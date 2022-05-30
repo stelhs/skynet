@@ -1,0 +1,106 @@
+
+a.button_blue {
+    margin: 10px;
+    line-height: 60px;
+    padding-left: 20px;
+    padding-right: 20px;
+    display: inline-block;
+    font-weight: 700;
+    color: rgb(209,209,217);
+    text-decoration: none;
+    text-shadow: 0 -1px 2px rgba(0,0,0,.2);
+    border-radius: 30px;
+    background: linear-gradient(rgb(100, 152, 200), rgb(10, 50, 70)) rgb(110, 112, 120);
+    box-shadow:
+        0 1px rgba(255,255,255,.2) inset,
+        0 3px 5px rgba(0,1,6,.5),
+        0 0 1px 1px rgba(0,1,6,.2);
+    user-select: none;
+}
+
+a.button_blue:active {
+    top: 1px;
+    background: linear-gradient(#4080AA, #202020);
+    box-shadow:
+        0 0 1px rgba(0,0,0,.5) inset,
+        0 2px 3px rgba(0,0,0,.5) inset,
+        0 1px 1px rgba(255,255,255,.1);
+}
+
+
+a.button_red {
+    margin: 10px;
+    line-height: 60px;
+    padding-left: 20px;
+    padding-right: 20px;
+    display: inline-block;
+    font-weight: 700;
+    color: #DDDDDD;
+    text-decoration: none;
+    text-shadow: 0 -1px 2px rgba(0,0,0,.2);
+    border-radius: 30px;
+    background: linear-gradient(#FD4009, #503030);
+    box-shadow:
+        0 1px rgba(255,255,255,.2) inset,
+        0 3px 5px rgba(0,1,6,.5),
+        0 0 1px 1px rgba(0,1,6,.2);
+    user-select: none;
+}
+
+a.button_red:active {
+    top: 1px;
+    background: linear-gradient(#DA4040, #202020);
+    box-shadow:
+        0 0 1px rgba(0,0,0,.5) inset,
+        0 2px 3px rgba(0,0,0,.5) inset,
+        0 1px 1px rgba(255,255,255,.1);
+}
+
+
+a.button_green {
+    margin: 10px;
+    line-height: 60px;
+    padding-left: 20px;
+    padding-right: 20px;
+    display: inline-block;
+    font-weight: 700;
+    color: #DDDDDD;
+    text-decoration: none;
+    text-shadow: 0 -1px 2px rgba(0,0,0,.2);
+    border-radius: 30px;
+    background: linear-gradient(#40FD09, #503030);
+    box-shadow:
+        0 1px rgba(255,255,255,.2) inset,
+        0 3px 5px rgba(0,1,6,.5),
+        0 0 1px 1px rgba(0,1,6,.2);
+    user-select: none;
+}
+
+a.button_green:active {
+    top: 1px;
+    background: linear-gradient(#40DA40, #202020);
+    box-shadow:
+        0 0 1px rgba(0,0,0,.5) inset,
+        0 2px 3px rgba(0,0,0,.5) inset,
+        0 1px 1px rgba(255,255,255,.1);
+}
+
+
+.fuel_consumption_table {
+    width: 100%;
+    margin-bottom: 20px;
+    border: 1px solid #dddddd;
+    border-collapse: collapse;
+}
+
+.fuel_consumption_table th {
+    font-weight: bold;
+    padding: 5px;
+    background: #335577;
+    border: 1px solid #dddddd;
+}
+
+.fuel_consumption_table td {
+    border: 1px solid #dddddd;
+    padding: 5px;
+}

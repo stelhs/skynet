@@ -1,0 +1,156 @@
+
+<table style="width: 1400px;">
+    <tr>
+        <td style="width: 25%;
+                   vertical-align: top">
+            <div style="border: solid 3px #00BFFF;
+                        margin: 10px;
+                        padding: 10px;
+                        width: fit-content;
+                        width: 320px;">
+                Статус котла:<br><br>
+                <table style="margin-left: 20px">
+                    <tr>
+                        <td style="width: 200px">Состояние:</td>
+                        <td id="bolier_state" style="padding: 5px">-</td>
+                    </tr>
+                    <tr>
+                        <td>Питание:</td>
+                        <td><div id="led_power" class="led-undefined"></div></td>
+                    </tr>
+                    <tr>
+                        <td>Воздух:</td>
+                        <td><div id="led_air_fun" class="led-undefined"></div></td>
+                    </tr>
+                    <tr>
+                        <td>Топлиный насос:</td>
+                        <td><div id="led_fuel_pump" class="led-undefined"></div></td>
+                    </tr>
+                    <tr>
+                        <td>Зажигание:</td>
+                        <td><div id="led_ignition" class="led-undefined"></div></td>
+                    </tr>
+                    <tr>
+                        <td>Водяной насос:</td>
+                        <td><div id="led_water_pump" class="led-undefined"></div></td>
+                    </tr>
+                    <tr>
+                        <td>Пламя:</td>
+                        <td><div id="led_flame" class="led-undefined"></div></td>
+                    </tr>
+                    <tr>
+                        <td>Калорифер:</td>
+                        <td><div id="led_heater" class="led-undefined"></div></td>
+                    </tr>
+                    <tr>
+                        <td style="margin: 10px">Нет давления:</td>
+                        <td><div id="led_no_pressure" class="led-undefined"></div></td>
+                    </tr>
+                    <tr>
+                        <td style="margin: 10px">Перегрев:</td>
+                        <td><div id="led_overheat" class="led-undefined"></div></td>
+                    </tr>
+                </table>
+
+                <br>
+            </div>
+        </td>
+
+        <td style="width: 25%;
+                   vertical-align: top">
+
+            <div class="seven_seg_item_big">
+                Установленная температура <br>
+                <div id="ss_target_t" class="seven_seg_big"></div>
+                <br><br>
+
+                <div style="">
+
+                    <a class="button_blue" onclick="ui.boiler.boilerSetTarget_t(5)">5°</a>
+                    <a class="button_blue" onclick="ui.boiler.onClickSetTarget_t()">Задать</a>
+
+                <!--    <div style="display: inline-block;
+                                text-align: center">
+                        <div class="button_box_red">
+                            <a onclick="ui.boiler.boilerSetTarget_t(5)"></a>
+                        </div><br>
+                        <span>5°</span>
+                    </div>
+
+                    <div style="display: inline-block;
+                                text-align: center">
+                        <div class="button_box_green">
+                            <a onclick="ui.boiler.onClickSetTarget_t()"></a>
+                        </div><br>
+                        <span>Установить t°</span>
+                    </div>
+                -->
+                </div>
+            </div>
+
+            <div class="seven_seg_item">
+                Счётчик запусков за сутки<br>
+                <div id="ss_ignition_counter" class="seven_seg_3"></div>
+            </div>
+
+            <div class="seven_seg_item">
+                Израсходовано литров за сутки<br>
+                <div id="ss_fuel_consumption" class="seven_seg_3"></div>
+            </div>
+
+        </td>
+
+        <td style="width: 25%;
+                   vertical-align: top">
+            <div class="seven_seg_item">
+                Температура в помещении <br>
+                <div id="ss_room_t" class="seven_seg_3"></div>
+            </div>
+
+            <div class="seven_seg_item">
+                Температура в корпусе котла <br>
+                <div id="ss_boiler_box_t" class="seven_seg_3"></div>
+            </div>
+
+            <div class="seven_seg_item">
+                Температура теплоносителя в котле<br>
+                <div id="ss_boiler_t" class="seven_seg_3"></div>
+            </div>
+
+            <div class="seven_seg_item">
+                Температура теплоносителя на входе в котёл <br>
+                <div id="ss_return_t" class="seven_seg_3"></div>
+            </div>
+        </td>
+
+        <td style="width: 25%;
+                   vertical-align: top">
+
+            <div style="border: solid 3px #00BFFF;
+                        margin: 10px;
+                        padding: 10px;
+                        width: fit-content;
+                        width: 320px;">
+
+                <div class="button_box_green">
+                    <a onclick=""></a>
+                </div>
+                <span>Вкл. котёл</span>
+                <br>
+
+                <div class="button_box_green">
+                    <a onclick="ui.boiler.boilerEnableHeater()"></a>
+                </div>
+                <span>Вкл. отопитель</span>
+                <br>
+
+                <div class="button_box_red">
+                    <a onclick="ui.boiler.boilerDisableHeater()"></a>
+                </div>
+                <span>Выкл. отопитель</span>
+            </div>
+
+        </td>
+    </tr>
+</table>
+

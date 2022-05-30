@@ -1,0 +1,257 @@
+
+<table style="width: 100%;">
+    <tr>
+        <td style="width: 50%;
+                   vertical-align: top;
+                   padding: 10px">
+
+            <div style="padding: 10 20 10 20;
+                        width: max-content;
+                        border: solid 1px">
+                <div style="margin: 0 60 10 0; display: inline-block">
+                    <div id="led_port_{port_name}_state" class="led_big-green"></div>Охрана (вкл/выкл)
+                 </div>
+                <div style="margin: 0 0 10 0; display: inline-block">
+                    <div id="led_port_{port_name}_state" class="led_big-red"></div>Неохраняемые зоны
+                </div>
+                <div style="margin: 0 30 0 0">
+                    <div id="led_port_{port_name}_state" class="led_big-red"></div>Заблокированные зоны
+                </div>
+            </div>
+
+            <div style="border: solid 1px;
+                        margin: 10 0 0 0;
+                        display: block;
+                        padding: 20px;
+                        width: max-content">
+                Условия включенной охраны:<br>
+
+                <div style="margin: 10 0 0 20">
+                    Готовность: <div id="led_port_{port_name}_state" class="led_big-red"></div>
+                </div>
+
+                <div style="margin: 10 0 10 20">
+                    Наблюдение:
+                    <select name="" style="vertical-align: middle">
+                        <option>полное</option>
+                        <option>без мастерской</option>
+                    </select>
+                </div>
+
+                <div style="margin: 10 0 10 20;
+                            display: inline-block;">
+                    Питание:
+                    <div style="margin: 5 0 0 50">
+                        <label class="switch" style="vertical-align: middle">
+                            <input type="checkbox">
+                            <span class="slider round"></span>
+                        </label>
+                        Мастерская
+                    </div>
+                    <div style="margin: 5 0 0 50">
+                        <label class="switch" style="vertical-align: middle">
+                            <input type="checkbox">
+                            <span class="slider round"></span>
+                        </label>
+                        Синий контейнер
+                    </div>
+                    <div style="margin: 5 0 0 50">
+                        <label class="switch" style="vertical-align: middle">
+                            <input type="checkbox">
+                            <span class="slider round"></span>
+                        </label>
+                        РП
+                    </div>
+                    <div style="margin: 5 0 0 50">
+                        <label class="switch" style="vertical-align: middle">
+                            <input type="checkbox">
+                            <span class="slider round"></span>
+                        </label>
+                        СК
+                    </div>
+                </div>
+
+                <div style="margin: 10 0 10 20;
+                            display: inline-block;">
+                    Питание замков:
+                    <div style="margin: 5 0 0 50">
+                        <label class="switch" style="vertical-align: middle">
+                            <input type="checkbox">
+                            <span class="slider round"></span>
+                        </label>
+                        Мастерская
+                    </div>
+                    <div style="margin: 5 0 0 50">
+                        <label class="switch" style="vertical-align: middle">
+                            <input type="checkbox">
+                            <span class="slider round"></span>
+                        </label>
+                        Синий контейнер
+                    </div>
+                    <div style="margin: 5 0 0 50">
+                        <label class="switch" style="vertical-align: middle">
+                            <input type="checkbox">
+                            <span class="slider round"></span>
+                        </label>
+                        РП
+                    </div>
+                    <div style="margin: 5 0 0 50">
+                        <label class="switch" style="vertical-align: middle">
+                            <input type="checkbox">
+                            <span class="slider round"></span>
+                        </label>
+                        КК
+                    </div>
+                </div>
+
+
+                <div style="width: max-content;
+                            border: solid 0px white;
+                            padding: 10px 15px 10px 15px;
+                            margin: 5px">
+
+                    <div class="button_box_red">
+                        <a onclick=""></a>
+                    </div>
+                    <span>Включить охрану</span>
+                </div>
+            </div>
+
+
+
+
+            <div style="border: solid 1px;
+                        margin: 20 0 0 0;
+                        display: block;
+                        padding: 20px;
+                        width: max-content">
+                <span style="font-weight: bold">Условия отключенной охраны:</span>
+
+
+                <div style="margin: 15 0 0 20">
+                    <label class="switch" style="vertical-align: middle">
+                        <input type="checkbox">
+                        <span class="slider round"></span>
+                    </label>
+                    Открыть откатные ворота
+                </div>
+
+                <div style="margin: 5 0 0 20">
+                    <label class="switch" style="vertical-align: middle">
+                        <input type="checkbox">
+                        <span class="slider round"></span>
+                    </label>
+                    Отключить запись видео в мастерской
+                </div>
+
+                <div style="margin: 10 0 10 20">
+                    Питание замков:
+                    <div style="margin: 5 0 0 100">
+                        <label class="switch" style="vertical-align: middle">
+                            <input type="checkbox">
+                            <span class="slider round"></span>
+                        </label>
+                        Мастерская
+                    </div>
+                    <div style="margin: 5 0 0 100">
+                        <label class="switch" style="vertical-align: middle">
+                            <input type="checkbox">
+                            <span class="slider round"></span>
+                        </label>
+                        Синий контейнер
+                    </div>
+                    <div style="margin: 5 0 0 100">
+                        <label class="switch" style="vertical-align: middle">
+                            <input type="checkbox">
+                            <span class="slider round"></span>
+                        </label>
+                        РП
+                    </div>
+                    <div style="margin: 5 0 0 100">
+                        <label class="switch" style="vertical-align: middle">
+                            <input type="checkbox">
+                            <span class="slider round"></span>
+                        </label>
+                        КК
+                    </div>
+                </div>
+
+
+                <div style="width: max-content;
+                            border: solid 0px white;
+                            padding: 10px 15px 10px 15px;
+                            margin: 5px">
+
+                    <div class="button_box_green">
+                        <a onclick=""></a>
+                    </div>
+                    <span>Отключить охрану</span>
+
+                </div>
+
+            </div>
+        </td>
+
+        <td style="width: 50%;
+                   vertical-align: top;">
+
+            <div style="font-weight: bold;
+                         font-size: 18px;
+                         padding: 0 0 10 0">
+                Зоны:
+                <select name="" style="vertical-align: middle">
+                    <option>Все</option>
+                    <option>Не готовые к охране</option>
+                    <option>Заблокированные</option>
+                    <option>Не охраняемые</option>
+                </select>
+
+
+            </div>
+
+            <div style="border: solid 1px;
+                        width: max-content;
+                        margin: 0 0 0 30">
+
+                <img style="width: 300px;
+                            display: inline-block;" src="{img_dir}/guard_zones/gates_closed.jpg">
+
+                <div style="display: inline-block;
+                            vertical-align: top;
+                            padding-left: 10px">
+
+                    <div style="font-size: 16px;
+                                font-weight: bold;
+                                padding: 10px 10px 5px 0px">Cевер калитка</div>
+
+                    <div style="padding: 0px 0px 0px 0px">
+                        <div style="display: inline-block;
+                                    vertical-align: middle">
+                            Готовность: <div id="led_port_{port_name}_state" class="led_big-red"></div>
+                        </div>
+                    </div>
+
+                    <div style="padding: 0px 0px 0px 20px">
+                        guard_motion_sensor_12:
+                        <div id="led_sensor_{sensor_name}_state" class="led_big-off"></div>
+                    </div>
+                    <div style="padding: 0px 0px 0px 20px">
+                        guard_motion_sensor_13:
+                        <div id="led_sensor_{sensor_name}_state" class="led_big-red"></div>
+                    </div>
+
+                    <div style="padding: 10px 0px 0px 0px">
+                        <div style="display: inline-block;
+                                    vertical-align: middle">
+                            Блокировка:
+                        </div>
+                        <a class="button_with_led">
+                            <div id="led_port_{port_name}_blink" class="led_mini-off" style="margin: 15px"></div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+        </td>
+    </tr>
+</table>

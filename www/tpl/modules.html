@@ -1,0 +1,59 @@
+<!-- START BLOCK : module -->
+    <div id="module_{name}"
+         style="display: none;
+                border: solid 1px;
+                padding-bottom: 20px">
+
+
+        <div style="line-height: 30px;
+                    padding-top: 5px;">
+
+            <div style="display: inline-block;
+                        padding-left: 30px;
+                        padding-right: 30px;
+                        font-size: 20px;
+                        font-weight: bold;">
+                {description}
+            </div>
+
+            <!-- START BLOCK : page_selector -->
+                <a class="button_switch_page" onclick="ui.{name}.switchPrevPage()"><-</a>
+                <span id="module_{name}_page_selector"
+                      style="font-weight: bold;
+                             padding: 10px;
+                             font-size: 20;"></span>
+                <a class="button_switch_page" onclick="ui.{name}.switchNextPage()">-></a>
+            <!-- END BLOCK : page_selector -->
+
+            <a style="vertical-align: bottom;
+                       position: absolute;
+                       right: 50px"
+                class="button_admin_mode" onclick="ui.{name}.enableSuperMode()">
+                <img id="button_enable_super_mode"
+                     style="height: 40px;
+                            display: block"
+                     src="{img_dir}/eye_on.png">
+
+                <img id="button_disable_super_mode"
+                     style="height: 40px;
+                            display: none"
+                     src="{img_dir}/eye_off.png">
+            </a>
+
+        </div>
+
+        <!-- START BLOCK : page -->
+            <div id="module_{name}_page_{pageNum}_content"
+                 style="display: none">
+                {content}
+                <br>
+                <br>
+                <br>
+                <br>
+                <br>
+                <br>
+            </div>
+        <!-- END BLOCK : page -->
+        <!-- mod_xxx.html -->
+    </div>
+<!-- END BLOCK : module -->

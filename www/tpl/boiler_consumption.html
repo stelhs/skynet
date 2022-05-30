@@ -1,0 +1,29 @@
+
+<!-- START BLOCK : no_data -->
+    Нет данных
+<!-- END BLOCK : no_data -->
+
+<table>
+    <tr>
+        <!-- START BLOCK : year -->
+            <td style="padding: 20px">
+                Расход топлива за {year}год:
+
+                <table class="fuel_consumption_table">
+                    <tr>
+                        <th>Месяц</th>
+                        <th>Объём</th>
+                    </tr>
+                    <!-- START BLOCK : month -->
+                        <tr>
+                            <td>{month}</td>
+                            <td>{liters}л.</td>
+                        </tr>
+                    <!-- END BLOCK : month -->
+                </table>
+                Всего: {total} Литров
+            </td>
+        <!-- END BLOCK : year -->
+    </tr>
+</table>
+

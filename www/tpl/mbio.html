@@ -1,0 +1,83 @@
+
+<table>
+    <tr style="vertical-align: top">
+        <td style="padding: 20px">
+            <!-- START BLOCK : inputs -->
+                Дискретные входы:
+                <span style="font-size: 20px;
+                             font-weight: bold">{io_name}</span>
+                <table class="io_table">
+                    <tr>
+                        <th>Входной порт</th>
+                        <th style="writing-mode: vertical-lr">Состояние</th>
+                        <th style="writing-mode: vertical-lr">1 / 0</th>
+                        <th style="writing-mode: vertical-lr">Блокировка</th>
+                    </tr>
+                    <!-- START BLOCK : input -->
+                        <tr style="height: 50px">
+                            <td>{port_num}. ({port_name})</td>
+                            <td>
+                                <div id="led_port_{port_name}_state" class="led_big-undefined"></div>
+                            </td>
+                            <td>
+                                <a class="button_with_led" onclick="ui.io.onTogglePortBlockedState('{port_name}')">
+                                    <div id="led_io_port_{port_name}_emulate"
+                                         class="led_mini-undefined" style="margin: 15px"></div>
+                                </a>
+                            </td>
+                            <td>
+                                <a class="button_with_led" onclick="ui.io.onTogglePortLockUnlock('{port_name}')">
+                                    <div id="led_io_port_{port_name}_blocked"
+                                         class="led_mini-undefined" style="margin: 15px"></div>
+                                </a>
+                            </td>
+                        </tr>
+                    <!-- END BLOCK : input -->
+                </table>
+            <!-- END BLOCK : inputs -->
+        </td>
+        <td style="padding: 20px">
+            <!-- START BLOCK : outputs -->
+                Дискретные выходы:
+                <span style="font-size: 20px;
+                             font-weight: bold">{io_name}</span>
+                <table class="io_table">
+                    <tr>
+                        <th>Выходной порт</th>
+                        <th style="writing-mode: vertical-lr">Состояние</th>
+                        <th style="writing-mode: vertical-lr">1 / 0</th>
+                        <th style="writing-mode: vertical-lr">Set blink</th>
+                        <th style="writing-mode: vertical-lr">Блокировка</th>
+                    </tr>
+                    <!-- START BLOCK : output -->
+                        <tr style="height: 50px">
+                            <td>{port_num}. ({port_name})</td>
+                            <td>
+                                <div id="led_port_{port_name}_state" class="led_big-undefined"></div>
+                            </td>
+                            <td>
+                                <a class="button_without_led" onclick="ui.io.onTogglePortState('{port_name}')"></a>
+                            </td>
+                            <td>
+                                <a class="button_with_led" onclick="ui.io.onSetPortBlink('{io_name}', '{port_name}')">
+                                    <div id="led_port_{port_name}_blink" class="led_mini-undefined" style="margin: 15px"></div>
+                                </a>
+                                <div id="label_port_{port_name}_blink_info"
+                                     style="font-size: 10px;
+                                            text-align: center;
+                                            padding-top: 5px;
+                                            display: none"></div>
+                            </td>
+                            <td>
+                                <a class="button_with_led" onclick="ui.io.onTogglePortLockUnlock('{port_name}')">
+                                    <div id="led_io_port_{port_name}_blocked"
+                                         class="led_mini-undefined" style="margin: 15px"></div>
+                                </a>
+                            </td>
+                        </tr>
+                    <!-- END BLOCK : output -->
+                </table>
+            <!-- END BLOCK : outputs -->
+        </td>
+    </tr>
+</table>

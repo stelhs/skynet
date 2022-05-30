@@ -1,0 +1,200 @@
+body
+{
+    background-color: #557799;
+    font-family: system-ui;
+    color: white;
+    width: 1450px;
+    font-size: 16px;
+    //touch-action: pan-y;
+}
+
+h3
+{
+    font-size: 20px;
+    font-weight: bold;
+    margin: 0px;
+}
+
+.menu_item_active {
+    border: solid 1px;
+    width: max-content;
+    color: white;
+    text-align: center;
+    padding: 5 30px 5 30px;
+    background-color: #335577;
+    user-select: none;
+}
+
+.menu_item {
+    border: solid 1px;
+    width: max-content;
+    color: white;
+    text-align: center;
+    padding: 5 30px 5 30px;
+    display: inline;
+    cursor: pointer;
+    user-select: none;
+}
+
+
+
+
+
+.led_big-green {
+    display: inline-block;
+    vertical-align: middle;
+    margin: 5px 10px 5px 10px;
+    width: 16px;
+    height: 16px;
+    background-color: #6f0;
+    border-radius: 50%;
+    box-shadow: 0 0 15px #fff, 0 0 15px #fff, 0 0 15px #fff;
+}
+
+.led_big-red {
+    display: inline-block;
+    vertical-align: middle;
+    margin: 5px 10px 5px 10px;
+    width: 16px;
+    height: 16px;
+    background-color: #f70;
+    border-radius: 50%;
+    box-shadow: 0 0 15px #fff, 0 0 15px #fff, 0 0 15px #fff;
+}
+
+.led_big-off {
+    display: inline-block;
+    vertical-align: middle;
+    margin: 5px 10px 5px 10px;
+    width: 16px;
+    height: 16px;
+    background-color: #422;
+    border-radius: 50%;
+}
+
+.led_big-undefined {
+    background-image: url(/img/cross.png);
+    display: inline-block;
+    vertical-align: middle;
+    margin: 3px 10px 3px 10px;
+    width: 20px;
+    height: 20px;
+}
+
+
+.led_mini-green {
+    display: inline-block;
+    vertical-align: middle;
+    margin: 5px 10px 5px 10px;
+    width: 12px;
+    height: 12px;
+    background-color: #6f0;
+    border-radius: 50%;
+    box-shadow: 0 0 15px #fff, 0 0 15px #fff, 0 0 15px #fff;
+}
+
+.led_mini-red {
+    display: inline-block;
+    vertical-align: middle;
+    margin: 5px 10px 5px 10px;
+    width: 12px;
+    height: 12px;
+    background-color: #f70;
+    border-radius: 50%;
+    box-shadow: 0 0 15px #fff, 0 0 15px #fff, 0 0 15px #fff;
+}
+
+.led_mini-off {
+    display: inline-block;
+    vertical-align: middle;
+    margin: 5px 10px 5px 10px;
+    width: 12px;
+    height: 12px;
+    background-color: #422;
+    border-radius: 50%;
+}
+
+.led_mini-undefined {
+    background-image: url(/img/cross.png);
+    display: inline-block;
+    vertical-align: middle;
+    margin: 3px 10px 3px 10px;
+    width: 14px;
+    height: 14px;
+}
+
+
+
+.seven_seg_big {
+    border: solid 4px #2F4F4F;
+    display: inline-block;
+    height: 50px;
+    width: 150;
+    padding: 5px;
+    background-color: black;
+    margin-top: 5px;
+}
+
+.seven_seg_4 {
+    border: solid 4px #2F4F4F;
+    display: inline-block;
+    height: 30px;
+    width: 120;
+    padding: 5px;
+    background-color: black;
+    margin-top: 5px;
+}
+
+.seven_seg_3 {
+    border: solid 4px #2F4F4F;
+    display: inline-block;
+    height: 30px;
+    width: 90;
+    padding: 5px;
+    background-color: black;
+    margin-top: 5px;
+}
+
+.seven_seg_2 {
+    border: solid 4px #2F4F4F;
+    display: inline-block;
+    height: 30px;
+    width: 60;
+    padding: 5px;
+    background-color: black;
+    margin-top: 5px;
+}
+
+.seven_seg_item_big {
+    border: solid 4px #00BFFF;
+    color: #FFFFFF;
+    padding: 10px;
+    width: fit-content;
+    text-align: center;
+    width: 320px;
+    margin: 10px;
+}
+
+.seven_seg_item {
+    border: solid 4px #00BFFF;
+    color: #FFFFFF;
+    padding: 10px;
+    width: fit-content;
+    text-align: center;
+    width: 250px;
+    margin: 10px;
+}
+
+select {
+    font-size: 22px;
+    color: #0d475e;
+    font-weight: bold;
+    background-color: #8AC;
+    padding: 0px 10px 0px 10px;
+}
+
+select option {
+    font-size: 22px;
+    font-weight: bold;
+}
+

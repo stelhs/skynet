@@ -1,0 +1,55 @@
+
+<div style="padding: 0px;
+            margin: 0px;
+            text-align: right">
+    <div style="width: max-content;
+                display: inline-block;
+                vertical-align: middle;
+                padding-left: 20px;
+                padding-right: 20px;
+                font-size: 20px;">
+        {header}
+    </div>
+    <a onclick="ui.hideDialogBox()"
+       class="number_button_blue"
+       style="padding: 0px;
+              width: 50px;
+              text-align: center;
+              line-height: 50px">X</a>
+</div>
+
+<!-- START BLOCK : display -->
+    <div style="display: inline-block;
+                line-heihht: 60px;
+                padding: 5px;
+                border: solid 2px #557799;
+                margin: 10px;"
+         id="number_win_disp_frame_{name}">
+        {header}<br>
+        <div id="ss_number_win_{name}"
+             onclick="ui.dialogBox.onSelectInput('{name}')"
+             class="seven_seg_4">
+        </div>
+    </div>
+<!-- END BLOCK : display -->
+<div style="margin-top: 20px">
+    <a class="number_button_blue" onclick="ui.dialogBox.onClickDigit('7')">7</a>
+    <a class="number_button_blue" onclick="ui.dialogBox.onClickDigit('8')">8</a>
+    <a class="number_button_blue" onclick="ui.dialogBox.onClickDigit('9')">9</a>
+</div>
+<div>
+    <a class="number_button_blue" onclick="ui.dialogBox.onClickDigit('4')">4</a>
+    <a class="number_button_blue" onclick="ui.dialogBox.onClickDigit('5')">5</a>
+    <a class="number_button_blue" onclick="ui.dialogBox.onClickDigit('6')">6</a>
+</div>
+<div>
+    <a class="number_button_blue" onclick="ui.dialogBox.onClickDigit('1')">1</a>
+    <a class="number_button_blue" onclick="ui.dialogBox.onClickDigit('2')">2</a>
+    <a class="number_button_blue" onclick="ui.dialogBox.onClickDigit('3')">3</a>
+</div>
+<div>
+    <a class="number_button_blue" onclick="ui.dialogBox.eraseSelected()">C</a>
+    <a class="number_button_blue" onclick="ui.dialogBox.onClickDigit('0')">0</a>
+    <a class="number_button_blue" onclick="ui.dialogBox.onClickDigit('.')">.</a>
+</div>
+<a class="number_button_blue" onclick="ui.dialogBox.onEnter()"> Ok </a>
