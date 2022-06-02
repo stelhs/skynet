@@ -1,4 +1,5 @@
 import sys
+sys.path.append('sr90lib/')
 sys.path.append('src/')
 
 from math import *
@@ -9,7 +10,7 @@ import atexit
 from Skynet import *
 
 
-skynet = Skynet()
+s = skynet()
 
 def exitCb():
     print("call exitCb")
@@ -18,7 +19,7 @@ def exitCb():
 atexit.register(exitCb)
 
 
-io = skynet.subsystemByName('io')
+io = s.io
 
 print("help:")
 print("\tskynet")

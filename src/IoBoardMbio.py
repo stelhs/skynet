@@ -14,6 +14,7 @@ class IoBoardMbio(IoBoardBase):
                     "Configuration for mbio '%s' error in field %s" % (ioName, e)) from e
 
         s.log = Syslog('Mbio')
+        s.resetMbio()
 
 
     def send(s, op, args = {}):
@@ -33,11 +34,11 @@ class IoBoardMbio(IoBoardBase):
         except simplejson.errors.JSONDecodeError as e:
             raise IoBoardMbioError(s.log,
                     "Response for '%s' from mbio '%s' parse error: %s. Response: %s" % (
-                            url, s.name(), e, r)) from e
+                            url, s.name(), e, r.content)) from e
         except KeyError as e:
             raise IoBoardMbioError(s.log,
                     "Request '%s' to mbio board '%s' return incorrect json: %s" % (
-                            url, s.name(), r))
+                            url, s.name(), r.content)) from e
 
 
     def outputSetState(s, port, state):
@@ -87,5 +88,11 @@ class IoBoardMbio(IoBoardBase):
             raise IoBoardMbioError(s.log,
                     "Request 'batteryInfo'return json w/o 'data' field: %s" % ret)
 
+
+    def resetMbio(s):
+        try:
+            s.send('reset')
+        except IoBoardError:
+            pass
 
 

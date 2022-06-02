@@ -60,12 +60,13 @@ class IoBoardBase():
         raise IoBoardPortNotFound("port %s not registred" % pName)
 
 
-    def ports(s, mode=None):
+    def ports(s, mode=None, blocked=None):
         list = []
         for port in s._ports:
-            if mode:
-                if port.mode() == mode:
-                    list.append(port)
+            if mode and port.mode() != mode:
+                continue
+
+            if blocked and port.isBlocked() != blocked:
                 continue
             list.append(port)
         return list

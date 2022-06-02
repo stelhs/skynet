@@ -87,7 +87,7 @@ class Io extends ModuleBase {
 
     requestToUpdateBoardsIO() {
         this.logInfo('Request to sr90 to obtain board IO info')
-        this.sr90Request('io/request_mbio_ui_update')
+        this.skynetRequest('io/request_mbio_config')
     }
 
     updateBoardsInfo(data) {
@@ -183,9 +183,8 @@ class Io extends ModuleBase {
         }
     }
 
-
     updateBlokedPorts(data) {
-        this.logInfo('Locked ports status sucess updated')
+        this.logInfo('Blocked ports status success updated')
         for (var pName in this.portsInfo) {
             var ledBlocked = this.portsInfo[pName]['ledBlocked'];
             var ledEmulate = this.portsInfo[pName]['ledEmulate'];
@@ -219,16 +218,16 @@ class Io extends ModuleBase {
             return
         }
 
-        if (!('list' in data)) {
-            this.logErr('Can`t updatePortStates(): field "list" is absent')
+        if (!('ports' in data)) {
+            this.logErr('Can`t updatePortStates(): field "ports" is absent')
             return
         }
 
         var ioName = data['io_name']
         this.restartEventTimeoutWatcher(ioName);
 
-        for (var i in data['list']) {
-            var row = data['list'][i];
+        for (var i in data['ports']) {
+            var row = data['ports'][i];
             var pName = row['port_name'];
             var type = row['type'];
             var state = parseInt(row['state']);
@@ -264,7 +263,7 @@ class Io extends ModuleBase {
             var d2 = results['d2']
             var number = results['number']
             this.logInfo('Request to blinking port ' + portName + '"');
-            this.sr90Request('io/port/blink',
+            this.skynetRequest('io/port/blink',
                              {'port_name': portName,
                               'd1': parseInt(d1 * 1000),
                               'd2': parseInt(d2 * 1000),
@@ -280,17 +279,17 @@ class Io extends ModuleBase {
 
     onTogglePortLockUnlock(portName) {
         this.logInfo('Request to Lock/Unlock port "' + portName + '"');
-        this.sr90Request('io/port/toggle_lock_unlock', {'port_name': portName});
+        this.skynetRequest('io/port/toggle_lock_unlock', {'port_name': portName});
     }
 
     onTogglePortBlockedState(portName) {
         this.logInfo('Request to change software emulation input state for port "' + portName + '"');
-        this.sr90Request('io/port/toggle_blocked_state', {'port_name': portName});
+        this.skynetRequest('io/port/toggle_blocked_state', {'port_name': portName});
     }
 
     onTogglePortState(portName) {
         this.logInfo('Request to toggle state for port "' + portName + '"');
-        this.sr90Request('io/port/toggle_state', {'port_name': portName});
+        this.skynetRequest('io/port/toggle_out_state', {'port_name': portName});
     }
 
 }

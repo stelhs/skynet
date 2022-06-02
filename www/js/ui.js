@@ -151,10 +151,10 @@ class Ui {
         return NaN;
     }
 
-    eventHandler(subsytem, type, data) {
-        var mod = this.moduleByName(subsytem)
+    eventHandler(source, type, data) {
+        var mod = this.moduleByName(source)
         if (!mod) {
-            this.logErr("eventHandler(): incorrect subsytem: " + subsytem)
+            this.logErr("eventHandler(): incorrect source: " + source)
             return;
         }
 
@@ -166,7 +166,7 @@ class Ui {
             this.errorBoxHide();
             var resp = JSON.parse(responceText)
             if (resp.status == 'error') {
-                if (resp.error_code == 2) { // if not registred
+                if (resp.errCode == 'subscriberNotRegistred') {
                     this.register();
                     this.eventReceiver();
                     return;
@@ -186,7 +186,7 @@ class Ui {
             if (events.length) {
                 for (var i in events) {
                     event = events[i];
-                    this.eventHandler(event.subsytem,
+                    this.eventHandler(event.source,
                                  event.type,
                                  event.data);
                 }
@@ -378,22 +378,22 @@ class ModuleBase {
     onPageChanged(pageNum) {
     }
 
-    sr90Request(method, args) {
+    skynetRequest(method, args) {
         var success = function(responceText) {
             var resp = JSON.parse(responceText)
 
             if (resp.status == 'error') {
-                this.logErr("sr90 method '" + method + "'" +
+                this.logErr("skyney method '" + method + "'" +
                                "return error: " + resp.reason)
                 return;
             }
-            this.logInfo("to sr90 '" + method + "' success finished")
+            this.logInfo("to skynet '" + method + "' success finished")
         }
 
         var error = function(reason, errCode) {
-            this.logErr('Can`t send request "' + method + '" to sr90: ' + reason)
+            this.logErr('Can`t send request "' + method + '" to skynet: ' + reason)
         }
-        asyncAjaxReq('sr90/' + method, args,
+        asyncAjaxReq(method, args,
                      success.bind(this), error.bind(this))
     }
 

@@ -1,26 +1,19 @@
+from sr90Exceptions import *
 
-
-class AppError(Exception): # Base of all errors
-    def __init__(s, log, msg):
-        log.err("Skynet Exception: %s" % msg)
-#        global skynet
-#        skynet.tc.sendToChat('stelhs', "Skynet Error:\n%s" % msg)
-        super().__init__(msg)
-
+# Database errors:
 
 class DatabaseConnectorError(AppError):
     pass
 
 
-class EventHandlerError(AppError): # error in subsystem event handler
+# errors in subsystem event handler
+
+class EventHandlerError(AppError):
     pass
 
 
-class ConfigError(AppError): # Configuration parser errors
-    pass
 
-
-
+# IO boars errors
 
 class IoError(AppError): # Base of all IO subsystem errors
     pass
@@ -47,7 +40,7 @@ class IoBoardMbioError(IoBoardError): # MBIO board errors
     pass
 
 
-
+# Thermosensors errors
 
 class TermosensorError(AppError):
     pass
@@ -63,15 +56,7 @@ class TermosensorNoDataError(TermosensorError):
 
 
 
-class TelegramError(AppError): # Telegram client errors
-    pass
-
-class TelegramClientError(TelegramError):
-    pass
-
-
-# Mysql base error: mysql.connector.errors.Error
-
+# Boiler errors:
 
 class BoilerError(AppError):
     pass

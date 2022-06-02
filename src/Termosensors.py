@@ -22,7 +22,7 @@ class Termosensors(SubsystemBase):
 
 
     def listenedEvents(s):
-        return ['mbio', 'boiler']
+        return ('mbio', 'boiler')
 
 
     def eventHandler(s, source, type, data):

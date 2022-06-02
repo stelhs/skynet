@@ -1,6 +1,7 @@
 import threading
 from Exceptions import *
 from Syslog import *
+from Skynet import *
 
 class IoPortBase():
     def __init__(s, io, board, mode, pn, pName):
@@ -41,14 +42,14 @@ class IoPortBase():
         with s._lock:
             s.blocked = True
         s.dbw.lock()
-       # s.io.uiUpdateBlockedPorts(); #TODO
+        s.io.uiUpdateBlockedPorts()
 
 
     def unlock(s):
         with s._lock:
             s.blocked = False
         s.dbw.unlock()
-       # s.io.uiUpdateBlockedPorts(); //TODO
+        s.io.uiUpdateBlockedPorts()
 
 
     def __repr__(s):
@@ -68,16 +69,17 @@ class IoPortBase():
         def isBlocked(s):
             row = s.db.query("select state from blocked_io_ports " \
                              "where port_name = '%s'" % s.port.name())
-            if 'state' not in row:
+            if 'state' in row:
                 return True
             return False
 
 
         def lock(s):
             s.unlock()
+            print("db lock")
             s.db.insert('blocked_io_ports',
-                        {'port_name': s.name(),
-                         'type': s.mode(),
+                        {'port_name': s.port.name(),
+                         'type': s.port.mode(),
                          'state': 0});
 
         def unlock(s):

@@ -132,7 +132,7 @@ class Boiler extends ModuleBase {
 
     eventHandler(type, data) {
         switch (type) {
-        case 'status':
+        case 'boilerStatus':
             this.restartEventTimeoutWatcher();
             this.updateStatus(data);
             return;
@@ -205,15 +205,15 @@ class Boiler extends ModuleBase {
             var resp = JSON.parse(responceText)
 
             if (resp.status == 'error') {
-                this.logErr("boiler method '" + method + "'" +
-                               "return error: " + resp.reason)
+                this.logErr("boiler method 'boiler/" + method + "'" +
+                            "return error: " + resp.reason)
                 return;
             }
-            this.logInfo("to boiler '" + method + "' success finished")
+            this.logInfo("to boiler 'boiler/" + method + "' success finished")
         }
 
         var error = function(reason, errCode) {
-            this.logErr('Can`t send request "' + method + '" to boiler: ' + reason)
+            this.logErr('Can`t send request "boiler/' + method + '" to boiler: ' + reason)
         }
         asyncAjaxReq('boiler/' + method, args,
                      success.bind(this), error.bind(this))
@@ -234,6 +234,11 @@ class Boiler extends ModuleBase {
                                       'Установить температуру',
                                       [['t', 't°', 2, 30, 'lime']]);
         this.ui.showDialogBox(numberBox)
+    }
+
+    boilerStart() {
+        this.ui.logInfo('Request to start boiler');
+        this.boilerRequest('boiler_start')
     }
 
     boilerEnableHeater() {
@@ -319,7 +324,7 @@ class Boiler extends ModuleBase {
 
     requestBoilerFuelConsumption() {
         this.logInfo('Request to sr90 to obtain fuel consumption report')
-        this.sr90Request('boiler/request_fuel_compsumption_stat')
+        this.skynetRequest('boiler/request_fuel_compsumption_stat')
     }
 }
 

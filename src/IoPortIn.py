@@ -9,7 +9,7 @@ class IoPortIn(IoPortBase):
 
 
     def state(s, force=False):
-        if force and s.isBlocked():
+        if not force and s.isBlocked():
             return s.blockedState()
 
         return s.board().inputState(s);
@@ -24,8 +24,13 @@ class IoPortIn(IoPortBase):
         with s._lock:
             s._blockedState = state
         s.db.setBlockedState(state)
-      #  s.io.uiUpdateBlockedPorts(); TODO
-        s.io.trigEvent(s, state, True);
+        s.io.uiUpdateBlockedPorts()
+        #s.io.trigEvent(s, state, True);
+
+
+    def unlock(s):
+        super().unlock()
+        s.setBlockedState(0)
 
 
     class Db(IoPortBase.Db):

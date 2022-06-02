@@ -1,16 +1,21 @@
-import requests
+from datetime import date
+import requests, simplejson
 from Exceptions import *
 from SubsystemBase import *
+from HttpServer import *
+from Skynet import *
 
 
 class Boiler(SubsystemBase):
-    def __init__(s, conf, httpServer):
+    def __init__(s, conf, httpServer, db):
         super().__init__("boiler", conf)
-        s.httpHandlers = Boiler.HttpHandlers(s, httpServer)
+        s.db = db
+        s.dbw = Boiler.Db(s, db)
+        s.httpHandlers = Boiler.HttpHandlers(s, httpServer, s.dbw)
 
 
     def listenedEvents(s):
-        return ['boiler']
+        return ()
 
 
     def eventHandler(s, source, type, data): # TODO
@@ -18,7 +23,7 @@ class Boiler(SubsystemBase):
 
 
     def send(s, op, args = {}):
-        url = "http://%s:%s/%s" % (s.conf['host'], s.conf['port'], url)
+        url = "http://%s:%s/%s" % (s.conf['host'], s.conf['port'], op)
         try:
             r = requests.get(url = url, params = args)
             resp = r.json()
@@ -31,14 +36,14 @@ class Boiler(SubsystemBase):
             raise BoilerError(s.log,
                     "Request '%s' to bolier '%s' fails: %s" % (
                             op, s.name, e)) from e
-        except json.JSONDecodeError as e:
+        except simplejson.errors.JSONDecodeError as e:
             raise BoilerError(s.log,
-                    "Response for '%s' from boiler '%s' parse error: %s" % (
-                            op, s.name, e)) from e
+                    "Response for '%s' from boiler '%s' parse error: %s. Response: %s" % (
+                            op, s.name, e, r.content)) from e
         except KeyError as e:
             raise BoilerError(s.log,
                     "Request '%s' to boiler '%s' return incorrect json: %s" % (
-                            op, s.name(), r))
+                            op, s.name(), r.content)) from e
 
 
     def setTarget_t(s, t):
@@ -57,18 +62,46 @@ class Boiler(SubsystemBase):
         s.send('boiler/fun_heater_disable')
 
 
+    def uiErr(s, msg):
+        skynet().emitEvent('boiler', 'error', msg)
+
+
+    class Db():
+        def __init__(s, boiler, db):
+            s.boiler = boiler
+            s.db = db
+
+
+        def fuelConsumptionMonthly(s, year, m):
+            row = s.db.query("select sum(fuel_consumption) as sum " \
+                             "from `boiler_statistics` " \
+                             "WHERE year(created)=%d and month(created)=%d" % (year, m))
+            if 'sum' not in row:
+                return 0
+            if row['sum'] == None:
+                return 0
+            return row['sum']
+
+
 
     class HttpHandlers():
-        def __init__(s, boiler, httpServer):
+        def __init__(s, boiler, httpServer, dbw):
             s.boiler = boiler
+            s.dbw = dbw
             s.httpServer = httpServer
-            s.httpServer.setReqHandler("GET", "/boiler/set_target_t", s.setTarget_t, ['t'])
-            s.httpServer.setReqHandler("GET", "/boiler/boiler_enable", s.boilerEnable)
-            s.httpServer.setReqHandler("GET", "/boiler/heater_enable", s.heaterEnable)
-            s.httpServer.setReqHandler("GET", "/boiler/heater_disable", s.heaterDisable)
+            s.httpServer.setReqHandler("GET", "/boiler/set_target_t",
+                                        s.setTarget_tHandler, ('t', ))
+            s.httpServer.setReqHandler("GET", "/boiler/boiler_start",
+                                        s.boilerStartHandler)
+            s.httpServer.setReqHandler("GET", "/boiler/heater_enable",
+                                        s.heaterEnableHandler)
+            s.httpServer.setReqHandler("GET", "/boiler/heater_disable",
+                                        s.heaterDisableHandler)
+            s.httpServer.setReqHandler("GET", "/boiler/request_fuel_compsumption_stat",
+                                        s.reqFuelConsumptionStatHandler)
 
 
-        def setTarget_t(s, args, body, attrs, conn):
+        def setTarget_tHandler(s, args, body, attrs, conn):
             try:
                 s.boiler.setTarget_t(args['t'])
             except BoilerError as e:
@@ -76,24 +109,55 @@ class Boiler(SubsystemBase):
 
 
 
-        def boilerEnable(s, args, body, attrs, conn):
+        def boilerStartHandler(s, args, body, attrs, conn):
             try:
-                s.send('boiler/enable')
+                s.boiler.send('boiler/start')
             except BoilerError as e:
                 raise HttpHandlerError('Can`t enable boiler: %s' % e)
 
 
-        def heaterEnable(s, args, body, attrs, conn):
+        def heaterEnableHandler(s, args, body, attrs, conn):
             try:
-                s.send('boiler/fun_heater_enable')
+                s.boiler.send('boiler/fun_heater_enable')
             except BoilerError as e:
                 raise HttpHandlerError('Can`t enable heater: %s' % e)
 
 
-        def heaterDisable(s, args, body, attrs, conn):
+        def heaterDisableHandler(s, args, body, attrs, conn):
             try:
-                s.send('boiler/fun_heater_disable')
+                s.boiler.send('boiler/fun_heater_disable')
             except BoilerError as e:
                 raise HttpHandlerError('Can`t disable heater: %s' % e)
+
+
+        def reqFuelConsumptionStatHandler(s, args, body, attrs, conn):
+            def report():
+                endYear = date.today().year;
+                startYear = endYear - 5;
+
+                listByYears = []
+                for year in range(startYear + 1, endYear + 1):
+                    listByMonths = []
+                    yearSum = 0
+                    for m in range(1, 12):
+                        try:
+                            monthlySum = s.dbw.fuelConsumptionMonthly(year, m)
+                        except DatabaseConnectorError as e:
+                            s.boiler.uiErr("Calculating total fuel consumption for %d.%d failed: " \
+                                           "Database error: %s" % (m, year, e))
+                            return
+
+                        yearSum += monthlySum
+                        listByMonths.append({'month': m,
+                                             'liters': float(round(monthlySum / 1000, 1))})
+
+                    if yearSum:
+                        listByYears.append({'year': year,
+                                            'months': listByMonths,
+                                            'total': float(round(yearSum / 1000, 1))})
+                skynet().emitEvent('boiler', 'boilerFuelConsumption', listByYears)
+
+            Task.asyncRunSingle("requestFuelConsumption", report)
+
 
 

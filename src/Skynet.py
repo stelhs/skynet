@@ -1,5 +1,10 @@
+def skynet():
+    if not hasattr(skynet, 'instance'):
+        skynet.instance = Skynet()
+    return skynet.instance
+
 from Syslog import *
-from Conf import *
+from ConfSkynet import *
 from DatabaseConnector import *
 from HttpServer import *
 from TelegramClient import *
@@ -9,22 +14,26 @@ from Io import *
 from Ui import *
 
 
+
+
 class Skynet():
     def __init__(s):
         s.log = Syslog("Skynet")
-        s.conf = Conf()
+        s.conf = ConfSkynet()
         s.db = DatabaseConnector(s.conf.db)
         s.tc = TelegramClient(s.conf.telegram, s.telegramHandler)
-        Task.setErrorCb(s.exceptionHandler)
+        Task.setErrorCb(s.taskExceptionHandler)
 
         s.httpServer = HttpServer(s.conf.skynet['http_host'],
                                   s.conf.skynet['http_port'],
                                   s.conf.skynet['http_www'])
 
-        s.subsystems = [Termosensors(s.conf.termosensors, s.httpServer),
-                       Io(s.conf.io, s.httpServer, s.db),
-                       Boiler(s.conf.boiler, s.httpServer),
-                       Ui(s.httpServer)]
+        s.ts = Termosensors(s.conf.termosensors, s.httpServer)
+        s.io = Io(s.conf.io, s.httpServer, s.db)
+        s.boiler = Boiler(s.conf.boiler, s.httpServer, s.db)
+        s.ui = Ui(s.httpServer, s.io)
+
+        s.subsystems = [s.ts, s.io, s.boiler, s.ui]
 
         s.httpHandlers = Skynet.HttpHandlers(s, s.httpServer)
 
@@ -41,10 +50,7 @@ class Skynet():
     def emitEvent(s, source, evType, data):
         for subsystem in s.subsystems:
             if source in subsystem.listenedEvents():
-                try:
-                    subsystem.eventHandler(source, evType, data)
-                except:
-                    pass
+                subsystem.eventHandler(source, evType, data)
 
 
     def telegramHandler(tc, text, msgId, date, fromName,
@@ -52,9 +58,9 @@ class Skynet():
         print("received %s" % text)
 
 
-    def exceptionHandler(s, task, errMsg):
+    def taskExceptionHandler(s, task, errMsg):
         s.tc.sendToChat('stelhs',
-                "Skynet Task '%s' error:\n%s" % (task.name(), errMsg))
+                "Skynet: task '%s' error:\n%s" % (task.name(), errMsg))
 
 
     def destroy(s):

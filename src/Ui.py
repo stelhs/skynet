@@ -7,19 +7,18 @@ import time
 
 
 class Ui(SubsystemBase):
-    def __init__(s, httpServer):
+    def __init__(s, httpServer, io):
         super().__init__("ui", {})
-        s.uiEventManager = Ui.EventManager()
-        s.httpHandlers = Ui.HttpHandlers(s, httpServer)
+        s.em = Ui.EventManager()
+        s.httpHandlers = Ui.HttpHandlers(s, httpServer, io)
 
 
     def listenedEvents(s):
-        return ['mbio', 'boiler']
+        return ('io', 'mbio', 'boiler')
 
 
-    def eventHandler(s, source, type, data):
-        s.uiEventManager.send(source, evType, data)
-
+    def eventHandler(s, source, evType, data):
+        s.em.send(source, evType, data)
 
 
     class EventManager():
@@ -58,10 +57,10 @@ class Ui(SubsystemBase):
             s.subscribers = []
 
 
-        def send(s, subsytem, type, evData):
+        def send(s, source, type, evData):
             s.removeOldSubscribers()
 
-            ev = {'subsytem': subsytem, 'type': type, 'data': evData}
+            ev = {'source': source, 'type': type, 'data': evData}
             for subscriber in s.subscribers:
                 subscriber.pushEvent(ev)
 
@@ -114,7 +113,8 @@ class Ui(SubsystemBase):
 
 
     class HttpHandlers():
-        def __init__(s, io, httpServer):
+        def __init__(s, ui, httpServer, io):
+            s.ui = ui
             s.io = io
             s.httpServer = httpServer
             s.httpServer.setReqHandler("GET", "/ui/get_teamplates", s.teamplatesHandler)
@@ -135,7 +135,7 @@ class Ui(SubsystemBase):
 
 
         def subscribeHandler(s, args, body, attrs, conn):
-            subscriber = s.uiEventManager.subscribe()
+            subscriber = s.ui.em.subscribe()
             return {'subscriber_id': subscriber.id}
 
 
@@ -144,10 +144,13 @@ class Ui(SubsystemBase):
                 raise HttpHandlerError("'subscriber_id' is absent", 'subscriberAbsent')
 
             subscriberId = args['subscriber_id']
-            events = s.uiEventManager.events(conn.task(), subscriberId)
+            events = s.ui.em.events(conn.task(), subscriberId)
             if events == None:
                 raise HttpHandlerError("'subscriberId' %s is not registred" % subscriberId, 'subscriberNotRegistred')
             return {'events': events}
+
+
+
 
 
 
