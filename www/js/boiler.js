@@ -14,20 +14,37 @@ class Boiler extends ModuleBase {
         return 'Панель управления котлом';
     }
 
+    eventSources() {
+        return ['boiler'];
+    }
+
+    setContentPageTotal(content) {
+        this.setPageContent(1, content)
+    }
+
+    setContentPageStatistics(content) {
+        this.setPageContent(2, content)
+    }
+
     init() {
         super.init();
-        this.boilerStateDiv = $$('bolier_state');
-        this.fuelConsumptionTableDiv = $$('boiler_fuel_consumption_table');
 
-        this.leds = {'led_power': $$('led_power'),
-                     'led_air_fun': $$('led_air_fun'),
-                     'led_fuel_pump': $$('led_fuel_pump'),
-                     'led_ignition': $$('led_ignition'),
-                     'led_water_pump': $$('led_water_pump'),
-                     'led_flame': $$('led_flame'),
-                     'led_heater': $$('led_heater'),
-                     'led_no_pressure': $$('led_no_pressure'),
-                     'led_overheat': $$('led_overheat')};
+        var tpl = this.tplOpen('mod_boiler_1')
+        tpl.assign();
+        this.setContentPageTotal(tpl.result())
+
+        this.boilerStateDiv = $$('bolier_state');
+
+
+        this.leds = {'led_power': new Led('led_power', 'green', 3),
+                     'led_air_fun': new Led('led_air_fun', 'green', 3),
+                     'led_fuel_pump': new Led('led_fuel_pump', 'green', 3),
+                     'led_ignition': new Led('led_ignition', 'green', 3),
+                     'led_water_pump': new Led('led_water_pump', 'red', 3),
+                     'led_flame': new Led('led_flame', 'green', 3),
+                     'led_heater': new Led('led_heater', 'red', 3),
+                     'led_no_pressure': new Led('led_no_pressure', 'red', 3),
+                     'led_overheat': new Led('led_overheat', 'red', 3)};
 
         this.sevenSegs = {
                      'ss_target_t': [$("#ss_target_t"), 3, "lime"],
@@ -49,12 +66,6 @@ class Boiler extends ModuleBase {
         this.restartEventTimeoutWatcher();
     }
 
-
-    html(pageNum) {
-        var tpl = this.ui.teamplates.openTpl('mod_' + this.name() + '_' + pageNum);
-        tpl.assign();
-        return tpl.result();
-    }
 
     onPageChanged(pageNum) {
         if (pageNum == 2)
@@ -83,17 +94,13 @@ class Boiler extends ModuleBase {
 
     }
 
-
     uiReset() {
         this.showBoilerState('-');
-
-        for (var ledName in this.leds)
-            this.ledSet(ledName, 'undefined');
 
         for (var name in this.sevenSegs)
             this.showSevenSegVal(name, "XXXXX");
 
-        this.fuelConsumptionTableDiv.innerHTML = '';
+        this.setContentPageStatistics('')
     }
 
     logErr(msg) {
@@ -117,20 +124,7 @@ class Boiler extends ModuleBase {
         this.watcherTimeoutHandler = setTimeout(handler.bind(this), 3000);
     }
 
-    ledByName(name) {
-        for (var itemName in this.leds) {
-            if (itemName == name)
-                return this.leds[itemName];
-        }
-        return NaN;
-    }
-
-    ledSet(ledName, mode) {
-        var led = this.ledByName(ledName);
-        led.className = 'led_big-' + mode;
-    }
-
-    eventHandler(type, data) {
+    eventHandler(source, type, data) {
         switch (type) {
         case 'boilerStatus':
             this.restartEventTimeoutWatcher();
@@ -149,21 +143,10 @@ class Boiler extends ModuleBase {
             this.updateBoilerFuelConsumption(data);
             return
 
-
         default:
             this.logErr("Incorrect event type: " + type)
         }
     }
-
-    actualizeLed(ledName, data, field, value, ledTrueMode) {
-        if (field in data) {
-            if (data[field] == value)
-                this.ledSet(ledName, ledTrueMode);
-            else
-                this.ledSet(ledName, 'off');
-        }
-    }
-
 
     actualizeSevenSeg(segName, data, field) {
         if (field in data)
@@ -179,15 +162,16 @@ class Boiler extends ModuleBase {
         if ('state' in data)
             this.showBoilerState(data['state']);
 
-        this.actualizeLed('led_power', data, 'power', 'True', 'green');
-        this.actualizeLed('led_air_fun', data, 'air_fun', 'True', 'green');
-        this.actualizeLed('led_fuel_pump', data, 'fuel_pump', 'True', 'green');
-        this.actualizeLed('led_ignition', data, 'ignition', 'True', 'red');
-        this.actualizeLed('led_water_pump', data, 'water_pump', 'True', 'green');
-        this.actualizeLed('led_flame', data, 'flame', 'True', 'red');
-        this.actualizeLed('led_heater', data, 'heater', 'True', 'red');
-        this.actualizeLed('led_no_pressure', data, 'no_pressure', 'True', 'red');
-        this.actualizeLed('led_overheat', data, 'overheat', 'True', 'red');
+        this.leds['led_power'].actualize(data, 'power', 'True');
+        this.leds['led_power'].actualize(data, 'power', 'True');
+        this.leds['led_air_fun'].actualize(data, 'air_fun', 'True');
+        this.leds['led_fuel_pump'].actualize(data, 'fuel_pump', 'True');
+        this.leds['led_ignition'].actualize(data, 'ignition', 'True');
+        this.leds['led_water_pump'].actualize(data, 'water_pump', 'True');
+        this.leds['led_flame'].actualize(data, 'flame', 'True');
+        this.leds['led_heater'].actualize(data, 'heater', 'True');
+        this.leds['led_no_pressure'].actualize(data, 'no_pressure', 'True');
+        this.leds['led_overheat'].actualize(data, 'overheat', 'True');
 
         this.actualizeSevenSeg('ss_target_t', data, 'target_t');
         this.actualizeSevenSeg('ss_room_t', data, 'room_t');
@@ -215,7 +199,7 @@ class Boiler extends ModuleBase {
         var error = function(reason, errCode) {
             this.logErr('Can`t send request "boiler/' + method + '" to boiler: ' + reason)
         }
-        asyncAjaxReq('boiler/' + method, args,
+        asyncAjaxReq('GET', 'boiler/' + method, args,
                      success.bind(this), error.bind(this))
     }
 
@@ -252,7 +236,6 @@ class Boiler extends ModuleBase {
     }
 
     updateBoilerFuelConsumption(data) {
-        var div = this.fuelConsumptionTableDiv
         var months = ['Январь',
                       'Февраль',
                       'Март',
@@ -271,11 +254,11 @@ class Boiler extends ModuleBase {
             return;
         }
 
-        var tpl = this.ui.teamplates.openTpl('boiler_consumption');
+        var tpl = this.tplOpen('mod_boiler_2');
 
         if (!data.length) {
             tpl.assign('no_data');
-            div.innerHTML = tpl.result();
+            this.setContentPageStatistics(tpl.result())
             this.logErr('Received list of fuel consumption is empty');
             return;
         }
@@ -319,12 +302,12 @@ class Boiler extends ModuleBase {
                             'liters': subrow['liters']});
             }
         }
-        div.innerHTML = tpl.result();
+        this.setContentPageStatistics(tpl.result())
     }
 
     requestBoilerFuelConsumption() {
-        this.logInfo('Request to sr90 to obtain fuel consumption report')
-        this.skynetRequest('boiler/request_fuel_compsumption_stat')
+        this.logInfo('Request to skynet to obtain fuel consumption report')
+        this.skynetGetRequest('boiler/request_fuel_compsumption_stat')
     }
 }
 

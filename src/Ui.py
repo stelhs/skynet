@@ -1,20 +1,18 @@
 import threading
 from HttpServer import *
-from SubsystemBase import *
 import os
 import uuid
 import time
 
 
-class Ui(SubsystemBase):
-    def __init__(s, httpServer, io):
-        super().__init__("ui", {})
+class Ui():
+    def __init__(s, skynet):
+        s.httpServer = skynet.httpServer
+        s.io = skynet.io
+        s.skynet = skynet
         s.em = Ui.EventManager()
-        s.httpHandlers = Ui.HttpHandlers(s, httpServer, io)
-
-
-    def listenedEvents(s):
-        return ('io', 'mbio', 'boiler')
+        s.httpHandlers = Ui.HttpHandlers(s)
+        skynet.registerEventSubscriber('Ui', s.eventHandler)
 
 
     def eventHandler(s, source, evType, data):
@@ -113,13 +111,15 @@ class Ui(SubsystemBase):
 
 
     class HttpHandlers():
-        def __init__(s, ui, httpServer, io):
+        def __init__(s, ui):
             s.ui = ui
-            s.io = io
-            s.httpServer = httpServer
+            s.io = ui.io
+            s.skynet = ui.skynet
+            s.httpServer = ui.httpServer
             s.httpServer.setReqHandler("GET", "/ui/get_teamplates", s.teamplatesHandler)
             s.httpServer.setReqHandler("GET", "/ui/get_events", s.eventsHandler)
             s.httpServer.setReqHandler("GET", "/ui/subscribe", s.subscribeHandler)
+            s.httpServer.setReqHandler("GET", "/ui/configs", s.configsHandler)
 
 
         def teamplatesHandler(s, args, body, attrs, conn):
@@ -148,6 +148,13 @@ class Ui(SubsystemBase):
             if events == None:
                 raise HttpHandlerError("'subscriberId' %s is not registred" % subscriberId, 'subscriberNotRegistred')
             return {'events': events}
+
+
+        def configsHandler(s, args, body, attrs, conn):
+            return {"io": s.skynet.conf.io,
+                    "guard": s.skynet.conf.guard,
+                    "doorLocks": s.skynet.conf.doorLocks,
+                    "powerSockets": s.skynet.conf.powerSockets}
 
 
 

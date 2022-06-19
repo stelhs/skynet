@@ -4,7 +4,7 @@ function $$(id)
     return document.getElementById(id);
 }
 
-function asyncAjaxReq(method, args = {}, successCb = NaN, errCb = NaN)
+function asyncAjaxReq(httpMethod, method, data = {}, successCb = NaN, errCb = NaN)
 {
     var error = function(jqXHR, exception) {
         var reason = '';
@@ -36,9 +36,9 @@ function asyncAjaxReq(method, args = {}, successCb = NaN, errCb = NaN)
     }
 
     return $.ajax({
-          type: "GET",
+          type: httpMethod,
           url: "/" + method,
-          data: args,
+          data: data,
           success: successCb,
           error: error,
           async: true,
@@ -86,19 +86,21 @@ class Ui {
     constructor(modules) {
         this.teamplates = new Teamplates();
         this.logBox = new LogBox(this.teamplates);
+        this.obtainConfigs();
 
         this.boiler = new Boiler(this)
         this.io = new Io(this)
         this.guard = new Guard(this)
         this.modules = [this.boiler, this.io, this.guard];
+//        this.modules = [this.boiler];
 
-        this.noSleep = new NoSleep('no_sleep_video');
+//        this.noSleep = new NoSleep('no_sleep_video');
         this.errorBoxDiv = $$('errorBox');
         this.dialogBoxDiv = $$('dialogBox');
         this.dialogBox = NaN;
         this.hidingPageDiv = $$('hidingPage');
         this.isErrBoxDisplayed = false
-        this.noSleep.run();
+//        this.noSleep.run();
         this.register();
         this.eventReceiver();
 
@@ -116,8 +118,7 @@ class Ui {
 
             for (var n = 1; n <= mod.pagesNumber; n++) {
                 modulesTpl.assign('page',
-                                   {'content': mod.html(n),
-                                    'name': mod.name(),
+                                   {'name': mod.name(),
                                     'pageNum': n})
             }
 
@@ -142,9 +143,13 @@ class Ui {
         this.subscriberId = resp.subscriber_id;
     }
 
+    obtainConfigs() {
+        var c = syncAjaxReq('ui/configs');
+        this.configs = JSON.parse(c)
+    }
+
     moduleByName(name) {
-        for (var i in this.modules) {
-            var mod = this.modules[i];
+        for (var mod of this.modules) {
             if (mod.name() == name)
                 return mod;
         }
@@ -152,13 +157,11 @@ class Ui {
     }
 
     eventHandler(source, type, data) {
-        var mod = this.moduleByName(source)
-        if (!mod) {
-            this.logErr("eventHandler(): incorrect source: " + source)
-            return;
+        for (var mod of this.modules) {
+            if (mod.eventSources().includes(source)) {
+                mod.eventHandler(source, type, data);
+            }
         }
-
-        mod.eventHandler(type, data);
     }
 
     eventReceiver() {
@@ -174,7 +177,7 @@ class Ui {
 
                 this.errorBoxShow('Ошибка',
                                   'Ошибка сервера: status: ' + resp.status + '<br>' +
-                                  'Причина: ' + resp.reason);
+                                  'Причина: ' + resp.reason.replace('\n', '<br>'));
                 var retry = function () {
                     this.eventReceiver();
                 }
@@ -203,13 +206,13 @@ class Ui {
             setTimeout(retry.bind(this), 3000);
         }
 
-        asyncAjaxReq('ui/get_events',
+        asyncAjaxReq('GET', 'ui/get_events',
                      {'subscriber_id': this.subscriberId},
                       success.bind(this), error.bind(this))
     }
 
     switchModule(name) {
-        this.noSleep.run()
+//        this.noSleep.run()
         for (var i in this.modules) {
             var mod = this.modules[i];
             var menuDiv = $$('menu_item_' + mod.name());
@@ -260,7 +263,6 @@ class Ui {
         this.logBox.redraw();
     }
 
-
     showDialogBox(box) {
         this.dialogBoxDiv.innerHTML = box.html();
         this.dialogBoxDiv.style.display = 'block';
@@ -274,6 +276,11 @@ class Ui {
         this.hidingPageDiv.style.display = 'none';
         this.dialogBox = NaN;
         this.dialogBoxDiv.innerHTML = "";
+    }
+
+    setPageContent(modName, pageNum, content) {
+        var page = $$('module_' + modName + '_page_' + pageNum + '_content');
+        page.innerHTML = content
     }
 }
 
@@ -330,13 +337,17 @@ class ModuleBase {
 
     init() {
         for (var i = 1; i <= this.pagesNumber; i++)
-            this.pages[i] = $$('module_' + this.name() + '_page_' + i + '_content');
+            this.pages[i] = $$('module_' + this.name() + '_page_' + i + '_block');
         if (this.pagesNumber > 1)
             this.pagesNav = $$('module_' + this.name() + '_page_selector');
     }
 
     name() {
         return this._name;
+    }
+
+    eventSources() {
+        return [];
     }
 
     switchNextPage() {
@@ -369,34 +380,113 @@ class ModuleBase {
         this.onPageChanged()
     }
 
-    html(pageNum) {
-        var tpl = this.ui.teamplates.openTpl('mod_' + this.name() + '_' + pageNum);
-        tpl.assign();
-        return tpl.result();
+    tplOpen(tplName) {
+        return this.ui.teamplates.openTpl(tplName);
+    }
+
+    setPageContent(pageNum, content) {
+        this.ui.setPageContent(this.name(), pageNum, content)
     }
 
     onPageChanged(pageNum) {
     }
 
-    skynetRequest(method, args) {
+    skynetGetRequest(method, args) {
         var success = function(responceText) {
             var resp = JSON.parse(responceText)
 
             if (resp.status == 'error') {
-                this.logErr("skyney method '" + method + "'" +
+                this.logErr("skynet GET method '" + method + "'" +
                                "return error: " + resp.reason)
                 return;
             }
-            this.logInfo("to skynet '" + method + "' success finished")
+            this.logInfo("to skynet GET '" + method + "' success finished")
         }
 
         var error = function(reason, errCode) {
-            this.logErr('Can`t send request "' + method + '" to skynet: ' + reason)
+            this.logErr('Can`t send GET request "' + method + '" to skynet: ' + reason)
         }
-        asyncAjaxReq(method, args,
+        asyncAjaxReq('GET', method, args,
                      success.bind(this), error.bind(this))
     }
 
+    skynetPostRequest(method, data) {
+        var success = function(responceText) {
+            var resp = JSON.parse(responceText)
+
+            if (resp.status != 'ok') {
+                this.logErr("skynet POST method '" + method + "'" +
+                               "return error: " + resp.reason)
+                return;
+            }
+            this.logInfo("to skynet POST '" + method + "' success finished")
+        }
+
+        var error = function(reason, errCode) {
+            this.logErr('Can`t send POST request "' + method + '" to skynet: ' + reason)
+        }
+        asyncAjaxReq('POST', method, data,
+                     success.bind(this), error.bind(this))
+    }
+
+}
+
+class Led {
+    constructor(divName, color, actualizeTimeoutSec=0, size="big") {
+        this.divName = divName;
+        this.div = $$(divName);
+        this.color = color
+        this.size = size
+        this.actualizeTimeout = actualizeTimeoutSec
+        this.wrkId = NaN;
+        this.set('undefined');
+    }
+
+    set(mode) {
+        var style
+        switch (mode) {
+        case 'on':
+            style = this.color;
+            break;
+        case 'off':
+            style = 'off';
+            break;
+        case 'undefined':
+            style = 'undefined';
+            break;
+        }
+
+        this.div.className = 'led_' + this.size + '-' + style;
+
+        if (this.actualizeTimeout && style != 'undefined') {
+            if (this.wrkId) {
+                clearTimeout(this.wrkId)
+                this.wrkId = NaN;
+            }
+
+            var cb = function() {
+                this.set('undefined')
+                this.wrkId = NaN;
+            }
+            this.wrkId = setTimeout(cb.bind(this), this.actualizeTimeout * 1000)
+        }
+    }
+
+    light(mode) {
+        if (mode)
+            this.set('on');
+        else
+            this.set('off');
+    }
+
+    actualize(data, field, value) {
+        if (field in data) {
+            if (data[field] == value)
+                this.set('on');
+            else
+                this.set('off');
+        }
+    }
 }
 
 function init() {

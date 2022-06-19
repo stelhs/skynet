@@ -79,7 +79,7 @@ class DatabaseConnector():
             try:
                 return s.mysql.insert(tableName, dataWithComma, dataWithOutComma)
             except mysql.connector.errors.OperationalError as e:
-                s.log.info('Cant insert table "%s": SQL query: "%s". Error: %s' % (tableName, query, e))
+                s.log.info('Cant insert to table "%s": Error: %s' % (tableName, e))
                 s.waitForConnect()
             except mysql.connector.errors.Error as e:
                 raise DatabaseConnectorError(s.log,

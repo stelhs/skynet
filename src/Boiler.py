@@ -1,25 +1,19 @@
 from datetime import date
 import requests, simplejson
 from Exceptions import *
-from SubsystemBase import *
 from HttpServer import *
 from Skynet import *
 
 
-class Boiler(SubsystemBase):
-    def __init__(s, conf, httpServer, db):
-        super().__init__("boiler", conf)
-        s.db = db
-        s.dbw = Boiler.Db(s, db)
-        s.httpHandlers = Boiler.HttpHandlers(s, httpServer, s.dbw)
-
-
-    def listenedEvents(s):
-        return ()
-
-
-    def eventHandler(s, source, type, data): # TODO
-        pass
+class Boiler():
+    def __init__(s, skynet):
+        s.log = Syslog('Boiler')
+        s.skynet = skynet
+        s.conf = skynet.conf.boiler
+        s.httpServer = skynet.httpServer
+        s.db = skynet.db
+        s.dbw = Boiler.Db(s, s.db)
+        s.httpHandlers = Boiler.HttpHandlers(s, s.httpServer, s.dbw)
 
 
     def send(s, op, args = {}):
@@ -34,16 +28,16 @@ class Boiler(SubsystemBase):
             return resp
         except requests.RequestException as e:
             raise BoilerError(s.log,
-                    "Request '%s' to bolier '%s' fails: %s" % (
-                            op, s.name, e)) from e
+                    "Request '%s' to bolier fails: %s" % (
+                            op, e)) from e
         except simplejson.errors.JSONDecodeError as e:
             raise BoilerError(s.log,
                     "Response for '%s' from boiler '%s' parse error: %s. Response: %s" % (
                             op, s.name, e, r.content)) from e
         except KeyError as e:
             raise BoilerError(s.log,
-                    "Request '%s' to boiler '%s' return incorrect json: %s" % (
-                            op, s.name(), r.content)) from e
+                    "Request '%s' to boiler return incorrect json: %s" % (
+                            op, r.content)) from e
 
 
     def setTarget_t(s, t):
@@ -63,7 +57,7 @@ class Boiler(SubsystemBase):
 
 
     def uiErr(s, msg):
-        skynet().emitEvent('boiler', 'error', msg)
+        s.skynet.emitEvent('boiler', 'error', msg)
 
 
     class Db():
@@ -87,6 +81,7 @@ class Boiler(SubsystemBase):
     class HttpHandlers():
         def __init__(s, boiler, httpServer, dbw):
             s.boiler = boiler
+            s.skynet = boiler.skynet
             s.dbw = dbw
             s.httpServer = httpServer
             s.httpServer.setReqHandler("GET", "/boiler/set_target_t",
@@ -155,7 +150,7 @@ class Boiler(SubsystemBase):
                         listByYears.append({'year': year,
                                             'months': listByMonths,
                                             'total': float(round(yearSum / 1000, 1))})
-                skynet().emitEvent('boiler', 'boilerFuelConsumption', listByYears)
+                s.skynet.emitEvent('boiler', 'boilerFuelConsumption', listByYears)
 
             Task.asyncRunSingle("requestFuelConsumption", report)
 

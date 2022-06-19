@@ -1,11 +1,13 @@
 import time, threading
 from Exceptions import *
-from SubsystemBase import *
 from Syslog import *
+from Skynet import *
 
-class Termosensors(SubsystemBase):
-    def __init__(s, conf, httpServer):
-        super().__init__("termosensors", conf)
+
+class Termosensors():
+    def __init__(s, skynet):
+        s.httpServer = skynet.httpServer
+        s.conf = skynet.conf.termosensors
         s.sensors = []
 
         try:
@@ -18,35 +20,35 @@ class Termosensors(SubsystemBase):
             raise TermosensorConfiguringError(s.log,
                     "Configuration error: field %s is absent" % e) from e
 
-        s.httpHandlers = Termosensors.HttpHandlers(s, httpServer)
+        s.httpHandlers = Termosensors.HttpHandlers(s, s.httpServer)
+        skynet.registerEventSubscriber('TermosensorsMbio', s.eventHandlerMbio,
+                                        ('mbio', ), ('ioStatus', ))
+        skynet.registerEventSubscriber('TermosensorsBoiler', s.eventHandlerBoiler,
+                                        ('boiler', ), ('boilerStatus', ))
 
 
-    def listenedEvents(s):
-        return ('mbio', 'boiler')
+    def eventHandlerMbio(s, source, type, data):
+        try:
+            for addr, t in data['termosensors'].items():
+                try:
+                    sensor = s.sensorByAddr(addr)
+                    sensor.update(t)
+                except TermosensorNotRegistredError:
+                    pass
+        except KeyError as e:
+            raise EventHandlerError(s.log,
+                    "eventHandler of '%s' failed: field %s is absent in event data" % (s.name(), e)) from e
 
 
-    def eventHandler(s, source, type, data):
-        if source == 'mbio' and type == 'ioStatus':
-            try:
-                for addr, t in data['termosensors'].items():
-                    try:
-                        sensor = s.sensorByAddr(addr)
-                        sensor.update(t)
-                    except TermosensorNotRegistredError:
-                        pass
-            except KeyError as e:
-                raise EventHandlerError(s.log,
-                        "eventHandler of '%s' failed: field %s is absent in event data" % (s.name(), e)) from e
-
-        if source == 'boiler' and type == 'ioStatus':
-            try:
-                sensorByName('workshop_inside1').update(data['room_t'])
-                sensorByName('boiler_inside').update(data['boiler_t'])
-                sensorByName('boiler_inside_case').update(data['boiler_box_t'])
-                sensorByName('workshop_radiators').update(data['return_t'])
-            except KeyError as e:
-                raise EventHandlerError(s.log,
-                        "eventHandler of '%s' failed: field %s is absent in event data" % (s.name(), e)) from e
+    def eventHandlerBoiler(s, source, type, data):
+        try:
+            s.sensorByName('workshop_inside1').update(data['room_t'])
+            s.sensorByName('boiler_inside').update(data['boiler_t'])
+            s.sensorByName('boiler_inside_case').update(data['boiler_box_t'])
+            s.sensorByName('workshop_radiators').update(data['return_t'])
+        except KeyError as e:
+            raise EventHandlerError(s.log,
+                    "eventHandler of '%s' failed: field %s is absent in event data" % (s.name(), e)) from e
 
 
     def sensorByName(s, name):

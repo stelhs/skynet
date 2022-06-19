@@ -2,12 +2,15 @@
 class Io extends ModuleBase {
     constructor(ui) {
         super(ui, 'io');
-        this.ioNames = ['mbio1', 'sbio2', 'mbio3', 'mbio4'];
-        this.pagesNumber = this.ioNames.length;
-        this.boardDivs = {};
-        this.portsInfo = {};
-        this.watcherTimeoutHandler = {}
-        this.ioInfoLoaded = false
+        this.conf = ui.configs['io'];
+        this.pagesNumber = Object.keys(this.conf['boards']).length;
+
+        this.ledsState = {};
+        this.ledsBlocked = {};
+        this.ledsEmulate = {};
+        this.ledsBlink = {};
+        this.ledsEmulate = {};
+        this.labelsBlink = {};
     }
 
     title() {
@@ -18,31 +21,71 @@ class Io extends ModuleBase {
         return 'Панель управления платами ввода-вывода';
     }
 
-    init() {
-        super.init();
-        for (var i in this.ioNames) {
-            var ioName = this.ioNames[i];
-            this.boardDivs[ioName] = $$('mod_io_mbio_' + ioName);
-            this.watcherTimeoutHandler[ioName] = NaN
-        }
-
-        this.requestToUpdateBoardsIO();
-
-        for (var i in this.ioNames) {
-            var ioName = this.ioNames[i];
-            this.restartEventTimeoutWatcher(ioName);
-        }
+    eventSources() {
+        return ['io'];
     }
 
-    eventHandler(type, data) {
-        switch (type) {
-        case 'boardsInfo':
-            this.updateBoardsInfo(data)
-            return;
+    init() {
+        super.init();
 
+        // init pages
+        var pageNum = 0
+        for (var ioName in this.conf['boards']) {
+            pageNum += 1
+            var boardInfo = this.conf['boards'][ioName];
+            var tpl = this.tplOpen('mod_mbio');
+            if ('in' in boardInfo) {
+                tpl.assign('inputs', {'io_name': ioName});
+                for (var portNum in boardInfo['in']) {
+                    var portInfo = boardInfo['in'][portNum];
+                    var pName = portInfo['name']
+                    tpl.assign('input',
+                               {'port_num': portNum,
+                                'port_name': pName,
+                                'io_name': ioName});
+                }
+            }
+
+            if ('out' in boardInfo) {
+                tpl.assign('outputs', {'io_name': ioName});
+                for (var portNum in boardInfo['out']) {
+                    var pName = boardInfo['out'][portNum];
+                    tpl.assign('output',
+                               {'port_num': portNum,
+                                'port_name': pName,
+                                'io_name': ioName});
+                }
+            }
+            this.setPageContent(pageNum, tpl.result())
+        }
+
+        for (var ioName in this.conf['boards']) {
+            var boardInfo = this.conf['boards'][ioName];
+            if ('in' in boardInfo) {
+                for (var portNum in boardInfo['in']) {
+                    pName = boardInfo['in'][portNum]['name'];
+                    this.ledsState[pName] = new Led("led_io_port_" + pName + "_state", 'red', 3);
+                    this.ledsBlocked[pName] = new Led('led_io_port_' + pName + '_blocked', 'green', 0, 'mini');
+                    this.ledsEmulate[pName] = new Led('led_io_port_' + pName + '_emulate', 'green', 0, 'mini');
+                }
+            }
+            if ('out' in boardInfo) {
+                for (var portNum in boardInfo['out']) {
+                    pName = boardInfo['out'][portNum];
+                    this.ledsState[pName] = new Led("led_io_port_" + pName + "_state", 'green', 3);
+                    this.ledsBlocked[pName] = new Led('led_io_port_' + pName + '_blocked', 'green', 0, 'mini');
+                    this.ledsBlink[pName] = new Led("led_io_port_" + pName + "_blink", 'green', 3, 'mini');
+                    this.labelsBlink[pName] = $$("label_io_port_" + pName + "_blink_info");
+                }
+            }
+        }
+
+        this.requestIoBlockedPortsInfo();
+    }
+
+    eventHandler(source, type, data) {
+        switch (type) {
         case 'boardsBlokedPortsList':
-            if (!this.ioInfoLoaded)
-                return;
             this.updateBlokedPorts(data);
             return;
 
@@ -55,8 +98,6 @@ class Io extends ModuleBase {
             return
 
         case 'ioStatus':
-            if (!this.ioInfoLoaded)
-                return;
             this.updatePortStates(data)
             return
 
@@ -75,123 +116,11 @@ class Io extends ModuleBase {
         this.ui.logInfo("IO: " + msg)
     }
 
-
-    onPageChanged(pageNum) {
-    }
-
-    html(pageNum) {
-        var tpl = this.ui.teamplates.openTpl('mod_io_mbio');
-        tpl.assign('mbio_page', {'name': this.ioNames[pageNum - 1]});
-        return tpl.result();
-    }
-
-    requestToUpdateBoardsIO() {
-        this.logInfo('Request to sr90 to obtain board IO info')
-        this.skynetRequest('io/request_mbio_config')
-    }
-
-    updateBoardsInfo(data) {
-        this.portNamesList = [];
-        for (var i in this.ioNames) {
-            var ioName = this.ioNames[i];
-            if (!(ioName in data)) {
-                this.logErr('updateBoardsInfo: board "' + ioName + '" is absent in update event');
-                continue;
-            }
-
-            var boardInfo = data[ioName];
-            var tpl = this.ui.teamplates.openTpl('mbio');
-            if ('in' in boardInfo) {
-                tpl.assign('inputs', {'io_name': ioName});
-                for (var portNum in boardInfo['in']) {
-                    var portInfo = boardInfo['in'][portNum];
-                    tpl.assign('input',
-                               {'port_num': portNum,
-                                'port_name': portInfo['name'],
-                                'io_name': ioName});
-
-                    this.portsInfo[portInfo['name']] = {'ioName': ioName};
-                }
-            }
-
-            if ('out' in boardInfo) {
-                tpl.assign('outputs', {'io_name': ioName});
-                for (var portNum in boardInfo['out']) {
-                    var pName = boardInfo['out'][portNum];
-                    tpl.assign('output',
-                               {'port_num': portNum,
-                                'port_name': pName,
-                                'io_name': ioName});
-
-                    this.portsInfo[pName] = {'ioName': ioName};
-                }
-            }
-            this.boardDivs[ioName].innerHTML = tpl.result();
-        }
-
-        for (var pName in this.portsInfo) {
-            var ledBlocked = $$('led_io_port_' + pName + '_blocked');
-            var ledEmulate = $$('led_io_port_' + pName + '_emulate');
-            var ledState = $$("led_port_" + pName + "_state");
-            var ledBlink = $$("led_port_" + pName + "_blink");
-            var labelBlink = $$("label_port_" + pName + "_blink_info");
-
-            this.portsInfo[pName]['ledBlocked'] = ledBlocked;
-            this.portsInfo[pName]['ledEmulate'] = ledEmulate;
-            this.portsInfo[pName]['ledState'] = ledState;
-            this.portsInfo[pName]['ledBlink'] = ledBlink;
-            this.portsInfo[pName]['labelBlink'] = labelBlink;
-        }
-
-        for (var i in this.ioNames) {
-            var ioName = this.ioNames[i];
-            this.ioResetStates(ioName);
-        }
-        this.ioInfoLoaded = true
-    }
-
-
-    restartEventTimeoutWatcher(ioName) {
-        if (this.watcherTimeoutHandler[ioName]) {
-            clearTimeout(this.watcherTimeoutHandler[ioName]);
-            this.watcherTimeoutHandler[ioName] = NaN;
-        }
-
-        var handler = function() {
-            this.logErr('UI does not receive a signal from "' + ioName + '" more then 3 second');
-            this.ioResetStates(ioName);
-        }
-
-        this.watcherTimeoutHandler[ioName] = setTimeout(handler.bind(this), 3000);
-    }
-
-    ioResetStates(ioNameForReset) {
-        for (var pName in this.portsInfo) {
-            var ioName = this.portsInfo[pName]['ioName'];
-            if (ioName != ioNameForReset)
-                continue;
-
-            var ledState = this.portsInfo[pName]['ledState'];
-            var ledBlink = this.portsInfo[pName]['ledBlink'];
-            var labelBlink = this.portsInfo[pName]['labelBlink'];
-
-            ledState.className = 'led_big-undefined';
-            if (ledBlink) {
-                ledBlink.className = 'led_mini-undefined';
-                labelBlink.innerHTML = "";
-            }
-        }
-    }
-
     updateBlokedPorts(data) {
         this.logInfo('Blocked ports status success updated')
-        for (var pName in this.portsInfo) {
-            var ledBlocked = this.portsInfo[pName]['ledBlocked'];
-            var ledEmulate = this.portsInfo[pName]['ledEmulate'];
-
-            ledBlocked.className = 'led_mini-off';
-            if (ledEmulate)
-                ledEmulate.className = 'led_mini-off';
+        for (var i in this.ledsBlocked) {
+            var led = this.ledsBlocked[i];
+            led.set('off');
         }
 
         for (var i in data) {
@@ -199,16 +128,11 @@ class Io extends ModuleBase {
             var type = row['type'];
             var pName = row['port_name'];
             var state = parseInt(row['state']);
-            var ledBlocked = this.portsInfo[pName]['ledBlocked'];
+            var ledBlocked = this.ledsBlocked[pName];
 
-            ledBlocked.className = 'led_mini-green';
-            if (type == 'in') {
-                var ledEmulate = this.portsInfo[pName]['ledEmulate'];
-                if (state)
-                    ledEmulate.className = 'led_mini-green';
-                else
-                    ledEmulate.className = 'led_mini-off';
-            }
+            ledBlocked.set('on');
+            if (type == 'in')
+                this.ledsEmulate[pName].light(state);
         }
     }
 
@@ -224,33 +148,25 @@ class Io extends ModuleBase {
         }
 
         var ioName = data['io_name']
-        this.restartEventTimeoutWatcher(ioName);
 
-        for (var i in data['ports']) {
-            var row = data['ports'][i];
+        for (var row of data['ports']) {
             var pName = row['port_name'];
             var type = row['type'];
             var state = parseInt(row['state']);
-            var ledState = this.portsInfo[pName]['ledState'];
-            var ledBlink = this.portsInfo[pName]['ledBlink'];
-            var labelBlink = this.portsInfo[pName]['labelBlink'];
-            var color = (type == 'in') ? 'red' : 'green';
-
-            if (state)
-                ledState.className = 'led_big-' + color;
-            else
-                ledState.className = 'led_big-off';
+            var labelBlink = this.labelsBlink[pName];
+            var ledBlink = this.ledsBlink[pName];
+            this.ledsState[pName].light(state)
 
             if ('blinking' in row) {
                 var blinking = row['blinking'];
-                ledBlink.className = 'led_mini-green';
+                ledBlink.set('on');
                 labelBlink.innerHTML = '(' + blinking['d1'] + '/' + blinking['d2'] + ':' +blinking['cnt'] + ')';
                 labelBlink.style.display = 'block';
                 continue;
             }
 
             if (ledBlink) {
-                ledBlink.className = 'led_mini-off';
+                ledBlink.set('off');
                 labelBlink.style.display = 'none';
                 labelBlink.innerHTML = "";
             }
@@ -263,7 +179,7 @@ class Io extends ModuleBase {
             var d2 = results['d2']
             var number = results['number']
             this.logInfo('Request to blinking port ' + portName + '"');
-            this.skynetRequest('io/port/blink',
+            this.skynetGetRequest('io/port/blink',
                              {'port_name': portName,
                               'd1': parseInt(d1 * 1000),
                               'd2': parseInt(d2 * 1000),
@@ -279,17 +195,22 @@ class Io extends ModuleBase {
 
     onTogglePortLockUnlock(portName) {
         this.logInfo('Request to Lock/Unlock port "' + portName + '"');
-        this.skynetRequest('io/port/toggle_lock_unlock', {'port_name': portName});
+        this.skynetGetRequest('io/port/toggle_lock_unlock', {'port_name': portName});
     }
 
     onTogglePortBlockedState(portName) {
         this.logInfo('Request to change software emulation input state for port "' + portName + '"');
-        this.skynetRequest('io/port/toggle_blocked_state', {'port_name': portName});
+        this.skynetGetRequest('io/port/toggle_blocked_state', {'port_name': portName});
     }
 
     onTogglePortState(portName) {
         this.logInfo('Request to toggle state for port "' + portName + '"');
-        this.skynetRequest('io/port/toggle_out_state', {'port_name': portName});
+        this.skynetGetRequest('io/port/toggle_out_state', {'port_name': portName});
+    }
+
+    requestIoBlockedPortsInfo() {
+        this.logInfo('Request to skynet for obtain blocked ports info')
+        this.skynetGetRequest('io/request_io_blocked_ports')
     }
 
 }

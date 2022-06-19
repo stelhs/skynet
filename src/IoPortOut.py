@@ -24,6 +24,8 @@ class IoPortOut(IoPortBase):
     def setState(s, state):
         s.board().outputSetState(s, state);
         s.db.storeState(state)
+        s.updateCachedState(state)
+        s.io.emitEvent(s.name(), state)
 
 
     def blink(s, d1, d2=0, number=1):

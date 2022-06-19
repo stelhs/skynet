@@ -9,23 +9,24 @@ class IoBoardBase():
         s.io = io
         s.ioName = ioName
         s.log = Syslog('Board_%s' % ioName)
+        s.conf = s.io.conf['boards'][ioName]
 
         s._ports = []
 
         try:
-            for pn, pInfo in s.io.conf[ioName]['in'].items():
+            for pn, pInfo in s.conf['in'].items():
                 pName = pInfo['name']
                 s._ports.append(IoPortIn(s.io, s, pn, pName))
 
-            for pn, pName in s.io.conf[ioName]['out'].items():
+            for pn, pName in s.conf['out'].items():
                 s._ports.append(IoPortOut(s.io, s, pn, pName))
         except KeyError as e:
             raise IoBoardConfigureErr(s.log,
                     "Configuration for board IO '%s' error in field %s" % (ioName, e)) from e
 
         s.emulator = None
-        if os.path.isfile('DISABLE_HW'):
-            s.emulator = IoBoardBase.Emulator(s.io)
+        if s.conf['emulate']:
+            s.emulator = IoBoardBase.Emulator(s)
 
 
     def name(s):
@@ -57,7 +58,14 @@ class IoBoardBase():
         for port in s._ports:
             if port.name() == pName:
                 return port
-        raise IoBoardPortNotFound("port %s not registred" % pName)
+        raise IoBoardPortNotFound(s.log, "port %s not registred" % pName)
+
+
+    def portByPn(s, pn):
+        for port in s._ports:
+            if port.pn() == pn:
+                return port
+        raise IoBoardPortNotFound(s.log, "port pn:%d not registred" % pn)
 
 
     def ports(s, mode=None, blocked=None):
@@ -88,20 +96,23 @@ class IoBoardBase():
 
 
     class Emulator:
-        def __init__(s, io):
+        def __init__(s, board):
             s.inputs = {}
             s.outputs = {}
             s.log = Syslog('IoBoardBase.Emulator')
+            s.conf = board.conf
+            s.board = board
+            s.outputFileName = '%s_fake_out_ports' % s.board.name()
+            s.inputFileName = '%s_fake_in_ports' % s.board.name()
 
             try:
-                for ioName, ioInfo in s.io.conf.items():
-                    for pn, pInfo in ioInfo['in'].items():
-                        pName = pInfo['name']
-                        s.inputs[pName] = 0
+                for pn, pInfo in s.conf['in'].items():
+                    print("IN pInfo = %s" % pInfo)
+                    pName = pInfo['name']
+                    s.inputs[pName] = 0
 
-                    for pn, pInfo in ioInfo['out'].items():
-                        pName = pInfo['name']
-                        s.outputs[pName] = 0
+                for pn, pName in s.conf['out'].items():
+                    s.outputs[pName] = 0
             except Exception as e:
                 raise IoBoardEmulatorError(s.log, 'IO configuration error: %s' % e) from e
 
@@ -120,7 +131,7 @@ class IoBoardBase():
                     cnt += 1
                 except ValueError as e:
                     raise IoBoardEmulatorError(s.log,
-                              "file %s parse error on line %d: %e" % (fName, cnt, e)) from e
+                              "file %s parse error on line %d: %s" % (fName, cnt, e)) from e
 
                 state = key.strip()
                 pName = val.strip()
@@ -130,28 +141,30 @@ class IoBoardBase():
 
         def save(s, fName, list):
             str = ""
+            sep = ""
             for pName, state in list.items():
-                str += "%d: %s" % (state, pName)
+                str += "%s%s: %s" % (sep, state, pName)
+                sep = "\n"
             filePutContent(fName, str)
 
 
         def loadInputs(s):
             try:
-                s.inputs.update(s.parse('fake_in_ports'))
-            except FileContentEx as e:
-                s.save('fake_in_ports', s.inputs)
+                s.inputs.update(s.parse(s.inputFileName))
+            except FileError as e:
+                s.save(s.inputFileName, s.inputs)
 
 
         def loadOutputs(s):
             try:
-                s.outputs.update(s.parse('fake_out_ports'))
-            except FileContentEx as e:
-                s.save('fake_out_ports', s.outputs)
+                s.outputs.update(s.parse(s.outputFileName))
+            except FileError as e:
+                s.save(s.outputFileName, s.outputs)
 
 
         def outputSet(s, port, state):
             s.outputs[port.name()] = state
-            s.save()
+            s.save(s.outputFileName, s.outputs)
 
 
         def outputState(s, port):

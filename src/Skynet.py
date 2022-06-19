@@ -1,15 +1,16 @@
-def skynet():
-    if not hasattr(skynet, 'instance'):
-        skynet.instance = Skynet()
-    return skynet.instance
-
 from Syslog import *
 from ConfSkynet import *
 from DatabaseConnector import *
 from HttpServer import *
-from TelegramClient import *
+from TelegramClientSkynet import *
 from Termosensors import *
 from Boiler import *
+from WaterSupply import *
+from DoorLocks import *
+from PowerSockets import *
+from Gates import *
+from Speakerphone import *
+from Guard import *
 from Io import *
 from Ui import *
 
@@ -18,39 +19,45 @@ from Ui import *
 
 class Skynet():
     def __init__(s):
+        s.eventSubscribers = []
         s.log = Syslog("Skynet")
         s.conf = ConfSkynet()
         s.db = DatabaseConnector(s.conf.db)
-        s.tc = TelegramClient(s.conf.telegram, s.telegramHandler)
+        s.tc = TelegramClientSkynet(s, s.telegramHandler)
         Task.setErrorCb(s.taskExceptionHandler)
 
         s.httpServer = HttpServer(s.conf.skynet['http_host'],
                                   s.conf.skynet['http_port'],
                                   s.conf.skynet['http_www'])
 
-        s.ts = Termosensors(s.conf.termosensors, s.httpServer)
-        s.io = Io(s.conf.io, s.httpServer, s.db)
-        s.boiler = Boiler(s.conf.boiler, s.httpServer, s.db)
-        s.ui = Ui(s.httpServer, s.io)
-
-        s.subsystems = [s.ts, s.io, s.boiler, s.ui]
+        s.ts = Termosensors(s)
+        s.io = Io(s)
+        s.boiler = Boiler(s)
+        s.waterSupply = WaterSupply(s)
+        s.doorLocks = DoorLocks(s)
+        s.powerSockets = PowerSockets(s)
+        s.gates = Gates(s)
+        s.speakerphone = Speakerphone(s)
+        s.guard = Guard(s)
+        s.ui = Ui(s)
 
         s.httpHandlers = Skynet.HttpHandlers(s, s.httpServer)
 
 
-
-    def subsystemByName(s, name):
-        for subsystem in s.subsystems:
-            if subsystem.name() == name:
-                return subsystem
-        raise AppError(s.log,
-                "subsystemByName() failed: Subsystem '%s' has not registred" % name)
+    def registerEventSubscriber(s, name, cb, sources=(), evTypes=()):
+        subscriber = Skynet.EventSubscriber(name, cb, sources, evTypes)
+        s.eventSubscribers.append(subscriber)
 
 
     def emitEvent(s, source, evType, data):
-        for subsystem in s.subsystems:
-            if source in subsystem.listenedEvents():
-                subsystem.eventHandler(source, evType, data)
+        for sb in s.eventSubscribers:
+            if not sb.match(source, evType):
+                continue
+            try:
+                sb.cb(source, evType, data)
+            except AppError as e:
+                s.tc.toAdmin("Error in event handler '%s' for source: '%s', " \
+                             "evType: '%s': %s" % (sb.name, source, evType, e))
 
 
     def telegramHandler(tc, text, msgId, date, fromName,
@@ -65,6 +72,35 @@ class Skynet():
 
     def destroy(s):
         s.httpServer.destroy()
+
+
+    class EventSubscriber():
+        def __init__(s, name, cb, sources, evTypes):
+            s.cb = cb
+            s.sources = sources
+            s.evTypes = evTypes
+            s.name = name
+
+
+        def match(s, source, evType):
+            sourceMatched = True
+            if len(s.sources):
+                sourceMatched = False
+                if source in s.sources:
+                    sourceMatched = True
+
+            evTypeMatched = True
+            if len(s.evTypes):
+                evTypeMatched = False
+                if evType in s.evTypes:
+                    evTypeMatched = True
+
+            return sourceMatched and evTypeMatched
+
+
+        def __repr__(s):
+            return "EventSubscriber:%s" % s.name
+
 
 
     class HttpHandlers():

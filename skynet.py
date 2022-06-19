@@ -10,11 +10,11 @@ import atexit
 from Skynet import *
 
 
-s = skynet()
+s = Skynet()
 
 def exitCb():
     print("call exitCb")
-    skynet.destroy()
+    s.destroy()
 
 atexit.register(exitCb)
 

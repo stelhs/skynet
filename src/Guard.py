@@ -1,0 +1,767 @@
+import threading, time, json
+from Exceptions import *
+from Task import *
+from Storage import *
+from HttpServer import *
+
+class Guard():
+    def __init__(s, skynet):
+        s.log = Syslog('Guard')
+        s.skynet = skynet
+        s.conf = skynet.conf.guard
+        s.httpServer = skynet.httpServer
+        s.db = skynet.db
+        s.io = skynet.io
+        s.waterSupply = skynet.waterSupply
+        s.gates = skynet.gates
+        s.doorLocks = skynet.doorLocks
+        s.powerSockets = skynet.powerSockets
+        s.speakerphone = skynet.speakerphone
+        s.gates = skynet.gates
+        s.doorLocks = skynet.doorLocks
+        s.boiler = skynet.boiler
+        s.tc = skynet.tc
+
+        s.dbw = Guard.Db(s, s.db)
+        s.storage = Storage('guard.json')
+        s._lock = threading.Lock()
+        s._zones = []
+        s.createZones()
+        s.startSettings = Guard.StartSettings(s)
+        s.stopSettings = Guard.StopSettings(s)
+        s.uiNotifier = Guard.UiNotifier(s)
+        s.httpHandlers = Guard.HttpHandlers(s)
+
+        s._state = s.storage.key('/state', 'sleep')
+        s._stateTime = s.storage.key('/state_time', int(time.time()))
+        s._stateId = s.storage.key('/stateId', 0)
+        s.watchingZones = s.storage.key('/watchingZones', [])
+
+
+    def createZones(s):
+        if len(s._zones):
+            raise GuardZonesAlreadyCreatedError(s.log,
+                    "createZones() failed: Zones list alrady was created early")
+        zones = []
+        for name, zConf in s.conf['zones'].items():
+            zone = Guard.Zone(s, name, zConf, s.storage, s.db)
+            zones.append(zone)
+        s._zones = tuple(zones)
+
+
+    def doSpeakerphoneShutUp(s):
+        try:
+            s.speakerphone.shutUp()
+        except AppError as e:
+            s.errors.append(("Can't shutdown speakerphone", e))
+
+
+    def doSetReadyState(s):
+        watchedZones = [zone.name() for zone in s.zones(unlockedOnly=True) if zone.isReadyToWatch()]
+        s.watchingZones.set(watchedZones)
+
+        s._state.set('ready')
+        s._stateTime.set(int(time.time()))
+        try:
+            stateId = s.db.insert('guard_states',
+                                  {'state': 'ready',
+                                   'config': s.storage.jsonData()});
+            s._stateId.set(stateId)
+        except AppError as e:
+            s.errors.append(("Can't insert into table guard_states", e))
+
+
+    def doLampBlinkStart(s):
+        try:
+            s.io.port('guard_lamp').blink(4000, 1000, 2)
+        except AppError as e:
+            s.errors.append(("Can't blink guard lamp", e))
+
+
+    def doGatesClose(s):
+        try:
+            s.gates.close()
+        except AppError as e:
+            s.errors.append(("Can't close Gates", e))
+
+
+    def doDoorLocksOnStart(s):
+        for dl in s.doorLocks.list():
+            st = s.startSettings.doorLocks[dl.name()]
+            if st.val:
+                try:
+                    dl.open()
+                except AppError as e:
+                    s.errors.append(("Can't open doorLock %s" % dl.name(), e))
+            else:
+                try:
+                    dl.close()
+                except AppError as e:
+                    s.errors.append(("Can't close doorLock %s" % dl.name(), e))
+
+
+    def doPowerSocketsOnStart(s):
+        for ps in s.powerSockets.list():
+            st = s.startSettings.powerSockets[ps.name()]
+            if st.val:
+                try:
+                    ps.up()
+                except AppError as e:
+                    s.errors.append(("Can't enable power for '%s'" % ps.name(), e))
+            else:
+                try:
+                    ps.down()
+                except AppError as e:
+                    s.errors.append(("Can't disable power for '%s'" % ps.name(), e))
+
+
+    def doWaterSupplyOnStart(s):
+        if not s.startSettings.waterSupply.val:
+            try:
+                s.waterSupply.disable()
+            except AppError as e:
+                s.errors.append(("Can't disable water supply", e))
+
+
+    def doBoilerStandby(s):
+        try:
+            s.boiler.setTarget_t(5.0)
+        except AppError as e:
+            s.errors.append(("Can't set boiler temperature", e))
+
+
+    def doSetSleepState(s):
+        s._state.set('sleep')
+        s._stateTime.set(int(time.time()))
+        try:
+            stateId = s.db.insert('guard_states',
+                                  {'state': 'sleep',
+                                   'config': s.storage.jsonData()});
+            s._stateId.set(stateId)
+        except AppError as e:
+            s.errors.append(("Can't insert into table guard_states", e))
+
+
+    def doLampBlinkStop(s):
+        try:
+            s.io.port('guard_lamp').blink(500, 500, 6)
+        except AppError as e:
+            s.errors.append(("Can't blink guard lamp", e))
+
+
+    def doGatesOpen(s):
+        try:
+            s.gates.open()
+        except AppError as e:
+            s.errors.append(("Can't close Gates", e))
+
+
+    def doPowerSocketsOnStop(s):
+        try:
+            s.powerSockets.up()
+        except AppError as e:
+            s.errors.append(("Can't power up", e))
+
+
+    def doDoorLocksOnStop(s):
+        for dl in s.doorLocks.list():
+            st = s.stopSettings.doorLocks[dl.name()]
+            if st.val:
+                try:
+                    dl.open()
+                except AppError as e:
+                    s.errors.append(("Can't open doorLock %s" % dl.name(), e))
+            else:
+                try:
+                    dl.close()
+                except AppError as e:
+                    s.errors.append(("Can't close doorLock %s" % dl.name(), e))
+
+
+    def doWaterSupplyOnStop(s):
+        if not s.startSettings.waterSupply.val:
+            try:
+                s.waterSupply.enable()
+            except AppError as e:
+                s.errors.append(("Can't enable water supply", e))
+
+
+    def doBoilerReady(s):
+        try:
+            s.boiler.setTarget_t(17.0)
+        except AppError as e:
+            s.errors.append(("Can't set boiler temperature", e))
+
+
+    def start(s):
+        s.errors = []
+        s.doSpeakerphoneShutUp()
+        s.doSetReadyState()
+        s.doLampBlinkStart()
+        s.doGatesClose()
+        s.doDoorLocksOnStart()
+        s.doPowerSocketsOnStart()
+        s.doWaterSupplyOnStart()
+        s.doBoilerStandby()
+
+        if len(s.errors):
+            shortListText = "<br> ".join([row[0] for row in s.errors])
+            try:
+                fullListText = ";\n ".join(["%s: %s\n\n" % row for row in s.errors])
+                s.tc.toSkynet("Охрана включена, но возникли ошибки: \n%s" % fullListText);
+            except AppError:
+                pass
+            raise GuardError(s.log, "Guard was started but any errors has occured: %s" % shortListText)
+
+        try:
+            s.tc.toSkynet("Охрана включена");
+        except AppError as e:
+            pass
+
+#        $this->send_screnshots();
+ #       $this->send_video_url($event_time);
+
+
+    def stop(s):
+        s.errors = []
+        s.doSpeakerphoneShutUp()
+        s.doSetSleepState()
+        s.doGatesOpen()
+        s.doLampBlinkStop()
+        s.doPowerSocketsOnStop()
+        s.doDoorLocksOnStop()
+        s.doWaterSupplyOnStop()
+        s.doBoilerReady()
+
+        if len(s.errors):
+            shortListText = "<br> ".join([row[0] for row in s.errors])
+            try:
+                fullListText = ";\n ".join(["%s: %s\n\n" % row for row in s.errors])
+                s.tc.toSkynet("Охрана отключена, но возникли ошибки: \n%s" % fullListText);
+            except AppError:
+                pass
+            raise GuardError(s.log, "Guard was stopped but any errors has occured: %s" % shortListText)
+
+        try:
+            s.tc.toSkynet("Охрана отключена");
+        except AppError as e:
+            pass
+
+
+    def isStarted(s):
+        return s._state.val == 'ready'
+
+
+    def isReadyToWatchSensors(s):
+        if not s.isStarted():
+            return False
+
+        now = int(time.time())
+        if (now - s._stateTime) > s.conf['start_interval']:
+            return True
+        return False
+
+
+    def zoneTrig(s, zone):
+        alarmId = s.db.insert('guard_alarms',
+                              {'zone': zone.name(),
+                               'state_id': s._stateId.val});
+
+        s.tc.toAlarm("!!! Внимание, Тревога !!!\n" \
+                     "Сработала зона: '%s', событие: %d" % (
+                     zone.name(), s._stateId.val))
+
+
+    def zones(s, unlockedOnly=False):
+        if unlockedOnly:
+            return [zone for zone in s._zones if not zone.isBlocked()]
+        return s._zones
+
+
+    def zone(s, zName):
+        for zone in s.zones():
+            if zone.name() == zName:
+                return zone
+        raise GuardZoneNotRegistredError(s.log, "Zone %s has not registred" % zName)
+
+
+    def sensor(s, sName):
+        for zone in s.zones():
+            for sensor in zone.sensors():
+                if sensor.name() == sName:
+                    return sensor
+
+        raise GuardSensorNotRegistredError(s.log, "Sensor %s has not registred" % sName)
+
+
+    class HttpHandlers():
+        def __init__(s, guard):
+            s.guard = guard
+            hs = guard.httpServer
+            hs.setReqHandler("GET", "/guard/zone_lock_unlock", s.zoneLockUnlockHandler, ('zone_name', ))
+            hs.setReqHandler("GET", "/guard/obtain_settings", s.obtainSettingsHandler)
+            hs.setReqHandler("POST", "/guard/start_with_settings", s.startWithSettingsHandler)
+            hs.setReqHandler("POST", "/guard/stop_with_settings", s.stopWithSettingsHandler)
+
+
+        def zoneLockUnlockHandler(s, args, body, attrs, conn):
+            try:
+                zone = s.guard.zone(args['zone_name'])
+                if zone.isBlocked():
+                    zone.unlock()
+                else:
+                    zone.lock()
+                s.guard.uiNotifier.update()
+            except GuardZoneNotRegistredError as e:
+                raise HttpHandlerError('Can`t switch zone lock/unlock: %s' % e)
+
+
+        def obtainSettingsHandler(s, args, body, attrs, conn):
+            data = {'startSettings': s.guard.startSettings.asDict(),
+                    'stopSettings': s.guard.stopSettings.asDict()}
+            s.guard.skynet.emitEvent('guard', 'guardSettings', data)
+
+
+        def startWithSettingsHandler(s, args, body, attrs, conn):
+            try:
+                data = json.loads(body)
+                s.guard.startSettings.fromDict(data)
+            except json.JSONDecodeError as e:
+                raise HttpHandlerError("Can't set start settings. Json data is not valid: %s" % e)
+            except KeyError as e:
+                raise HttpHandlerError("Settings data format error. Field %s is absent" % e)
+
+            try:
+                s.guard.start()
+            except AppError as e:
+                raise HttpHandlerError("Can't starting guard: %s" % e)
+
+            try:
+                s.guard.uiNotifier.update()
+            except AppError as e:
+                raise HttpHandlerError("Guard was started but UI notifier error: %s" % e)
+
+
+        def stopWithSettingsHandler(s, args, body, attrs, conn):
+            try:
+                data = json.loads(body)
+                s.guard.stopSettings.fromDict(data)
+            except json.JSONDecodeError as e:
+                raise HttpHandlerError("Can't set stop settings. Json data is not valid: %s" % e)
+            except KeyError as e:
+                raise HttpHandlerError("Settings data format error. Field %s is absent" % e)
+
+            try:
+                s.guard.stop()
+            except AppError as e:
+                raise HttpHandlerError("Can't stopped guard: %s" % e)
+
+            try:
+                s.guard.uiNotifier.update()
+            except AppError as e:
+                raise HttpHandlerError("Guard was stopped but UI notifier error: %s" % e)
+
+
+    class UiNotifier():
+        def __init__(s, guard):
+            s.guard = guard
+            s.io = guard.io
+            s.skynet = guard.skynet
+            s.task = Task('guard_ui_nitifier')
+            s.task.setCb(s.do)
+            s.task.start()
+            s.voicePowerPort = s.io.port("voice_power")
+            s.io.registerEventSubscriber("Guard", s.onVoicePowerChanged, "voice_power")
+
+
+        def do(s):
+                s.cnt = 0
+                while 1:
+                    s.cnt += 1
+                    Task.sleep(100)
+                    if s.cnt < 20:
+                        continue
+                    s.update()
+
+
+        def update(s):
+            s.cnt = 0
+            notAllReady = False
+            sensorsLeds = {}
+            readyZoneLeds = {}
+            blockedZoneLeds = {}
+
+            for zone in s.guard.zones():
+                readyZoneLeds[zone.name()] = zone.isReadyToWatch()
+                blockedZoneLeds[zone.name()] = zone.isBlocked()
+
+                for sensor in zone.sensors():
+                    isTriggered = sensor.isTriggered()
+                    try:
+                        sensorsLeds[sensor.name()] = sensor.state()
+                    except IoPortCachedStateExpiredError:
+                        continue
+
+                    if isTriggered:
+                        notAllReady = True
+
+            blockedZonesExisted = bool(len([zone for zone in s.guard.zones() if zone.isBlocked()]))
+
+
+            data = {'sensorsLeds': sensorsLeds,
+                    'readyZoneLeds': readyZoneLeds,
+                    'blockedZoneLeds': blockedZoneLeds,
+                    'notAllReady': notAllReady,
+                    'isStarted': s.guard.isStarted(),
+                    'blockedZonesExisted': blockedZonesExisted,
+                    'publicSound': s.voicePowerPort.cachedState()}
+
+            s.skynet.emitEvent('guard', 'statusUpdate', data)
+
+
+        def onVoicePowerChanged(s, port, state):
+            s.update()
+
+
+    class StartSettings():
+        def __init__(s, guard):
+            s.guard = guard
+            s.st = guard.storage
+
+            s.watchMode = s.st.key('/startSettings/watchMode', 'full')
+
+            s.powerSockets = {}
+            for ps in s.guard.powerSockets.list():
+                s.powerSockets[ps.name()] = s.st.key('/startSettings/power/%s' % ps.name(), False)
+
+            s.doorLocks = {}
+            for dl in s.guard.doorLocks.list():
+                s.doorLocks[dl.name()] = s.st.key('/startSettings/doorLocks/%s' % dl.name(), False)
+
+            s.waterSupply = s.st.key('/startSettings/waterSupply', False)
+
+            s.enabledAlarmSound = s.st.key('/startSettings/enabledAlarmSound', False)
+            s.enabledSMS = s.st.key('/startSettings/enabledSMS', False)
+            s.enabledSkynetGroupNotify = s.st.key('/startSettings/enabledSkynetGroupNotify', False)
+
+
+        def asDict(s):
+            data = {}
+            data['watchMode'] = s.watchMode.val
+            data['waterSupply'] = s.waterSupply.val
+            data['enabledAlarmSound'] = s.enabledAlarmSound.val
+            data['enabledSMS'] = s.enabledSMS.val
+            data['enabledSkynetGroupNotify'] = s.enabledSkynetGroupNotify.val
+
+            data['powerSockets'] = {}
+            for name, key in s.powerSockets.items():
+                data['powerSockets'][name] = s.powerSockets[name].val
+
+            data['doorLocks'] = {}
+            for name, key in s.doorLocks.items():
+                data['doorLocks'][name] = s.doorLocks[name].val
+            return data
+
+
+        def fromDict(s, data):
+            if 'watchMode' in data:
+                s.watchMode.set(data['watchMode'])
+
+            if 'waterSupply' in data:
+                s.waterSupply.set(data['waterSupply'])
+
+            if 'enabledAlarmSound' in data:
+                s.enabledAlarmSound.set(data['enabledAlarmSound'])
+
+            if 'enabledSMS' in data:
+                s.enabledSMS.set(data['enabledSMS'])
+
+            if 'enabledSkynetGroupNotify' in data:
+                s.enabledSkynetGroupNotify.set(data['enabledSkynetGroupNotify'])
+
+            if 'powerSockets' in data:
+                for name, val in data['powerSockets'].items():
+                    s.powerSockets[name].set(data['powerSockets'][name])
+
+            if 'doorLocks' in data:
+                for name, val in data['doorLocks'].items():
+                    s.doorLocks[name].set(data['doorLocks'][name])
+
+
+    class StopSettings():
+        def __init__(s, guard):
+            s.guard = guard
+            s.st = guard.storage
+
+            s.openGates = s.st.key('/stopSettings/openGates', True)
+            s.stopDvr = s.st.key('/stopSettings/stopDvr', True)
+
+            s.doorLocks = {}
+            for dl in s.guard.doorLocks.list():
+                s.doorLocks[dl.name()] = s.st.key('/startSettings/doorLocks/%s' % dl.name(), True)
+
+
+        def asDict(s):
+            data = {}
+            data['openGates'] = s.openGates.val
+            data['stopDvr'] = s.stopDvr.val
+
+            data['doorLocks'] = {}
+            for name, key in s.doorLocks.items():
+                data['doorLocks'][name] = s.doorLocks[name].val
+            return data
+
+
+        def fromDict(s, data):
+            if 'openGates' in data:
+                s.openGates.set(data['openGates'])
+
+            if 'stopDvr' in data:
+                s.stopDvr.set(data['stopDvr'])
+
+            if 'doorLocks' in data:
+                for name, val in data['doorLocks'].items():
+                    s.doorLocks[name].set(data['doorLocks'][name])
+
+
+    class Db():
+        def __init__(s, guard, db):
+            s.guard = guard
+            s.db = db
+
+
+
+    class Zone():
+        def __init__(s, guard, name, conf, storage, db):
+            s.guard = guard
+            s.io = guard.io
+            s._lock = threading.Lock()
+            s.storage = storage
+            s._name = name
+            s._desc = conf['desc']
+            if len(conf['io_sensors']) > 1:
+                s._diffInterval = conf['diff_interval']
+            s._alarmInterval = conf['alarm_interval']
+            s._features = conf['features']
+            s._sensors = []
+            s._blocked = s.storage.key('/zones/zone_%s/blocked' % s.name(), False)
+
+            for sName, trigState in conf['io_sensors'].items():
+                port = s.guard.io.port(sName)
+                if port.mode() != 'in':
+                    raise GuardZoneCreateError(s.log,
+                            "Can't create zone '%s': port '%s' has incorrect type '%s'. " \
+                            "Only 'in' ports allowable" % (sName, port.name(), port.mode()))
+
+                sensor = Guard.Sensor(s.io, s, port, trigState)
+                s._sensors.append(sensor)
+
+
+        def name(s):
+            return s._name
+
+
+        def sensors(s):
+            return s._sensors
+
+
+        def isBlocked(s):
+            with s._lock:
+                return s._blocked.val
+
+
+        def lock(s):
+            if s.isBlocked():
+                return
+
+            with s._lock:
+                s._blocked.set(True)
+
+
+        def unlock(s):
+            if not s.isBlocked():
+                return
+            with s._lock:
+                s._blocked.set(False)
+
+
+        def isReadyToWatch(s):
+            for sense in s._sensors:
+                if sense.isTriggered():
+                    return False
+            return True
+
+
+        def sensorTrig(s, triggeredSensor):
+            if len(s._sensors) == 1:
+                return s.guard.zoneTrig(s)
+
+            minInterval = None
+            for sensor in s._sensors:
+                if sensor == triggeredSensor:
+                    continue
+
+                interval = triggeredSensor.trigTime() - sensor.trigTime()
+                if not minInterval:
+                    minInterval = interval
+
+                if interval < minInterval:
+                    minInterval = interval
+
+            if minInterval > s._diffInterval:
+                return
+
+            print("call zone %s trig" % s.name())
+            s.guard.zoneTrig(s)
+
+
+        def __repr__(s):
+            return "zone:%s" % s.name()
+
+
+    class Sensor():
+        def __init__(s, io, zone, port, trigState):
+            s._lock = threading.Lock()
+            s.io = io
+            s.zone = zone
+            s.guard = zone.guard
+            s.tc = s.guard.tc
+            s.port = port
+            s.attemptToLockTimer = None
+            s.storage = s.guard.storage
+
+            s.trigState = trigState
+            s.io.registerEventSubscriber("Sensor", s.doEventProcessing,
+                                         port.name())
+            s._blocked = s.storage.key('/zones/zone_%s/sensor_%s/blocked' % (
+                                       s.zone.name(), s.name()), False)
+            s._lastTrigTime = s.storage.key('/zones/zone_%s/sensor_%s/last_trig_time' % (
+                                            s.zone.name(), s.name()),
+                                            int(time.time()))
+            s._lastNotificationTime = s.storage.key('/zones/zone_%s/sensor_%s/last_notification_time' % (
+                                                    s.zone.name(), s.name()),
+                                                    int(time.time()))
+            s._trigCnt = s.storage.key('/zones/zone_%s/sensor_%s/trig_cnt' % (
+                                       s.zone.name(), s.name()), 0)
+
+
+        def trigTime(s):
+            return s._lastTrigTime.val
+
+
+        def isTriggered(s):
+            try:
+                return s.state() == s.trigState
+            except IoPortCachedStateExpiredError:
+                return False
+
+
+        def isBlocked(s):
+            with s._lock:
+                return s._blocked.val
+
+
+        def attemptToAutoUnlock(s):
+            if not s.isBlocked():
+                return
+
+            now = int(time.time())
+            if (now - s._lastTrigTime.val) > s.guard.conf["sensorAutolock"]["unlockInterval"]:
+                s.unlock()
+                s.tc.toAdmin("Датчик %s из зоны %s автоматически разблокирован" % (
+                             s.name(), s.zone.name()))
+
+            return s._blocked.val
+
+
+        def lock(s):
+            if s.isBlocked():
+                return
+
+            with s._lock:
+                s._blocked.set(True)
+            s._lastNotificationTime.set(int(time.time()))
+            s._trigCnt.set(0)
+            print("sensor %s locked" % s.name())
+
+
+        def unlock(s):
+            if not s.isBlocked():
+                return
+            with s._lock:
+                s._blocked.set(False)
+            s._trigCnt.set(0)
+            print("sensor %s ulocked" % s.name())
+
+
+        def match(s, port):
+            return port.name() == s.port.name()
+
+
+        def state(s):
+            return s.port.cachedState()
+
+
+        def name(s):
+            return s.port.name()
+
+
+        def doEventProcessing(s, port, state):
+            s.zone.guard.uiNotifier.update()
+
+            if s.zone.isBlocked():
+                return
+
+            if s.trigState != state:
+                return
+
+            now = int(time.time())
+            if (now - s._lastTrigTime.val) < 3:
+                return
+
+            if not s.guard.isReadyToWatchSensors():
+                return
+
+            print("doEventProcessing %s" % s.name())
+
+            s.attemptToAutoUnlock()
+            s._lastTrigTime.set(now)
+            s._trigCnt.set(s._trigCnt.val + 1)
+
+            if s.isBlocked():
+                print("blocked")
+                if (now - s._lastNotificationTime.val) > s.guard.conf['sensorAutolock']['notoficationInterval']:
+                    s.tc.toAdmin("Заблокированный датчик продолжает генерировать события. " \
+                                 "Нагенерировано событий: %d" % s._trigCnt.val)
+                    s._lastNotificationTime.set(now)
+                return
+
+            if not s.attemptToLockTimer:
+                print("start attemptToLockTimer %s" % s.name())
+                s.attemptToLockTimer = now
+
+            if (now - s.attemptToLockTimer) >= s.guard.conf['sensorAutolock']['interval']:
+                print("sensorAutolock > 5min: %s" % s.name())
+                if s._trigCnt.val < s.guard.conf['sensorAutolock']['trigNumber']:
+                    print("cnt < 5: %s" % s.name())
+                    s._trigCnt.set(0)
+                    s.attemptToLockTimer = None
+                else:
+                    print("cnt > 5: %s" % s.name())
+                    s.lock()
+                    s.attemptToLockTimer = None
+                    s.tc.toAdmin("Датчик %s из зоны %s заблокирован, " \
+                                 "потому что он сработал более 5ти раз за 5 минут" % (
+                                 s.name(), s.zone.name()))
+                    return
+
+            print("call zone trig by %s" % s.name())
+            s.zone.sensorTrig(s)
+
+
+        def __repr__(s):
+            return "sensor:%s" % s.name()
+
+
+
+

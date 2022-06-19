@@ -15,6 +15,8 @@ class IoPortBase():
         s.dbw = IoPortBase.Db(s)
         with s._lock:
             s.blocked = s.dbw.isBlocked()
+        s._cachedState = None
+        s.updatedTime = 0
 
 
     def name(s):
@@ -50,6 +52,20 @@ class IoPortBase():
             s.blocked = False
         s.dbw.unlock()
         s.io.uiUpdateBlockedPorts()
+
+
+    def cachedState(s):
+        if s.mode() == 'out':
+            return s._cachedState
+
+        if (time.time() - s.updatedTime) > s.io.conf['cachedInterval']:
+            raise IoPortCachedStateExpiredError(s.log, 'Cached state of port %s was expired' % s.name())
+        return s._cachedState
+
+
+    def updateCachedState(s, state):
+        s.updatedTime = time.time()
+        s._cachedState = state
 
 
     def __repr__(s):

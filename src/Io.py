@@ -1,23 +1,69 @@
 from Exceptions import *
-from SubsystemBase import *
 from IoBoardMbio import *
 from HttpServer import *
-from Skynet import skynet
+from Syslog import *
 
 
-class Io(SubsystemBase):
-    def __init__(s, conf, httpServer, db):
-        super().__init__("io", conf)
-        s.db = db
-        s.dbw = Io.Db(s, db)
-        s.httpHandlers = Io.HttpHandlers(s, httpServer, s.dbw)
+class Io():
+    def __init__(s, skynet):
+        s.log = Syslog('Io')
+        s.conf = skynet.conf.io
+        s.httpServer = skynet.httpServer
+        s.db = skynet.db
+        s.tc = skynet.tc
+        s.eventSubscribers = []
+        s.dbw = Io.Db(s, s.db)
+        s.httpHandlers = Io.HttpHandlers(s, s.httpServer, s.dbw)
         s.registerBoards()
+        s.skynet = skynet
+        s.skynet.registerEventSubscriber('Io', s.eventHandler, ('io', ), ('portTriggered', ))
+        s.skynet.registerEventSubscriber('Io', s.boardStatusHandler, ('io', ), ('ioStatus', ))
+
+
+    def boardStatusHandler(s, source, type, data):
+        for row in data['ports']:
+            port = s.port(row['port_name'])
+            port.updateCachedState(row['state'])
+
+
+    def eventHandler(s, source, type, data):
+        try:
+            pn = int(data['pn'])
+            state = int(data['state'])
+            bName = data['io_name']
+            board = s.board(bName)
+            port = board.portByPn(pn)
+        except KeyError as e:
+            s.tc.toAdmin("IO event handler error: field %s is absent in 'portTriggered' evType" % e)
+            return
+        except IoError as e:
+            s.tc.toAdmin("IO event handler error: board '%s' send event for " \
+                         "pn:%d, state:%d but it can't be processing: %s" % (bName, pn, state, e))
+            return
+
+        try:
+            port.updateCachedState(state)
+            s.emitEvent(port.name(), state)
+        except AppError as e:
+            s.tc.toAdmin("IO event handler %s error: %s" % (port, e))
+
+
+    def emitEvent(s, portName, state):
+        for sb in s.eventSubscribers:
+            if not sb.match(portName, state):
+                continue
+            try:
+                port = s.port(portName)
+                sb.cb(port, state)
+            except AppError as e:
+                s.tc.toAdmin("Error in event IO handler '%s' for port: '%s' state: '%d': %s" % (
+                             sb.name, source, evType, e))
 
 
     def registerBoards(s):
         s._boards = []
         try:
-            for ioName, ioInfo in s.conf.items():
+            for ioName, ioInfo in s.conf['boards'].items():
                 if ioInfo['type'] != 'mbio':
                     continue
                 board = IoBoardMbio(s, ioName)
@@ -25,14 +71,6 @@ class Io(SubsystemBase):
         except KeyError as e:
             raise IoPortNotFound(s.log,
                     "Configuration for IO failed in field %s" % e) from e
-
-
-    def listenedEvents(s):
-        return ()
-
-
-    def eventHandler(s, source, type, data): # TODO
-        pass
 
 
     def port(s, pName):
@@ -67,11 +105,12 @@ class Io(SubsystemBase):
                     'port_name': p.name()} for p in s.ports(mode='out', blocked=True)]
         list = listIn
         list.extend(listOut)
-        skynet().emitEvent('io', 'boardsBlokedPortsList', list)
+        s.skynet.emitEvent('io', 'boardsBlokedPortsList', list)
 
 
-    def uiUpdateIoBoardsInfo(s):
-        skynet().emitEvent('io', 'boardsInfo', s.conf)
+    def registerEventSubscriber(s, name, cb, portName, level=None):
+        subscriber = Io.EventSubscriber(s, name, cb, portName, level=None)
+        s.eventSubscribers.append(subscriber)
 
 
     def __repr__(s):
@@ -84,6 +123,21 @@ class Io(SubsystemBase):
         return str
 
 
+    class EventSubscriber():
+        def __init__(s, io, name, cb, portName, level):
+            s.name = "%s_%s:%s" % (name, portName, str(level))
+            s.portName = portName
+            s.port = io.port(portName)
+            s.level = level
+            s.cb = cb
+
+
+        def match(s, portName, level):
+            if portName != s.portName:
+                return False
+            if not s.level:
+                return True
+            return level == s.level
 
 
     class HttpHandlers():
@@ -95,8 +149,8 @@ class Io(SubsystemBase):
                                         s.configHandler, ['io'])
             s.httpServer.setReqHandler("GET", "/io/out_port_states",
                                         s.outPortStatesHandler, ['io'])
-            s.httpServer.setReqHandler("GET", "/io/request_mbio_config",
-                                        s.requestMbioConfigHandler)
+            s.httpServer.setReqHandler("GET", "/io/request_io_blocked_ports",
+                                        s.requestIoBlockedPortsHandler)
             s.httpServer.setReqHandler("GET", "/io/port/toggle_lock_unlock",
                                         s.portLockUnlockHandler, ['port_name'])
             s.httpServer.setReqHandler("GET", "/io/port/toggle_blocked_state",
@@ -130,8 +184,7 @@ class Io(SubsystemBase):
                 raise HttpHandlerError('Database error: %s' % e)
 
 
-        def requestMbioConfigHandler(s, args, body, attrs, conn):
-            s.io.uiUpdateIoBoardsInfo()
+        def requestIoBlockedPortsHandler(s, args, body, attrs, conn):
             s.io.uiUpdateBlockedPorts()
 
 
@@ -140,6 +193,7 @@ class Io(SubsystemBase):
             try:
                 port = s.io.port(portName)
                 if port.isBlocked():
+                    port.setBlockedState(0)
                     port.unlock()
                 else:
                     port.lock()
@@ -160,6 +214,10 @@ class Io(SubsystemBase):
                     port.setBlockedState(1)
             except AppError as e:
                 raise HttpHandlerError("Can't change blocked state for 'in' port %s: %s" % (portName, e))
+
+            if port.isBlocked():
+                s.io.emitEvent(port.name(), port.blockedState())
+
 
 
         def portToggleOutStateHandler(s, args, body, attrs, conn):

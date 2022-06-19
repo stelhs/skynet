@@ -39,6 +39,9 @@ class IoBoardConfigureErr(IoBoardError): # Configuring of all IO boards errors
 class IoBoardMbioError(IoBoardError): # MBIO board errors
     pass
 
+class IoPortCachedStateExpiredError(IoBoardError):
+    pass
+
 
 # Thermosensors errors
 
@@ -60,3 +63,60 @@ class TermosensorNoDataError(TermosensorError):
 
 class BoilerError(AppError):
     pass
+
+
+# Guard system errors
+
+class GuardError(AppError):
+    pass
+
+class GuardZonesAlreadyCreatedError(GuardError):
+    pass
+
+class GuardZoneCreateError(GuardError):
+    pass
+
+class GuardAlreadyStartedError(GuardError):
+    pass
+
+class GuardZoneNotRegistredError(GuardError):
+    pass
+
+class GuardSensorNotRegistredError(GuardError):
+    pass
+
+# Door Locks errors
+class DoorLocksError(AppError):
+    pass
+
+
+# Power sockets errors
+class PowerSocketError(AppError):
+    pass
+
+
+
+# Speakerphone errors
+
+class SpeakerphoneError(AppError):
+    pass
+
+class SpeakerphonePlayerError(SpeakerphoneError):
+    pass
+
+class SpeakerphoneSetVolumeError(SpeakerphoneError):
+    pass
+
+class SpeakerphoneSpeakError(SpeakerphoneError):
+    pass
+
+
+
+# Gates
+
+class GatesError(AppError):
+    pass
+
+class GatesNoPowerError(GatesError):
+    pass
+

@@ -10,5 +10,9 @@ class ConfSkynet(ConfParser):
         s.addConfig('skynet', 'skynet.conf')
         s.addConfig('telegram', 'telegram.conf')
         s.addConfig('termosensors', 'termosensors.conf')
+        s.addConfig('doorLocks', 'door_locks.conf')
+        s.addConfig('powerSockets', 'power_sockets.conf')
+        s.addConfig('guard', 'guard.conf')
+
 
 

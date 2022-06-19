@@ -7,8 +7,8 @@ class IoBoardMbio(IoBoardBase):
     def __init__(s, io, ioName):
         super().__init__(io, ioName)
         try:
-            s.host = s.io.conf[ioName]['host']
-            s.port = s.io.conf[ioName]['port']
+            s.host = s.conf['host']
+            s.port = s.conf['port']
         except KeyError as e:
             raise IoBoardConfigureErr(s.log,
                     "Configuration for mbio '%s' error in field %s" % (ioName, e)) from e
