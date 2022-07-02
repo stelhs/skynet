@@ -6,17 +6,17 @@ from Skynet import *
 class IoPortBase():
     def __init__(s, io, board, mode, pn, pName):
         s.io = io
-        s._lock = threading.Lock()
+        s.storage = io.storage
         s.pName = pName
         s._board = board;
         s._mode = mode;
         s._pn = pn;
         s.log = Syslog('Io_port_%s' % pName)
         s.dbw = IoPortBase.Db(s)
-        with s._lock:
-            s.blocked = s.dbw.isBlocked()
         s._cachedState = None
         s.updatedTime = 0
+        s._blocked = s.storage.key('/ports/%s/blocked' % s.name(), False)
+        s.subscribers = []
 
 
     def name(s):
@@ -36,21 +36,16 @@ class IoPortBase():
 
 
     def isBlocked(s):
-        with s._lock:
-            return s.blocked
+        return s._blocked.val
 
 
     def lock(s):
-        with s._lock:
-            s.blocked = True
-        s.dbw.lock()
+        s._blocked.set(True)
         s.io.uiUpdateBlockedPorts()
 
 
     def unlock(s):
-        with s._lock:
-            s.blocked = False
-        s.dbw.unlock()
+        s._blocked.set(False)
         s.io.uiUpdateBlockedPorts()
 
 
@@ -68,12 +63,48 @@ class IoPortBase():
         s._cachedState = state
 
 
+    def subscribe(s, name, cb, level=None):
+        subscriber = IoPortBase.EventSubscriber(s, name, cb, level)
+        s.subscribers.append(subscriber)
+
+
+    def emitEvent(s, state):
+        for sb in s.subscribers:
+            if not sb.match(state):
+                continue
+            try:
+                sb.cb(state)
+            except AppError as e:
+                s.tc.toAdmin("Port %s:%d subscriber Error: %s" % (
+                             s.name(), state, e))
+
+
     def __repr__(s):
-        return "p:%s/%s.%s.%s\n" % (s.name(), s.board().name(), s.mode(), s.pn())
+        return "IoPort:%s/%s.%s.%s\n" % (s.name(), s.board().name(), s.mode(), s.pn())
 
 
     def __str__(s):
         return "%s/%s.%s.%s" % (s.name(), s.board().name(), s.mode(), s.pn())
+
+
+
+    class EventSubscriber():
+        def __init__(s, port, name, cb, level):
+            s.name = "%s:%s" % (name, str(level))
+            s.port = port
+            s.level = level
+            s.cb = cb
+
+
+        def match(s, level):
+            if s.level == None:
+                return True
+            return level == s.level
+
+
+        def __repr__(s):
+            return "IoPort.EventSubscriber:%s" % s.name
+
 
 
     class Db():
@@ -82,21 +113,4 @@ class IoPortBase():
             s.port = port
 
 
-        def isBlocked(s):
-            row = s.db.query("select state from blocked_io_ports " \
-                             "where port_name = '%s'" % s.port.name())
-            if 'state' in row:
-                return True
-            return False
 
-
-        def lock(s):
-            s.unlock()
-            print("db lock")
-            s.db.insert('blocked_io_ports',
-                        {'port_name': s.port.name(),
-                         'type': s.port.mode(),
-                         'state': 0});
-
-        def unlock(s):
-            s.db.query('delete from blocked_io_ports where port_name = "%s"' % s.port.name());

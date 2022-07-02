@@ -16,6 +16,12 @@ class IoBoardMbio(IoBoardBase):
         s.log = Syslog('Mbio')
         s.resetMbio()
 
+        for port in s.ports():
+            try:
+                port.updateCachedState(bool(port.state()))
+            except IoBoardError:
+                pass
+
 
     def send(s, op, args = {}):
         url = "http://%s:%d/%s" % (s.host, s.port, op)

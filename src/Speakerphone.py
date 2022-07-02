@@ -64,13 +64,14 @@ class Speakerphone():
 
 
     def shutUp(s):
-        if not s.sp:
-            return
-        s.sp.terminate()
         try:
             s.amplifierPort.down()
         except IoError as e:
             raise SpeakerphonePlayerError(s.log, 'Can`t disable amplifier') from e
+
+        if not s.sp:
+            return
+        s.sp.terminate()
         Task.sleep(500)
 
 

@@ -11,19 +11,22 @@ class Io():
         s.httpServer = skynet.httpServer
         s.db = skynet.db
         s.tc = skynet.tc
-        s.eventSubscribers = []
+        s.storage = Storage('io.json')
+
         s.dbw = Io.Db(s, s.db)
         s.httpHandlers = Io.HttpHandlers(s, s.httpServer, s.dbw)
         s.registerBoards()
         s.skynet = skynet
-        s.skynet.registerEventSubscriber('Io', s.eventHandler, ('io', ), ('portTriggered', ))
-        s.skynet.registerEventSubscriber('Io', s.boardStatusHandler, ('io', ), ('ioStatus', ))
+        s.skynet.registerEventSubscriber('Io', s.eventHandler, ('mbio', ), ('portTriggered', ))
+        s.skynet.registerEventSubscriber('Io', s.boardStatusHandler, ('mbio', ), ('portsStates', ))
 
 
     def boardStatusHandler(s, source, type, data):
         for row in data['ports']:
             port = s.port(row['port_name'])
             port.updateCachedState(row['state'])
+
+        s.skynet.emitEvent('io', 'portsStates', data)
 
 
     def eventHandler(s, source, type, data):
@@ -41,6 +44,9 @@ class Io():
                          "pn:%d, state:%d but it can't be processing: %s" % (bName, pn, state, e))
             return
 
+        if port.isBlocked():
+            return
+
         try:
             port.updateCachedState(state)
             s.emitEvent(port.name(), state)
@@ -49,15 +55,8 @@ class Io():
 
 
     def emitEvent(s, portName, state):
-        for sb in s.eventSubscribers:
-            if not sb.match(portName, state):
-                continue
-            try:
-                port = s.port(portName)
-                sb.cb(port, state)
-            except AppError as e:
-                s.tc.toAdmin("Error in event IO handler '%s' for port: '%s' state: '%d': %s" % (
-                             sb.name, source, evType, e))
+        port = s.port(portName)
+        port.emitEvent(state)
 
 
     def registerBoards(s):
@@ -100,17 +99,13 @@ class Io():
 
     def uiUpdateBlockedPorts(s):
         listIn = [{'state': int(p.blockedState()), 'type': p.mode(),
-                   'port_name': p.name()} for p in s.ports(mode='in', blocked=True)]
+                   'port_name': p.name(), 'isBlocked': p.isBlocked()}
+                   for p in s.ports(mode='in')]
         listOut = [{'state': 0, 'type': p.mode(),
                     'port_name': p.name()} for p in s.ports(mode='out', blocked=True)]
         list = listIn
         list.extend(listOut)
         s.skynet.emitEvent('io', 'boardsBlokedPortsList', list)
-
-
-    def registerEventSubscriber(s, name, cb, portName, level=None):
-        subscriber = Io.EventSubscriber(s, name, cb, portName, level=None)
-        s.eventSubscribers.append(subscriber)
 
 
     def __repr__(s):
@@ -123,54 +118,31 @@ class Io():
         return str
 
 
-    class EventSubscriber():
-        def __init__(s, io, name, cb, portName, level):
-            s.name = "%s_%s:%s" % (name, portName, str(level))
-            s.portName = portName
-            s.port = io.port(portName)
-            s.level = level
-            s.cb = cb
-
-
-        def match(s, portName, level):
-            if portName != s.portName:
-                return False
-            if not s.level:
-                return True
-            return level == s.level
-
 
     class HttpHandlers():
         def __init__(s, io, httpServer, dbw):
             s.io = io
             s.dbw = dbw
-            s.httpServer = httpServer
-            s.httpServer.setReqHandler("GET", "/io/port_config",
-                                        s.configHandler, ['io'])
-            s.httpServer.setReqHandler("GET", "/io/out_port_states",
-                                        s.outPortStatesHandler, ['io'])
-            s.httpServer.setReqHandler("GET", "/io/request_io_blocked_ports",
-                                        s.requestIoBlockedPortsHandler)
-            s.httpServer.setReqHandler("GET", "/io/port/toggle_lock_unlock",
-                                        s.portLockUnlockHandler, ['port_name'])
-            s.httpServer.setReqHandler("GET", "/io/port/toggle_blocked_state",
-                                        s.portBlockedStateHandler, ['port_name'])
-            s.httpServer.setReqHandler("GET", "/io/port/toggle_out_state",
-                                        s.portToggleOutStateHandler, ['port_name'])
-            s.httpServer.setReqHandler("GET", "/io/port/blink",
-                                        s.portSetBlinkHandler, ['port_name', 'd1', 'd2', 'number'])
+            s.hs = httpServer
+            s.hs.setReqHandler("GET", "/io/port_config", s.config, ('io',))
+            s.hs.setReqHandler("GET", "/io/out_port_states", s.outPortStates, ('io',))
+            s.hs.setReqHandler("GET", "/io/request_io_blocked_ports", s.requestIoBlockedPorts)
+            s.hs.setReqHandler("GET", "/io/port/toggle_lock_unlock", s.portLockUnlock, ('port_name',))
+            s.hs.setReqHandler("GET", "/io/port/toggle_blocked_state", s.portBlockedState, ('port_name',))
+            s.hs.setReqHandler("GET", "/io/port/toggle_out_state", s.portToggleOutState, ('port_name',))
+            s.hs.setReqHandler("GET", "/io/port/blink", s.portSetBlink, ('port_name', 'd1', 'd2', 'number'))
 
 
-        def configHandler(s, args, body, attrs, conn):
+        def config(s, args, body, attrs, conn):
             try:
                 ioName = args['io']
-                conf = s.io.conf[ioName]
+                conf = s.io.conf['boards'][ioName]
             except KeyError:
                 raise HttpHandlerError("board '%s' is not registred" % ioName)
             return {'config': conf}
 
 
-        def outPortStatesHandler(s, args, body, attrs, conn):
+        def outPortStates(s, args, body, attrs, conn):
             ioName = args['io']
             try:
                 s.io.board(ioName)
@@ -184,24 +156,25 @@ class Io():
                 raise HttpHandlerError('Database error: %s' % e)
 
 
-        def requestIoBlockedPortsHandler(s, args, body, attrs, conn):
+        def requestIoBlockedPorts(s, args, body, attrs, conn):
             s.io.uiUpdateBlockedPorts()
 
 
-        def portLockUnlockHandler(s, args, body, attrs, conn):
+        def portLockUnlock(s, args, body, attrs, conn):
             portName = args['port_name']
             try:
                 port = s.io.port(portName)
                 if port.isBlocked():
-                    port.setBlockedState(0)
                     port.unlock()
                 else:
                     port.lock()
+                    if port.mode() == 'in':
+                        port.setBlockedState(port.blockedState())
             except AppError as e:
                 raise HttpHandlerError("Can't toggle Lock/Unlock port %s: %s" % (portName ,e))
 
 
-        def portBlockedStateHandler(s, args, body, attrs, conn):
+        def portBlockedState(s, args, body, attrs, conn):
             portName = args['port_name']
             try:
                 port = s.io.port(portName)
@@ -215,12 +188,8 @@ class Io():
             except AppError as e:
                 raise HttpHandlerError("Can't change blocked state for 'in' port %s: %s" % (portName, e))
 
-            if port.isBlocked():
-                s.io.emitEvent(port.name(), port.blockedState())
 
-
-
-        def portToggleOutStateHandler(s, args, body, attrs, conn):
+        def portToggleOutState(s, args, body, attrs, conn):
             portName = args['port_name']
             try:
                 port = s.io.port(portName)
@@ -235,7 +204,7 @@ class Io():
                 raise HttpHandlerError("Can't change output state for 'out' port %s: %s" % (portName, e))
 
 
-        def portSetBlinkHandler(s, args, body, attrs, conn):
+        def portSetBlink(s, args, body, attrs, conn):
             portName = args['port_name']
             d1 = args['d1']
             d2 = args['d2']

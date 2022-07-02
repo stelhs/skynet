@@ -12,7 +12,9 @@ class ConfSkynet(ConfParser):
         s.addConfig('termosensors', 'termosensors.conf')
         s.addConfig('doorLocks', 'door_locks.conf')
         s.addConfig('powerSockets', 'power_sockets.conf')
+        s.addConfig('lighters', 'lighters.conf')
         s.addConfig('guard', 'guard.conf')
+        s.addConfig('waterSupply', 'water_supply.conf')
 
 
 

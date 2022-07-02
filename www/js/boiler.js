@@ -33,74 +33,31 @@ class Boiler extends ModuleBase {
         tpl.assign();
         this.setContentPageTotal(tpl.result())
 
-        this.boilerStateDiv = $$('bolier_state');
+        this.boilerStateBar = new StatusBar('bolier_state', 3);
 
+        this.leds = {'power': new Led('led_power', 'green', 3),
+                     'air_fun': new Led('led_air_fun', 'green', 3),
+                     'fuel_pump': new Led('led_fuel_pump', 'green', 3),
+                     'ignition': new Led('led_ignition', 'green', 3),
+                     'water_pump': new Led('led_water_pump', 'red', 3),
+                     'flame': new Led('led_flame', 'green', 3),
+                     'heater': new Led('led_heater', 'red', 3),
+                     'no_pressure': new Led('led_no_pressure', 'red', 3),
+                     'overheat': new Led('led_overheat', 'red', 3)};
 
-        this.leds = {'led_power': new Led('led_power', 'green', 3),
-                     'led_air_fun': new Led('led_air_fun', 'green', 3),
-                     'led_fuel_pump': new Led('led_fuel_pump', 'green', 3),
-                     'led_ignition': new Led('led_ignition', 'green', 3),
-                     'led_water_pump': new Led('led_water_pump', 'red', 3),
-                     'led_flame': new Led('led_flame', 'green', 3),
-                     'led_heater': new Led('led_heater', 'red', 3),
-                     'led_no_pressure': new Led('led_no_pressure', 'red', 3),
-                     'led_overheat': new Led('led_overheat', 'red', 3)};
-
-        this.sevenSegs = {
-                     'ss_target_t': [$("#ss_target_t"), 3, "lime"],
-                     'ss_room_t': [$("#ss_room_t"), 3, "lime"],
-                     'ss_boiler_box_t': [$("#ss_boiler_box_t"), 3, "red"],
-                     'ss_boiler_t': [$("#ss_boiler_t"), 3, "red"],
-                     'ss_return_t': [$("#ss_return_t"), 3, "red"],
-                     'ss_ignition_counter': [$("#ss_ignition_counter"), 3, "orange"],
-                     'ss_fuel_consumption': [$("#ss_fuel_consumption"), 3, "orange"],
-                     'ss_fuel_consumption_month': [$("#ss_fuel_consumption_month"), 4, "orange"],
-                     'ss_fuel_consumption_year': [$("#ss_fuel_consumption_year"), 4, "orange"]};
-
-
-        this.uiReset();
-
-        for (var name in this.sevenSegs)
-            this.showSevenSegVal(name, "");
-
-        this.restartEventTimeoutWatcher();
+        this.sevenSegs = {'target_t':  new SevenSeg("ss_target_t", "lime", 3, 3),
+                          'room_t':  new SevenSeg("ss_room_t", "lime", 3, 3),
+                          'boiler_box_t':  new SevenSeg("ss_boiler_box_t", "red", 3, 3),
+                          'boiler_t':  new SevenSeg("ss_boiler_t", "red", 3, 3),
+                          'return_t':  new SevenSeg("ss_return_t", "red", 3, 3),
+                          'ignition_counter':  new SevenSeg("ss_ignition_counter", "orange", 3, 3),
+                          'fuel_consumption':  new SevenSeg("ss_fuel_consumption", "orange", 3, 3)}
     }
 
 
     onPageChanged(pageNum) {
         if (pageNum == 2)
             this.requestBoilerFuelConsumption()
-    }
-
-    showBoilerState(state) {
-        this.boilerStateDiv.innerHTML = state;
-    }
-
-    showSevenSegVal(name, val) {
-        var parts = this.sevenSegs[name];
-        var div = parts[0];
-        var digits = parts[1];
-        var color = parts[2];
-
-        div.sevenSegArray({
-            value: val,
-            digits:digits,
-            segmentOptions: {
-                colorOff: "#003500",
-                colorOn: color,
-                slant: 10
-            }
-        });
-
-    }
-
-    uiReset() {
-        this.showBoilerState('-');
-
-        for (var name in this.sevenSegs)
-            this.showSevenSegVal(name, "XXXXX");
-
-        this.setContentPageStatistics('')
     }
 
     logErr(msg) {
@@ -111,23 +68,10 @@ class Boiler extends ModuleBase {
         this.ui.logInfo("Boiler: " + msg)
     }
 
-    restartEventTimeoutWatcher() {
-        if (this.watcherTimeoutHandler) {
-            clearTimeout(this.watcherTimeoutHandler);
-            this.watcherTimeoutHandler = NaN;
-        }
-
-        var handler = function() {
-            this.uiReset();
-            this.logErr('UI does not receive a signal from boiler more then 3 second');
-        }
-        this.watcherTimeoutHandler = setTimeout(handler.bind(this), 3000);
-    }
 
     eventHandler(source, type, data) {
         switch (type) {
         case 'boilerStatus':
-            this.restartEventTimeoutWatcher();
             this.updateStatus(data);
             return;
 
@@ -148,9 +92,9 @@ class Boiler extends ModuleBase {
         }
     }
 
-    actualizeSevenSeg(segName, data, field) {
+    actualizeSevenSeg(data, field) {
         if (field in data)
-            this.showSevenSegVal(segName, data[field].toString());
+            this.sevenSegs[field].set(data[field].toString())
     }
 
     updateStatus(data) {
@@ -160,28 +104,25 @@ class Boiler extends ModuleBase {
         }
 
         if ('state' in data)
-            this.showBoilerState(data['state']);
+            this.boilerStateBar.set(data['state']);
 
-        this.leds['led_power'].actualize(data, 'power', 'True');
-        this.leds['led_power'].actualize(data, 'power', 'True');
-        this.leds['led_air_fun'].actualize(data, 'air_fun', 'True');
-        this.leds['led_fuel_pump'].actualize(data, 'fuel_pump', 'True');
-        this.leds['led_ignition'].actualize(data, 'ignition', 'True');
-        this.leds['led_water_pump'].actualize(data, 'water_pump', 'True');
-        this.leds['led_flame'].actualize(data, 'flame', 'True');
-        this.leds['led_heater'].actualize(data, 'heater', 'True');
-        this.leds['led_no_pressure'].actualize(data, 'no_pressure', 'True');
-        this.leds['led_overheat'].actualize(data, 'overheat', 'True');
+        this.leds['power'].actualize(data, 'power', 'True');
+        this.leds['air_fun'].actualize(data, 'air_fun', 'True');
+        this.leds['fuel_pump'].actualize(data, 'fuel_pump', 'True');
+        this.leds['ignition'].actualize(data, 'ignition', 'True');
+        this.leds['water_pump'].actualize(data, 'water_pump', 'True');
+        this.leds['flame'].actualize(data, 'flame', 'True');
+        this.leds['heater'].actualize(data, 'heater', 'True');
+        this.leds['no_pressure'].actualize(data, 'no_pressure', 'True');
+        this.leds['overheat'].actualize(data, 'overheat', 'True');
 
-        this.actualizeSevenSeg('ss_target_t', data, 'target_t');
-        this.actualizeSevenSeg('ss_room_t', data, 'room_t');
-        this.actualizeSevenSeg('ss_boiler_box_t', data, 'boiler_box_t');
-        this.actualizeSevenSeg('ss_boiler_t', data, 'boiler_t');
-        this.actualizeSevenSeg('ss_return_t', data, 'return_t');
-        this.actualizeSevenSeg('ss_ignition_counter', data, 'ignition_counter');
-        this.actualizeSevenSeg('ss_fuel_consumption', data, 'fuel_consumption');
-        this.actualizeSevenSeg('ss_fuel_consumption_month', data, 'fuel_consumption_month');
-        this.actualizeSevenSeg('ss_fuel_consumption_year', data, 'fuel_consumption_year');
+        this.actualizeSevenSeg(data, 'target_t');
+        this.actualizeSevenSeg(data, 'room_t');
+        this.actualizeSevenSeg(data, 'boiler_box_t');
+        this.actualizeSevenSeg(data, 'boiler_t');
+        this.actualizeSevenSeg(data, 'return_t');
+        this.actualizeSevenSeg(data, 'ignition_counter');
+        this.actualizeSevenSeg(data, 'fuel_consumption');
     }
 
     boilerRequest(method, args) {

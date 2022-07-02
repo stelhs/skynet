@@ -1,0 +1,262 @@
+
+<table style="width: 100%;">
+    <tr>
+        <td style="width: 33%;
+                   vertical-align: top;
+                   padding: 10px">
+
+            <div style="margin: 0 0 5 0;
+                        width: max-content;
+                        border: solid 1px">
+
+                <div style="background-color: #335577;
+                            text-align: center;
+                            padding: 3 0">
+                    Состояние зарядника и ИБП
+                </div>
+
+                <div style="padding: 10 20 10 20;">
+                    <table>
+                        <tr>
+                            <td style="width: 250px">
+                                Питание на вводе</td>
+                            <td><div id="led_power2_ext" class="led_big-undefined"></div></td>
+                        </tr>
+                        <tr>
+                            <td>Питание на входе в ИБП</td>
+                            <td><div id="led_power2_ups_in" class="led_big-undefined"></div></td>
+                        </tr>
+                        <tr>
+                            <td>Нет выходного питания</td>
+                            <td><div id="led_power_no_output_power" class="led_big-undefined"></div></td>
+                        </tr>
+                        <tr>
+                            <td>Нет питания 14vdc в ИБП</td>
+                            <td><div id="led_power_no_14vdc" class="led_big-undefined"></div></td>
+                        </tr>
+
+                        <tr>
+                            <td>Автоматический заряд АКБ</td>
+                            <td>
+                                <a class="button_with_led" onclick="ui.power.requestToSwitchAutomatic()" style="margin: 10 5">
+                                    <div id="led_charger_automatic_enabled" class="led_mini-undefined" style="margin: 15px"></div>
+                                </a>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td>Состояние ИБП</td>
+                            <td><div class="status_box" id="power2_ups_state">---</div></td>
+                        </tr>
+
+                        <tr>
+                            <td>Напряжение на АКБ</td>
+                            <td><div class="status_box" id="battery_voltage">---</div></td>
+                        </tr>
+
+                        <tr>
+                            <td>Ток заряда</td>
+                            <td><div class="status_box" id="charger_current">---</div></td>
+                        </tr>
+
+                    </table>
+
+                    <div style="text-align: center;
+                                margin: 15 0">
+                        <div style="display: inline-block;
+                                    text-align: center">
+                            <div class="button_box_green">
+                                <a onclick="ui.power.requestToStartCharger()"></a>
+                            </div>
+                            <div>Старт</div>
+                        </div>
+
+                        <div style="display: inline-block;
+                                    text-align: center">
+                            <div class="button_box_red">
+                                <a onclick="ui.power.requestToStopCharger()"></a>
+                            </div>
+                            <div>Стоп</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </td>
+
+        <td style="width: 33%;
+                   vertical-align: top;
+                   padding: 10px">
+
+            <div style="margin: 0 0 5 0;
+                        width: max-content;
+                        border: solid 1px">
+
+                <div style="background-color: #335577;
+                            text-align: center;
+                            padding: 3 0">
+                    Управление зарядником
+                </div>
+
+                <div style="padding: 0 20 10 20;">
+                    <table>
+                        <tr>
+                            <td style="width: 250">Подключение зарядного устройства к АКБ:</td>
+                            <td>
+                                <div id="led_charger_power_enabled" class="led_big-off" style="margin: 5px; vertical-align: middle"></div>
+                                <a class="button_without_led_green" onclick="ui.power.requestToEnableHwCharger()"></a>
+                                <a class="button_without_led_red" onclick="ui.power.requestToDisableHwCharger()"></a>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td>Зарядный ток 3A:</td>
+                            <td>
+                                <div id="led_charger_current_max_enabled" class="led_big-off" style="margin: 5px; vertical-align: middle"></div>
+                                <a class="button_without_led_green" onclick="ui.power.requestToTurnOnHighCurrent()"></a>
+                                <a class="button_without_led_red" onclick="ui.power.requestToTurnOffHighCurrent()"></a>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td>Зарядный ток 1.5A:</td>
+                            <td>
+                                <div id="led_charger_current_middle_enabled" class="led_big-off" style="margin: 5px; vertical-align: middle"></div>
+                                <a class="button_without_led_green" onclick="ui.power.requestToTurnOnMiddleCurrent()"></a>
+                                <a class="button_without_led_red" onclick="ui.power.requestToTurnOffMiddleCurrent()"></a>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td>Разряд:</td>
+                            <td>
+                                <div id="led_charge_discharge" class="led_big-off" style="margin: 5px; vertical-align: middle"></div>
+                                <a class="button_without_led_green" onclick="ui.power.requestToSwitchToCharge()"></a>
+                                <a class="button_without_led_red" onclick="ui.power.requestToSwitchToDischarge()"></a>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td>Питание реле АКБ:</td>
+                            <td>
+                                <div id="led_main_relay_enabled" class="led_big-off" style="margin: 5px; vertical-align: middle"></div>
+                                <a class="button_without_led_green" onclick="ui.power.requestToBatteryRelayOn()"></a>
+                                <a class="button_without_led_red" onclick="ui.power.requestToBatteryRelayOff()"></a>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td>Отключатель питания на ИБП (Запуск теста АКБ):</td>
+                            <td>
+                                <div id="led_power_ups_disabled" class="led_big-off" style="margin: 5px; vertical-align: middle"></div>
+                                <a class="button_without_led_green" onclick="ui.power.requestToInputPowerOff()"></a>
+                                <a class="button_without_led_red" onclick="ui.power.requestToInputPowerOn()"></a>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </td>
+
+        <td style="width: 33%;
+                   vertical-align: top;
+                   padding: 10px">
+
+            <div style="margin: 0 0 5 0;
+                        width: max-content;
+                        border: solid 1px">
+                <div style="background-color: #335577;
+                            text-align: center;
+                            padding: 3 0">
+                    Статус процесса заряда АКБ
+                </div>
+                <div style="padding: 10 20 10 20;">
+                    <table>
+                        <tr>
+                            <td style="width: 250px">Зарядка АКБ:</td>
+                            <td><div id="led_charger_status_activated" class="led_big-green"></div></td>
+                        </tr>
+                        <tr>
+                            <td>Причина запуска:</td>
+                            <td><div class="status_box" id="charger_status_reason_started">---</div></td>
+                        </tr>
+                        <tr>
+                            <td>Веремя начала заряда:</td>
+                            <td><div class="status_box" id="charger_status_start_time">---</div></td>
+                        </tr>
+                        <tr>
+                            <td>Веремя окончания заряда:</td>
+                            <td><div class="status_box" id="charger_status_end_time">---</div></td>
+                        </tr>
+                        <tr>
+                            <td>Начальное напряжение АКБ:</td>
+                            <td><div class="status_box" id="charger_status_start_voltage">---</div></td>
+                        </tr>
+                        <tr>
+                            <td>Время заряда 3A:</td>
+                            <td><div class="status_box" id="charger_status_max_current_duration">---</div></td>
+                        </tr>
+                        <tr>
+                            <td>Время заряда 1.5A:</td>
+                            <td><div class="status_box" id="charger_status_middle_current_duration">---</div></td>
+                        </tr>
+                        <tr>
+                            <td>Время заряда 0.5A:</td>
+                            <td><div class="status_box" id="charger_status_min_current_duration">---</div></td>
+                        </tr>
+                        <tr>
+                            <td>Сумарное время заряда:</td>
+                            <td><div class="status_box" id="charger_status_duration">---</div></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+
+            <div style="margin: 0 0 5 0;
+                        width: max-content;
+                        border: solid 1px">
+                <div style="background-color: #335577;
+                            text-align: center;
+                            padding: 3 0">
+                    Статус процесса разряда АКБ
+                </div>
+                <div style="padding: 10 20 10 20;">
+                    <table>
+                        <tr>
+                            <td style="width: 250px">Разряд АКБ:</td>
+                            <td><div id="led_discharge_status_activated" class="led_big-green"></div></td>
+                        </tr>
+                        <tr>
+                            <td>Причина запуска:</td>
+                            <td><div class="status_box" id="discharge_status_reason_started">---</div></td>
+                        </tr>
+                        <tr>
+                            <td>Веремя начала разряда:</td>
+                            <td><div class="status_box" id="discharge_status_start_time">---</div></td>
+                        </tr>
+                        <tr>
+                            <td>Веремя окончания разряда:</td>
+                            <td><div class="status_box" id="discharge_status_end_time">---</div></td>
+                        </tr>
+                        <tr>
+                            <td>Начальное напряжение АКБ:</td>
+                            <td><div class="status_box" id="discharge_status_start_voltage">---</div></td>
+                        </tr>
+                        <tr>
+                            <td>Оконечное напряжение АКБ:</td>
+                            <td><div class="status_box" id="discharge_status_finished_voltage">---</div></td>
+                        </tr>
+                        <tr>
+                            <td>Время разряда:</td>
+                            <td><div class="status_box" id="discharge_status_duration">---</div></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+        </td>
+
+
+    </tr>
+</table>
+

@@ -12,7 +12,9 @@
                 <table style="margin-left: 20px">
                     <tr>
                         <td style="width: 200px">Состояние:</td>
-                        <td id="bolier_state" style="padding: 5px">-</td>
+                        <td style="padding: 5px">
+                            <div class="status_box" id="bolier_state"></div>
+                        </td>
                     </tr>
                     <tr>
                         <td>Питание:</td>
@@ -59,9 +61,38 @@
         <td style="width: 25%;
                    vertical-align: top">
 
+            <div style="border: solid 3px #00BFFF;
+                        margin: 10px;
+                        padding: 10px;
+                        width: fit-content;
+                        width: 320px;">
+
+                <div class="button_box_green">
+                    <a onclick="ui.boiler.boilerStart()"></a>
+                </div>
+                <span>Вкл. котёл</span>
+                <br>
+
+                <div class="button_box_green">
+                    <a onclick="ui.boiler.boilerEnableHeater()"></a>
+                </div>
+                <span>Вкл. отопитель</span>
+                <br>
+
+                <div class="button_box_red">
+                    <a onclick="ui.boiler.boilerDisableHeater()"></a>
+                </div>
+                <span>Выкл. отопитель</span>
+            </div>
+
+        </td>
+
+        <td style="width: 25%;
+                   vertical-align: top">
+
             <div class="seven_seg_item_big">
                 Установленная температура <br>
-                <div id="ss_target_t" class="seven_seg_big"></div>
+                <div id="ss_target_t" class="seven_seg_big_3"></div>
                 <br><br>
 
                 <div style="">
@@ -123,34 +154,6 @@
             </div>
         </td>
 
-        <td style="width: 25%;
-                   vertical-align: top">
-
-            <div style="border: solid 3px #00BFFF;
-                        margin: 10px;
-                        padding: 10px;
-                        width: fit-content;
-                        width: 320px;">
-
-                <div class="button_box_green">
-                    <a onclick="ui.boiler.boilerStart()"></a>
-                </div>
-                <span>Вкл. котёл</span>
-                <br>
-
-                <div class="button_box_green">
-                    <a onclick="ui.boiler.boilerEnableHeater()"></a>
-                </div>
-                <span>Вкл. отопитель</span>
-                <br>
-
-                <div class="button_box_red">
-                    <a onclick="ui.boiler.boilerDisableHeater()"></a>
-                </div>
-                <span>Выкл. отопитель</span>
-            </div>
-
-        </td>
     </tr>
 </table>
 

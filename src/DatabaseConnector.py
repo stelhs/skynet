@@ -10,8 +10,7 @@ class DatabaseConnector():
         s.log = Syslog('DatabaseConnector')
         s.mysql = MySQL(conf)
         s.attempts = 0
-        s.task = Task('DatabaseConnector')
-        s.task.setCb(s.reconnector)
+        s.task = Task('DatabaseConnector', s.reconnector)
         s.task.start()
 
 
@@ -92,7 +91,7 @@ class DatabaseConnector():
 
         while 1:
             try:
-                return s.mysql.update(tableName, dataWithComma, dataWithOutComma)
+                return s.mysql.update(tableName, id, dataWithComma, dataWithOutComma)
             except mysql.connector.errors.OperationalError as e:
                 s.log.info('Cant update table "%s": SQL query: "%s". Error: %s' % (tableName, query, e))
                 s.waitForConnect()

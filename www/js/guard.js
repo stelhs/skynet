@@ -2,7 +2,7 @@
 class Guard extends ModuleBase {
     constructor(ui) {
         super(ui, 'guard');
-        this.pagesNumber = 1;
+        this.pagesNumber = 2;
         this.confGuard = ui.configs['guard'];
         this.confPowerSockets = ui.configs['powerSockets'];
         this.confDoorLocks = ui.configs['doorLocks'];
@@ -30,18 +30,13 @@ class Guard extends ModuleBase {
         this.setPageContent(1, content)
     }
 
+    setContentZoneList(content) {
+        this.setPageContent(2, content)
+    }
+
     init() {
         super.init();
         var tpl = this.tplOpen('mod_guard_1')
-        for (var zName in this.confGuard['zones']) {
-            var zInfo = this.confGuard['zones'][zName];
-            tpl.assign('zone', {'name': zName,
-                                'description': zInfo['desc']})
-
-            for (var sName in zInfo['io_sensors'])
-                tpl.assign('sensor', {'sensor_name': sName})
-        }
-
         for (var name in this.confPowerSockets) {
             var inf = this.confPowerSockets[name];
             tpl.assign('guard_starting_power_zone',
@@ -55,8 +50,19 @@ class Guard extends ModuleBase {
             tpl.assign('guard_starting_doorlock_power', data);
             tpl.assign('guard_stopping_doorlock_power', data);
         }
-
         this.setContentPagePrimary(tpl.result());
+
+        tpl = this.tplOpen('mod_guard_2')
+        for (var zName in this.confGuard['zones']) {
+            var zInfo = this.confGuard['zones'][zName];
+            tpl.assign('zone', {'name': zName,
+                                'description': zInfo['desc']})
+
+            for (var sName in zInfo['io_sensors'])
+                tpl.assign('sensor', {'sensor_name': sName})
+        }
+
+        this.setContentZoneList(tpl.result());
 
         for (var zName in this.confGuard['zones']) {
             var zInfo = this.confGuard['zones'][zName];
@@ -86,7 +92,7 @@ class Guard extends ModuleBase {
         this.allZonesReadyLed = new Led('led_all_zones_ready', 'red', 3);
         this.publicAudioLed = new Led('led_public_audio', 'red', 3);
 
-
+        this.noWatchWorkshopSwitch = $$('guard_starting_no_watch_workshop');
         this.enabledAlarmSoundSwitch = $$('guard_alarm_sound_enabled');
         this.enabledSMSSwitch = $$('guard_alarm_sms_enabled');
         this.enabledSkynetGroupNotifySwitch = $$('guard_alarm_skynet_enabled');
@@ -170,11 +176,11 @@ class Guard extends ModuleBase {
             this.startGuardDoorLocksSwitches[name].checked = val;
         }
 
+        this.noWatchWorkshopSwitch.checked = Boolean(startSettings['noWatchWorkshop']);
         this.enabledAlarmSoundSwitch.checked = Boolean(startSettings['enabledAlarmSound']);
         this.enabledSMSSwitch.checked = Boolean(startSettings['enabledSMS']);
         this.enabledSkynetGroupNotifySwitch.checked = Boolean(startSettings['enabledSkynetGroupNotify']);
-        this.waterSupplySwitch.selected = Boolean(startSettings['waterSupply']);
-        //this.watchModeSwitch.selected =
+        this.waterSupplySwitch.checked = Boolean(startSettings['waterSupply']);
 
         for (name in stopSettings['doorLocks']) {
             var val = Boolean(stopSettings['doorLocks'][name]);
@@ -205,12 +211,13 @@ class Guard extends ModuleBase {
 
     requestToStartGuard() {
         var data = {};
+
+        data['noWatchWorkshop'] = this.noWatchWorkshopSwitch.checked;
         data['enabledAlarmSound'] = this.enabledAlarmSoundSwitch.checked;
         data['enabledSMS'] = this.enabledSMSSwitch.checked;
         data['enabledSkynetGroupNotify'] = this.enabledSkynetGroupNotifySwitch.checked;
 
-        //data['watchMode'] =
-        data['waterSupply'] = this.waterSupplySwitch.selected;
+        data['waterSupply'] = this.waterSupplySwitch.checked;
 
         data['powerSockets'] = {};
         for (var name in this.confPowerSockets)
@@ -232,10 +239,15 @@ class Guard extends ModuleBase {
 
         data['doorLocks'] = {};
         for (var name in this.confDoorLocks)
-            data['doorLocks'][name] = this.startGuardDoorLocksSwitches[name].checked;
+            data['doorLocks'][name] = this.stopGuardDoorLocksSwitches[name].checked;
 
         this.logInfo('Post guard stop settings and stopping');
         this.skynetPostRequest('guard/stop_with_settings', JSON.stringify(data));
+    }
+
+    requestToCancelPublicSound() {
+        this.logInfo('Request to public sound cancellation');
+        this.skynetGetRequest('guard/stop_public_sound');
     }
 
 }

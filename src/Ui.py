@@ -1,5 +1,6 @@
 import threading
 from HttpServer import *
+from PeriodicNotifier import *
 import os
 import uuid
 import time
@@ -12,7 +13,11 @@ class Ui():
         s.skynet = skynet
         s.em = Ui.EventManager()
         s.httpHandlers = Ui.HttpHandlers(s)
-        skynet.registerEventSubscriber('Ui', s.eventHandler)
+        skynet.registerEventSubscriber('Ui', s.eventHandler,
+                                       ('io', 'boiler', 'termosensors', 'power_sockets',
+                                        'lighters', 'water_supply', 'gates', 'guard',
+                                        'door_locks', 'ups'))
+        s.periodicNotifier = PeriodicNotifier()
 
 
     def eventHandler(s, source, evType, data):
@@ -116,13 +121,13 @@ class Ui():
             s.io = ui.io
             s.skynet = ui.skynet
             s.httpServer = ui.httpServer
-            s.httpServer.setReqHandler("GET", "/ui/get_teamplates", s.teamplatesHandler)
-            s.httpServer.setReqHandler("GET", "/ui/get_events", s.eventsHandler)
-            s.httpServer.setReqHandler("GET", "/ui/subscribe", s.subscribeHandler)
-            s.httpServer.setReqHandler("GET", "/ui/configs", s.configsHandler)
+            s.httpServer.setReqHandler("GET", "/ui/get_teamplates", s.teamplates)
+            s.httpServer.setReqHandler("GET", "/ui/get_events", s.events)
+            s.httpServer.setReqHandler("GET", "/ui/subscribe", s.subscribe)
+            s.httpServer.setReqHandler("GET", "/ui/configs", s.configs)
 
 
-        def teamplatesHandler(s, args, body, attrs, conn):
+        def teamplates(s, args, body, attrs, conn):
             tplDir = "%s/tpl" % s.httpServer.wwwDir()
             files = os.listdir(tplDir)
             list = {}
@@ -134,12 +139,12 @@ class Ui():
             return list
 
 
-        def subscribeHandler(s, args, body, attrs, conn):
+        def subscribe(s, args, body, attrs, conn):
             subscriber = s.ui.em.subscribe()
             return {'subscriber_id': subscriber.id}
 
 
-        def eventsHandler(s, args, body, attrs, conn):
+        def events(s, args, body, attrs, conn):
             if not 'subscriber_id' in args:
                 raise HttpHandlerError("'subscriber_id' is absent", 'subscriberAbsent')
 
@@ -150,12 +155,14 @@ class Ui():
             return {'events': events}
 
 
-        def configsHandler(s, args, body, attrs, conn):
+        def configs(s, args, body, attrs, conn):
             return {"io": s.skynet.conf.io,
                     "guard": s.skynet.conf.guard,
                     "doorLocks": s.skynet.conf.doorLocks,
-                    "powerSockets": s.skynet.conf.powerSockets}
-
+                    "powerSockets": s.skynet.conf.powerSockets,
+                    "termosensors": s.skynet.conf.termosensors,
+                    "lighters": s.skynet.conf.lighters,
+                    "doorlocks": s.skynet.conf.doorLocks}
 
 
 

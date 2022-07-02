@@ -12,6 +12,7 @@ class Guard():
         s.httpServer = skynet.httpServer
         s.db = skynet.db
         s.io = skynet.io
+        s.ui = skynet.ui
         s.waterSupply = skynet.waterSupply
         s.gates = skynet.gates
         s.doorLocks = skynet.doorLocks
@@ -29,13 +30,16 @@ class Guard():
         s.createZones()
         s.startSettings = Guard.StartSettings(s)
         s.stopSettings = Guard.StopSettings(s)
-        s.uiNotifier = Guard.UiNotifier(s)
         s.httpHandlers = Guard.HttpHandlers(s)
 
         s._state = s.storage.key('/state', 'sleep')
         s._stateTime = s.storage.key('/state_time', int(time.time()))
         s._stateId = s.storage.key('/stateId', 0)
         s.watchingZones = s.storage.key('/watchingZones', [])
+
+        s.voicePowerPort = s.io.port("voice_power")
+        s.uiUpdater = s.ui.periodicNotifier.register("guard", s.uiUpdateHandler, 2000)
+        s.voicePowerPort.subscribe("Guard", lambda state: s.uiUpdater.call())
 
 
     def createZones(s):
@@ -57,7 +61,12 @@ class Guard():
 
 
     def doSetReadyState(s):
+        workshopZones = ['workshop_west', 'workshop_south', 'workshop_north', 'workshop_east']
         watchedZones = [zone.name() for zone in s.zones(unlockedOnly=True) if zone.isReadyToWatch()]
+
+        if s.startSettings.noWatchWorkshop.val:
+            watchedZones = list(set(watchedZones) - set(workshopZones))
+
         s.watchingZones.set(watchedZones)
 
         s._state.set('ready')
@@ -71,11 +80,18 @@ class Guard():
             s.errors.append(("Can't insert into table guard_states", e))
 
 
-    def doLampBlinkStart(s):
+    def doLampBlinkOnStart(s):
         try:
             s.io.port('guard_lamp').blink(4000, 1000, 2)
         except AppError as e:
             s.errors.append(("Can't blink guard lamp", e))
+
+
+    def doLampBlinkAbort(s):
+        try:
+            s.io.port('guard_lamp').down()
+        except AppError as e:
+            s.errors.append(("Can't abort blink guard lamp", e))
 
 
     def doGatesClose(s):
@@ -118,9 +134,14 @@ class Guard():
     def doWaterSupplyOnStart(s):
         if not s.startSettings.waterSupply.val:
             try:
-                s.waterSupply.disable()
+                s.waterSupply.lock()
             except AppError as e:
                 s.errors.append(("Can't disable water supply", e))
+        else:
+            try:
+                s.waterSupply.unlock()
+            except AppError as e:
+                s.errors.append(("Can't enable water supply", e))
 
 
     def doBoilerStandby(s):
@@ -142,7 +163,7 @@ class Guard():
             s.errors.append(("Can't insert into table guard_states", e))
 
 
-    def doLampBlinkStop(s):
+    def doLampBlinkOnStop(s):
         try:
             s.io.port('guard_lamp').blink(500, 500, 6)
         except AppError as e:
@@ -181,7 +202,7 @@ class Guard():
     def doWaterSupplyOnStop(s):
         if not s.startSettings.waterSupply.val:
             try:
-                s.waterSupply.enable()
+                s.waterSupply.unlock()
             except AppError as e:
                 s.errors.append(("Can't enable water supply", e))
 
@@ -195,14 +216,28 @@ class Guard():
 
     def start(s):
         s.errors = []
+
+        s.doLampBlinkAbort()
         s.doSpeakerphoneShutUp()
         s.doSetReadyState()
-        s.doLampBlinkStart()
-        s.doGatesClose()
-        s.doDoorLocksOnStart()
-        s.doPowerSocketsOnStart()
-        s.doWaterSupplyOnStart()
-        s.doBoilerStandby()
+
+        if s.isStarted():
+            s.uiInfo('Updated guard settings')
+            s.doDoorLocksOnStart()
+            s.doPowerSocketsOnStart()
+            s.doWaterSupplyOnStart()
+        else:
+            s.doLampBlinkOnStart()
+            s.doGatesClose()
+            s.doDoorLocksOnStart()
+            s.doPowerSocketsOnStart()
+            s.doWaterSupplyOnStart()
+            s.doBoilerStandby()
+
+        try:
+            s.tc.toSkynet("Охрана включена");
+        except AppError as e:
+            pass
 
         if len(s.errors):
             shortListText = "<br> ".join([row[0] for row in s.errors])
@@ -213,10 +248,8 @@ class Guard():
                 pass
             raise GuardError(s.log, "Guard was started but any errors has occured: %s" % shortListText)
 
-        try:
-            s.tc.toSkynet("Охрана включена");
-        except AppError as e:
-            pass
+#        s.uiInfo('Guard ')
+
 
 #        $this->send_screnshots();
  #       $this->send_video_url($event_time);
@@ -224,10 +257,11 @@ class Guard():
 
     def stop(s):
         s.errors = []
+        s.doLampBlinkAbort()
         s.doSpeakerphoneShutUp()
         s.doSetSleepState()
         s.doGatesOpen()
-        s.doLampBlinkStop()
+        s.doLampBlinkOnStop()
         s.doPowerSocketsOnStop()
         s.doDoorLocksOnStop()
         s.doWaterSupplyOnStop()
@@ -257,7 +291,7 @@ class Guard():
             return False
 
         now = int(time.time())
-        if (now - s._stateTime) > s.conf['start_interval']:
+        if (now - s._stateTime.val) > s.conf['start_interval']:
             return True
         return False
 
@@ -294,6 +328,49 @@ class Guard():
         raise GuardSensorNotRegistredError(s.log, "Sensor %s has not registred" % sName)
 
 
+    def uiErr(s, msg):
+        s.skynet.emitEvent('guard', 'error', msg)
+
+
+    def uiInfo(s, msg):
+        s.skynet.emitEvent('guard', 'info', msg)
+
+
+    def uiUpdateHandler(s):
+        s.cnt = 0
+        notAllReady = False
+        sensorsLeds = {}
+        readyZoneLeds = {}
+        blockedZoneLeds = {}
+
+        for zone in s.zones():
+            readyZoneLeds[zone.name()] = zone.isReadyToWatch()
+            blockedZoneLeds[zone.name()] = zone.isBlocked()
+
+            for sensor in zone.sensors():
+                isTriggered = sensor.isTriggered()
+                try:
+                    sensorsLeds[sensor.name()] = sensor.state()
+                except IoPortCachedStateExpiredError:
+                    continue
+
+                if isTriggered:
+                    notAllReady = True
+
+        blockedZonesExisted = bool(len([zone for zone in s.zones() if zone.isBlocked()]))
+
+        data = {'sensorsLeds': sensorsLeds,
+                'readyZoneLeds': readyZoneLeds,
+                'blockedZoneLeds': blockedZoneLeds,
+                'notAllReady': notAllReady,
+                'isStarted': s.isStarted(),
+                'blockedZonesExisted': blockedZonesExisted,
+                'publicSound': s.voicePowerPort.cachedState()}
+
+        s.skynet.emitEvent('guard', 'statusUpdate', data)
+
+
+
     class HttpHandlers():
         def __init__(s, guard):
             s.guard = guard
@@ -302,6 +379,8 @@ class Guard():
             hs.setReqHandler("GET", "/guard/obtain_settings", s.obtainSettingsHandler)
             hs.setReqHandler("POST", "/guard/start_with_settings", s.startWithSettingsHandler)
             hs.setReqHandler("POST", "/guard/stop_with_settings", s.stopWithSettingsHandler)
+            hs.setReqHandler("GET", "/guard/stop_public_sound", s.stopPublicSoundHandler)
+
 
 
         def zoneLockUnlockHandler(s, args, body, attrs, conn):
@@ -311,7 +390,7 @@ class Guard():
                     zone.unlock()
                 else:
                     zone.lock()
-                s.guard.uiNotifier.update()
+                s.guard.uiUpdater.call()
             except GuardZoneNotRegistredError as e:
                 raise HttpHandlerError('Can`t switch zone lock/unlock: %s' % e)
 
@@ -337,7 +416,7 @@ class Guard():
                 raise HttpHandlerError("Can't starting guard: %s" % e)
 
             try:
-                s.guard.uiNotifier.update()
+                s.guard.uiUpdater.call()
             except AppError as e:
                 raise HttpHandlerError("Guard was started but UI notifier error: %s" % e)
 
@@ -357,70 +436,16 @@ class Guard():
                 raise HttpHandlerError("Can't stopped guard: %s" % e)
 
             try:
-                s.guard.uiNotifier.update()
+                s.guard.uiUpdater.call()
             except AppError as e:
                 raise HttpHandlerError("Guard was stopped but UI notifier error: %s" % e)
 
 
-    class UiNotifier():
-        def __init__(s, guard):
-            s.guard = guard
-            s.io = guard.io
-            s.skynet = guard.skynet
-            s.task = Task('guard_ui_nitifier')
-            s.task.setCb(s.do)
-            s.task.start()
-            s.voicePowerPort = s.io.port("voice_power")
-            s.io.registerEventSubscriber("Guard", s.onVoicePowerChanged, "voice_power")
-
-
-        def do(s):
-                s.cnt = 0
-                while 1:
-                    s.cnt += 1
-                    Task.sleep(100)
-                    if s.cnt < 20:
-                        continue
-                    s.update()
-
-
-        def update(s):
-            s.cnt = 0
-            notAllReady = False
-            sensorsLeds = {}
-            readyZoneLeds = {}
-            blockedZoneLeds = {}
-
-            for zone in s.guard.zones():
-                readyZoneLeds[zone.name()] = zone.isReadyToWatch()
-                blockedZoneLeds[zone.name()] = zone.isBlocked()
-
-                for sensor in zone.sensors():
-                    isTriggered = sensor.isTriggered()
-                    try:
-                        sensorsLeds[sensor.name()] = sensor.state()
-                    except IoPortCachedStateExpiredError:
-                        continue
-
-                    if isTriggered:
-                        notAllReady = True
-
-            blockedZonesExisted = bool(len([zone for zone in s.guard.zones() if zone.isBlocked()]))
-
-
-            data = {'sensorsLeds': sensorsLeds,
-                    'readyZoneLeds': readyZoneLeds,
-                    'blockedZoneLeds': blockedZoneLeds,
-                    'notAllReady': notAllReady,
-                    'isStarted': s.guard.isStarted(),
-                    'blockedZonesExisted': blockedZonesExisted,
-                    'publicSound': s.voicePowerPort.cachedState()}
-
-            s.skynet.emitEvent('guard', 'statusUpdate', data)
-
-
-        def onVoicePowerChanged(s, port, state):
-            s.update()
+        def stopPublicSoundHandler(s, args, body, attrs, conn):
+            try:
+                s.guard.speakerphone.shutUp()
+            except AppError as e:
+                raise HttpHandlerError("Can't stop public sound: %s" % e)
 
 
     class StartSettings():
@@ -428,7 +453,7 @@ class Guard():
             s.guard = guard
             s.st = guard.storage
 
-            s.watchMode = s.st.key('/startSettings/watchMode', 'full')
+            s.noWatchWorkshop = s.st.key('/startSettings/noWatchWorkshop', False)
 
             s.powerSockets = {}
             for ps in s.guard.powerSockets.list():
@@ -447,7 +472,7 @@ class Guard():
 
         def asDict(s):
             data = {}
-            data['watchMode'] = s.watchMode.val
+            data['noWatchWorkshop'] = s.noWatchWorkshop.val
             data['waterSupply'] = s.waterSupply.val
             data['enabledAlarmSound'] = s.enabledAlarmSound.val
             data['enabledSMS'] = s.enabledSMS.val
@@ -464,8 +489,8 @@ class Guard():
 
 
         def fromDict(s, data):
-            if 'watchMode' in data:
-                s.watchMode.set(data['watchMode'])
+            if 'noWatchWorkshop' in data:
+                s.noWatchWorkshop.set(data['noWatchWorkshop'])
 
             if 'waterSupply' in data:
                 s.waterSupply.set(data['waterSupply'])
@@ -498,7 +523,7 @@ class Guard():
 
             s.doorLocks = {}
             for dl in s.guard.doorLocks.list():
-                s.doorLocks[dl.name()] = s.st.key('/startSettings/doorLocks/%s' % dl.name(), True)
+                s.doorLocks[dl.name()] = s.st.key('/stopSettings/doorLocks/%s' % dl.name(), True)
 
 
         def asDict(s):
@@ -631,8 +656,8 @@ class Guard():
             s.storage = s.guard.storage
 
             s.trigState = trigState
-            s.io.registerEventSubscriber("Sensor", s.doEventProcessing,
-                                         port.name())
+            port.subscribe("Sensor", s.doEventProcessing)
+
             s._blocked = s.storage.key('/zones/zone_%s/sensor_%s/blocked' % (
                                        s.zone.name(), s.name()), False)
             s._lastTrigTime = s.storage.key('/zones/zone_%s/sensor_%s/last_trig_time' % (
@@ -706,8 +731,8 @@ class Guard():
             return s.port.name()
 
 
-        def doEventProcessing(s, port, state):
-            s.zone.guard.uiNotifier.update()
+        def doEventProcessing(s, state):
+            s.zone.guard.uiUpdater.call()
 
             if s.zone.isBlocked():
                 return

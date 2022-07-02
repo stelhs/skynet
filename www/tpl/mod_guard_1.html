@@ -1,7 +1,7 @@
 
 <table style="width: 100%;">
     <tr>
-        <td style="width: 50%;
+        <td style="width: 33%;
                    vertical-align: top;
                    padding: 10px">
 
@@ -9,190 +9,209 @@
                  style="border: solid 1px;
                         margin: 10 0 0 0;
                         display: block;
-                        padding: 20px;
                         width: max-content">
-                Условия включения охраны:<br>
-
-                <div style="margin: 10 0 0 20">
-                    Готовность: <div id="led_all_zones_ready" class="led_big-red"></div>
+                <div style="background-color: #335577;
+                            text-align: center;
+                            padding: 3 0">
+                    Условия включения охраны
                 </div>
+                <div style="padding: 0 20 10 20;">
 
-                <div style="margin: 10 0 10 20">
-                    Наблюдение:
-                    <select name="" style="vertical-align: middle">
-                        <option>полное</option>
-                        <option>без мастерской</option>
-                    </select>
-                </div>
-
-                <div style="margin: 10 0 10 20;
-                            display: inline-block;">
-                    Питание:
-                    <!-- START BLOCK : guard_starting_power_zone -->
-                        <div style="margin: 5 0 0 50">
-                            <label class="switch" style="vertical-align: middle">
-                                <input type="checkbox" id="guard_starting_power_zone_{name}">
-                                <span class="slider round"></span>
-                            </label>
-                            {description}
-                        </div>
-                    <!-- END BLOCK : guard_starting_power_zone -->
-                </div>
-
-                <div style="margin: 10 0 10 20;
-                            display: inline-block;">
-                    Питание замков:
-                    <!-- START BLOCK : guard_starting_doorlock_power -->
-                        <div style="margin: 5 0 0 50">
-                            <label class="switch" style="vertical-align: middle">
-                                <input type="checkbox" id="guard_starting_doorlock_power_{name}">
-                                <span class="slider round"></span>
-                            </label>
-                            {description}
-                        </div>
-                    <!-- END BLOCK : guard_starting_doorlock_power -->
-                </div>
-
-                <div style="margin: 5 0 0 50">
-                    <label class="switch" style="vertical-align: middle">
-                        <input type="checkbox" id="guard_starting_water_supply">
-                        <span class="slider round"></span>
-                    </label>
-                    Водоснабжение
-                </div>
-
-                <div>
-                    При сработке:
-                    <div>
-                        <div style="margin: 5 0 0 50; display: inline-block;">
-                            <label class="switch" style="vertical-align: middle">
-                                <input type="checkbox" id="guard_alarm_sound_enabled">
-                                <span class="slider round"></span>
-                            </label>
-                            Сирена
-                        </div>
-
-                        <div style="margin: 5 0 0 50; display: inline-block;">
-                            <label class="switch" style="vertical-align: middle">
-                                <input type="checkbox" id="guard_alarm_sms_enabled">
-                                <span class="slider round"></span>
-                            </label>
-                            Рассылка SMS
-                        </div>
+                    <div style="margin: 10 0 0 20">
+                        Готовность: <div id="led_all_zones_ready" class="led_big-red"></div>
                     </div>
 
                     <div style="margin: 5 0 0 50">
                         <label class="switch" style="vertical-align: middle">
-                            <input type="checkbox" id="guard_alarm_skynet_enabled">
+                            <input type="checkbox" id="guard_starting_no_watch_workshop">
                             <span class="slider round"></span>
                         </label>
-                        Уведомление в Skynet группу
+                        Не следить за мастерской
                     </div>
 
-                </div>
-
-
-                <div style="width: max-content;
-                            border: solid 0px white;
-                            padding: 10px 15px 10px 15px;
-                            margin: 5px">
-
-                    <div class="button_box_green">
-                        <a onclick="ui.guard.requestToStartGuard()"></a>
+                    <div style="margin: 20 0 10 20;
+                                display: inline-block;
+                                vertical-align: top">
+                        Питание:
+                        <!-- START BLOCK : guard_starting_power_zone -->
+                            <div style="margin: 5 0 0 50">
+                                <label class="switch" style="vertical-align: middle">
+                                    <input type="checkbox" id="guard_starting_power_zone_{name}">
+                                    <span class="slider round"></span>
+                                </label>
+                                {description}
+                            </div>
+                        <!-- END BLOCK : guard_starting_power_zone -->
                     </div>
-                    <span>Включить охрану</span>
+
+                    <div style="margin: 20 0 10 20;
+                                display: inline-block;
+                                vertical-align: top">
+                        Питание замков:
+                        <!-- START BLOCK : guard_starting_doorlock_power -->
+                            <div style="margin: 5 0 0 50">
+                                <label class="switch" style="vertical-align: middle">
+                                    <input type="checkbox" id="guard_starting_doorlock_power_{name}">
+                                    <span class="slider round"></span>
+                                </label>
+                                {description}
+                            </div>
+                        <!-- END BLOCK : guard_starting_doorlock_power -->
+                    </div>
+
+                    <div style="margin: 5 0 0 50">
+                        <label class="switch" style="vertical-align: middle">
+                            <input type="checkbox" id="guard_starting_water_supply">
+                            <span class="slider round"></span>
+                        </label>
+                        Водоснабжение
+                    </div>
+
+                    <div style="margin: 20 0 10 20">
+                        При сработке:
+                        <div>
+                            <div style="margin: 5 0 0 50; display: inline-block;">
+                                <label class="switch" style="vertical-align: middle">
+                                    <input type="checkbox" id="guard_alarm_sound_enabled">
+                                    <span class="slider round"></span>
+                                </label>
+                                Сирена
+                            </div>
+
+                            <div style="margin: 5 0 0 50; display: inline-block;">
+                                <label class="switch" style="vertical-align: middle">
+                                    <input type="checkbox" id="guard_alarm_sms_enabled">
+                                    <span class="slider round"></span>
+                                </label>
+                                Рассылка SMS
+                            </div>
+                        </div>
+
+                        <div style="margin: 5 0 0 50">
+                            <label class="switch" style="vertical-align: middle">
+                                <input type="checkbox" id="guard_alarm_skynet_enabled">
+                                <span class="slider round"></span>
+                            </label>
+                            Уведомление в Skynet группу
+                        </div>
+
+                    </div>
+
+
+                    <div style="width: max-content;
+                                border: solid 0px white;
+                                padding: 10px 15px 10px 15px;
+                                margin: 5px">
+
+                        <div class="button_box_green">
+                            <a onclick="ui.guard.requestToStartGuard()"></a>
+                        </div>
+                        <span>Включить охрану</span>
+                    </div>
                 </div>
             </div>
+        </td>
 
-
+        <td style="width: 33%;
+                   vertical-align: top;
+                   padding: 10px">
 
 
             <div id="guard_stopping_settings"
                  style="border: solid 1px;
-                        margin: 20 0 0 0;
+                        margin: 10 0 0 0;
                         display: block;
-                        padding: 20px;
                         width: max-content">
-                <span style="font-weight: bold">Условия отключения охраны:</span>
-
-
-                <div style="margin: 15 0 0 20">
-                    <label class="switch" style="vertical-align: middle">
-                        <input type="checkbox" id="guard_stopping_open_gates">
-                        <span class="slider round"></span>
-                    </label>
-                    Открыть откатные ворота
+                <div style="background-color: #335577;
+                            text-align: center;
+                            padding: 3 0">
+                    Условия отключения охраны
                 </div>
+                <div style="padding: 0 20 10 20;">
 
-                <div style="margin: 5 0 0 20">
-                    <label class="switch" style="vertical-align: middle">
-                        <input type="checkbox" id="guard_stopping_stop_dvr">
-                        <span class="slider round"></span>
-                    </label>
-                    Отключить запись видео в мастерской
-                </div>
-
-                <div style="margin: 10 0 10 20">
-                    Питание замков:
-                    <!-- START BLOCK : guard_stopping_doorlock_power -->
-                        <div style="margin: 5 0 0 50">
-                            <label class="switch" style="vertical-align: middle">
-                                <input type="checkbox" id="guard_stopping_doorlock_power_{name}">
-                                <span class="slider round"></span>
-                            </label>
-                            {description}
-                        </div>
-                    <!-- END BLOCK : guard_stopping_doorlock_power -->
-                </div>
-
-
-                <div style="width: max-content;
-                            border: solid 0px white;
-                            padding: 10px 15px 10px 15px;
-                            margin: 5px">
-
-                    <div class="button_box_red">
-                        <a onclick="ui.guard.requestToStopGuard()"></a>
+                    <div style="margin: 15 0 0 20">
+                        <label class="switch" style="vertical-align: middle">
+                            <input type="checkbox" id="guard_stopping_open_gates">
+                            <span class="slider round"></span>
+                        </label>
+                        Открыть откатные ворота
                     </div>
-                    <span>Отключить охрану</span>
 
+                    <div style="margin: 5 0 0 20">
+                        <label class="switch" style="vertical-align: middle">
+                            <input type="checkbox" id="guard_stopping_stop_dvr">
+                            <span class="slider round"></span>
+                        </label>
+                        Отключить запись видео в мастерской
+                    </div>
+
+                    <div style="margin: 10 0 10 20">
+                        Питание замков:
+                        <!-- START BLOCK : guard_stopping_doorlock_power -->
+                            <div style="margin: 5 0 0 50">
+                                <label class="switch" style="vertical-align: middle">
+                                    <input type="checkbox" id="guard_stopping_doorlock_power_{name}">
+                                    <span class="slider round"></span>
+                                </label>
+                                {description}
+                            </div>
+                        <!-- END BLOCK : guard_stopping_doorlock_power -->
+                    </div>
+
+                    <div style="width: max-content;
+                                border: solid 0px white;
+                                padding: 10px 15px 10px 15px;
+                                margin: 5px">
+
+                        <div class="button_box_red">
+                            <a onclick="ui.guard.requestToStopGuard()"></a>
+                        </div>
+                        <span>Отключить охрану</span>
+
+                    </div>
                 </div>
-
             </div>
+
         </td>
 
-        <td style="width: 50%;
+        <td style="width: 33%;
                    vertical-align: top;">
-
-            <div style="padding: 10 20 10 20;
+            <div style="margin: 20px;
                         width: max-content;
                         border: solid 1px">
-                <div style="margin: 0 30 10 0; display: inline-block">
+                <div style="background-color: #335577;
+                            text-align: center;
+                            padding: 3 0">
+                    Состояние системы охраны
+                </div>
+                <div style="padding: 0 20 10 20;">
+
                     <div style="padding-top: 5px">
                         <div id="led_guard_state" class="led_big-green"></div>Охрана (вкл/выкл)
                     </div>
                     <div style="padding-top: 5px">
                         <div id="led_blocked_zones" class="led_big-red"></div>Заблокированные зоны
                     </div>
-                 </div>
-                <div style="margin: 0 0 10 0; display: inline-block">
                     <div style="padding-top: 5px">
                         <div id="led_not_watched_zones" class="led_big-red"></div>Неохраняемые зоны
                     </div>
                     <div style="padding-top: 5px">
                         <div id="led_public_audio" class="led_big-red"></div>Громкоговоритель
                     </div>
-                </div>
 
-                <div style="width: max-content;
-                            border: solid 0px white;
-                            padding: 10px 15px 10px 15px;
-                            margin: 5px">
+                    <div style="width: max-content;
+                                border: solid 0px white;
+                                padding: 10px 15px 10px 15px;
+                                margin: 5px">
 
-                    <div class="button_box_green">
-                        <a onclick=""></a>
+                        <div class="button_box_green">
+                            <a onclick="ui.guard.requestToCancelPublicSound()"></a>
+                        </div>
+                        <div style="display: inline-block">
+                            Заглушить<br>
+                            громкоговоритель
+                        </div>
                     </div>
-                    <span>Заглушить громкоговоритель</span>
                 </div>
             </div>
         </td>

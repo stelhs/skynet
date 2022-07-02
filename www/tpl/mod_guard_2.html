@@ -1,45 +1,46 @@
+<div style="margin: 10px">
+    <!-- START BLOCK : zone -->
+        <div id="zone_{name}"
+             style="border: solid 1px;
+                    width: max-content;
+                    margin: 0 0 0 30;
+                    display: block">
 
-<!-- START BLOCK : zone -->
-    <div id="zone_{name}"
-         style="border: solid 1px;
-                width: max-content;
-                margin: 0 0 0 30;
-                display: block">
+            <img style="width: 300px;
+                        display: inline-block;" src="{img_dir}/guard_zones/{name}.jpg">
 
-        <img style="width: 300px;
-                    display: inline-block;" src="{img_dir}/guard_zones/{name}.jpg">
+            <div style="display: inline-block;
+                        vertical-align: top;
+                        padding-left: 10px">
 
-        <div style="display: inline-block;
-                    vertical-align: top;
-                    padding-left: 10px">
+                <div style="font-size: 16px;
+                            font-weight: bold;
+                            padding: 10px 10px 5px 0px">{description}</div>
 
-            <div style="font-size: 16px;
-                        font-weight: bold;
-                        padding: 10px 10px 5px 0px">{description}</div>
-
-            <div style="padding: 0px 0px 0px 0px">
-                <div style="display: inline-block;
-                            vertical-align: middle">
-                    Готовность: <div id="led_zone_{name}_ready" class="led_big-red"></div>
+                <div style="padding: 0px 0px 0px 0px">
+                    <div style="display: inline-block;
+                                vertical-align: middle">
+                        Готовность: <div id="led_zone_{name}_ready" class="led_big-red"></div>
+                    </div>
                 </div>
-            </div>
 
-            <!-- START BLOCK : sensor -->
-                <div style="padding: 0px 0px 0px 20px">
-                    {sensor_name}:
-                    <div id="led_sensor_{sensor_name}_state" class="led_big-off"></div>
-                </div>
-            <!-- END BLOCK : sensor -->
+                <!-- START BLOCK : sensor -->
+                    <div style="padding: 0px 0px 0px 20px">
+                        {sensor_name}:
+                        <div id="led_sensor_{sensor_name}_state" class="led_big-off"></div>
+                    </div>
+                <!-- END BLOCK : sensor -->
 
-            <div style="padding: 10px 0px 0px 0px">
-                <div style="display: inline-block;
-                            vertical-align: middle">
-                    Блокировка:
+                <div style="padding: 10px 0px 0px 0px">
+                    <div style="display: inline-block;
+                                vertical-align: middle">
+                        Блокировка:
+                    </div>
+                    <a class="button_with_led" onclick="ui.guard.requestZoneLockUnlock('{name}')">
+                        <div id="led_zone_{name}_blocked" class="led_mini-off" style="margin: 15px"></div>
+                    </a>
                 </div>
-                <a class="button_with_led" onclick="ui.guard.requestZoneLockUnlock('{name}')">
-                    <div id="led_zone_{name}_blocked" class="led_mini-off" style="margin: 15px"></div>
-                </a>
             </div>
         </div>
-    </div>
-<!-- END BLOCK : zone -->
+    <!-- END BLOCK : zone -->
+</div>

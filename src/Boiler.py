@@ -23,8 +23,8 @@ class Boiler():
             resp = r.json()
             if resp['status'] != 'ok' and resp['reason']:
                 raise BoilerError(s.log,
-                        "Request '%s' to boiler '%s' return response with error: %s" % (
-                                op, s.name(), resp['reason']))
+                        "Request '%s' to boiler return response with error: %s" % (
+                                op, resp['reason']))
             return resp
         except requests.RequestException as e:
             raise BoilerError(s.log,

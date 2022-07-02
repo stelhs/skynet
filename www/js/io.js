@@ -3,7 +3,8 @@ class Io extends ModuleBase {
     constructor(ui) {
         super(ui, 'io');
         this.conf = ui.configs['io'];
-        this.pagesNumber = Object.keys(this.conf['boards']).length;
+        this.termosensorsConf = ui.configs['termosensors'];
+        this.pagesNumber = 1 + Object.keys(this.conf['boards']).length;
 
         this.ledsState = {};
         this.ledsBlocked = {};
@@ -11,6 +12,8 @@ class Io extends ModuleBase {
         this.ledsBlink = {};
         this.ledsEmulate = {};
         this.labelsBlink = {};
+
+        this.termoSensors = {};
     }
 
     title() {
@@ -22,18 +25,44 @@ class Io extends ModuleBase {
     }
 
     eventSources() {
-        return ['io'];
+        return ['io', 'termosensors'];
+    }
+
+    setTermoSensorsPageContent(content) {
+        this.setPageContent(1, content)
+    }
+
+    setMbioPageContent(mbioNum, content) {
+        this.setPageContent(1 + mbioNum, content)
     }
 
     init() {
         super.init();
+
+        var tpl = this.tplOpen('mod_io_1');
+        var num = 0;
+        tpl.assign('item_columns')
+        for (var name in this.termosensorsConf['sensors']) {
+            var info = this.termosensorsConf['sensors'][name];
+            num ++;
+
+            if (num > 4) {
+                tpl.assign('item_columns');
+                num = 1;
+            }
+
+            tpl.assign('ss_item',
+                       {'name': name,
+                        'description': info['description']})
+        }
+        this.setTermoSensorsPageContent(tpl.result())
 
         // init pages
         var pageNum = 0
         for (var ioName in this.conf['boards']) {
             pageNum += 1
             var boardInfo = this.conf['boards'][ioName];
-            var tpl = this.tplOpen('mod_mbio');
+            var tpl = this.tplOpen('mod_io_mbio');
             if ('in' in boardInfo) {
                 tpl.assign('inputs', {'io_name': ioName});
                 for (var portNum in boardInfo['in']) {
@@ -56,7 +85,7 @@ class Io extends ModuleBase {
                                 'io_name': ioName});
                 }
             }
-            this.setPageContent(pageNum, tpl.result())
+            this.setMbioPageContent(pageNum, tpl.result())
         }
 
         for (var ioName in this.conf['boards']) {
@@ -80,29 +109,43 @@ class Io extends ModuleBase {
             }
         }
 
+        for (var name in this.termosensorsConf['sensors']) {
+            this.termoSensors[name] = new SevenSeg("ss_" + name, "red", 3, 3)
+        }
+
         this.requestIoBlockedPortsInfo();
     }
 
     eventHandler(source, type, data) {
-        switch (type) {
-        case 'boardsBlokedPortsList':
-            this.updateBlokedPorts(data);
-            return;
+        switch (source) {
+        case 'io':
+            switch (type) {
+            case 'boardsBlokedPortsList':
+                this.updateBlokedPorts(data);
+                return;
 
-        case 'error':
-            this.logErr(data)
-            return
+            case 'portsStates':
+                this.updatePortStates(data)
+                return;
 
-        case 'info':
-            this.logInfo(data)
-            return
+            case 'error':
+                this.logErr(data)
+                return;
 
-        case 'ioStatus':
-            this.updatePortStates(data)
-            return
+            case 'info':
+                this.logInfo(data)
+                return;
 
-        default:
-            this.logErr("Incorrect event type: " + type)
+            default:
+                this.logErr("Incorrect event type: " + type)
+            }
+
+        case 'termosensors':
+            switch (type) {
+            case 'termosensorsUpdate':
+                this.updateTermoSensors(data);
+                return;
+            }
         }
     }
 
@@ -130,10 +173,18 @@ class Io extends ModuleBase {
             var state = parseInt(row['state']);
             var ledBlocked = this.ledsBlocked[pName];
 
-            ledBlocked.set('on');
+            if (row['isBlocked'])
+                ledBlocked.set('on');
+            else
+                ledBlocked.set('off');
             if (type == 'in')
                 this.ledsEmulate[pName].light(state);
         }
+    }
+
+    updateTermoSensors(data) {
+        for (var name in data)
+            this.termoSensors[name].set(data[name])
     }
 
     updatePortStates(data) {

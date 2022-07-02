@@ -135,7 +135,10 @@ class IoBoardBase():
 
                 state = key.strip()
                 pName = val.strip()
-                list[pName] = state
+                try:
+                    list[pName] = int(state)
+                except ValueError:
+                    list[pName] = 0
             return list
 
 

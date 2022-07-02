@@ -8,11 +8,12 @@ class Termosensors():
     def __init__(s, skynet):
         s.httpServer = skynet.httpServer
         s.conf = skynet.conf.termosensors
+        s.skynet = skynet
         s.sensors = []
 
         try:
-            for sName, sInfo in s.conf.items():
-                sensor = Termosensor(sName, sInfo['addr'],
+            for sName, sInfo in s.conf['sensors'].items():
+                sensor = Termosensor(s, sName, sInfo['addr'],
                                      sInfo['description'],
                                      sInfo['ioBoard'])
                 s.sensors.append(sensor)
@@ -22,7 +23,7 @@ class Termosensors():
 
         s.httpHandlers = Termosensors.HttpHandlers(s, s.httpServer)
         skynet.registerEventSubscriber('TermosensorsMbio', s.eventHandlerMbio,
-                                        ('mbio', ), ('ioStatus', ))
+                                        ('mbio', ), ('termoStates', ))
         skynet.registerEventSubscriber('TermosensorsBoiler', s.eventHandlerBoiler,
                                         ('boiler', ), ('boilerStatus', ))
 
@@ -38,25 +39,27 @@ class Termosensors():
         except KeyError as e:
             raise EventHandlerError(s.log,
                     "eventHandler of '%s' failed: field %s is absent in event data" % (s.name(), e)) from e
+        s.updateUi()
 
 
     def eventHandlerBoiler(s, source, type, data):
         try:
-            s.sensorByName('workshop_inside1').update(data['room_t'])
-            s.sensorByName('boiler_inside').update(data['boiler_t'])
-            s.sensorByName('boiler_inside_case').update(data['boiler_box_t'])
-            s.sensorByName('workshop_radiators').update(data['return_t'])
+            s.sensor('workshop_inside1').update(data['room_t'])
+            s.sensor('boiler_inside').update(data['boiler_t'])
+            s.sensor('boiler_inside_case').update(data['boiler_box_t'])
+            s.sensor('workshop_radiators').update(data['return_t'])
         except KeyError as e:
             raise EventHandlerError(s.log,
                     "eventHandler of '%s' failed: field %s is absent in event data" % (s.name(), e)) from e
+        s.updateUi()
 
 
-    def sensorByName(s, name):
+    def sensor(s, name):
         for sensor in s.sensors:
             if sensor.name() == name:
                 return sensor
         raise TermosensorNotRegistredError(s.log,
-                "sensorByName() failed: sensor name '%s' is not registred" % name)
+                "sensor() failed: sensor name '%s' is not registred" % name)
 
 
     def sensorByAddr(s, addr):
@@ -64,8 +67,17 @@ class Termosensors():
             if sensor.addr() == addr:
                 return sensor
         raise TermosensorNotRegistredError(s.log,
-                "sensorByName() failed: sensor addr '%s' is not registred" % addr)
+                "sensor() failed: sensor addr '%s' is not registred" % addr)
 
+
+    def updateUi(s):
+        data = {}
+        for sensor in s.sensors:
+            try:
+                data[sensor.name()] = sensor.t()
+            except TermosensorNoDataError:
+                pass
+        s.skynet.emitEvent('termosensors', 'termosensorsUpdate', data)
 
 
     class HttpHandlers():
@@ -89,27 +101,30 @@ class Termosensors():
 
 
 class Termosensor():
-    def __init__(s, name, addr, description, ioName):
+    def __init__(s, manager, name, addr, description, ioName):
+        s.manager = manager
+        s.conf = manager.conf
         s.log = Syslog('Termosensor_%s' % name)
         s._lock = threading.Lock()
         s._name = name
         s._addr = addr
         s._description = description
         s._ioName = ioName
+        s.updateTime = 0
 
 
     def update(s, t):
         with s._lock:
             s._t = t
-            s.updateTime = time.time()
+            s.updateTime = int(time.time())
 
 
     def t(s):
-        now = time.time()
+        now = int(time.time())
         with s._lock:
-            if (now - s.updateTime) > s.updateInterval:
+            if (now - s.updateTime) > s.conf['cachedInterval']:
                 raise TermosensorNoDataError(s.log,
-                        "termosensor is not updated more then %d seconds" % s.updateInterval)
+                        "termosensor is not updated more then %d seconds" % s.conf['cachedInterval'])
             return s._t
 
 
@@ -127,3 +142,7 @@ class Termosensor():
 
     def addr(s):
         return s._addr
+
+
+    def __repr__(s):
+        return "Termosensor:%s" % s.name()

@@ -57,9 +57,9 @@ h3
     margin: 5px 10px 5px 10px;
     width: 16px;
     height: 16px;
-    background-color: #f70;
+    background-color: #ffdbdb;
     border-radius: 50%;
-    box-shadow: 0 0 15px #fff, 0 0 15px #fff, 0 0 15px #fff;
+    box-shadow: 0 0 15px #ff0000, 0 0 15px #ff6c6c, 0 0 15px #c54545;
 }
 
 .led_big-off {
@@ -99,9 +99,9 @@ h3
     margin: 5px 10px 5px 10px;
     width: 12px;
     height: 12px;
-    background-color: #f70;
+    background-color: #ff0000;
     border-radius: 50%;
-    box-shadow: 0 0 15px #fff, 0 0 15px #fff, 0 0 15px #fff;
+    box-shadow: 0 0 15px #ffdada, 0 0 15px #ffffff, 0 0 15px #fffdfd;
 }
 
 .led_mini-off {
@@ -125,7 +125,7 @@ h3
 
 
 
-.seven_seg_big {
+.seven_seg_big_3 {
     border: solid 4px #2F4F4F;
     display: inline-block;
     height: 50px;
@@ -184,6 +184,20 @@ h3
     width: 250px;
     margin: 10px;
 }
+
+.status_box {
+    border: solid 2px #2f4f4f;
+    padding: 5 10;
+    background-color: black;
+    color: #36fd36;
+    font-family: monospace;
+    font-size: 18;
+    font-weight: 400;
+    width: 80;
+    text-align: center;
+    display: inline-block;
+}
+
 
 select {
     font-size: 22px;

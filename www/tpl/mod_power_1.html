@@ -1,0 +1,237 @@
+
+<table style="width: 100%;">
+    <tr>
+        <td style="width: 33%;
+                   vertical-align: top;
+                   padding: 10px">
+
+            <div style="border: solid 1px;
+                        width: max-content;
+                        margin: 0 0 10 0">
+
+                <div style="background-color: #335577;
+                            text-align: center;
+                            padding: 3 0">
+                    Питание в помещениях
+                </div>
+                <div style="padding: 0 20 10 20;">
+                    <table>
+                        <!-- START BLOCK : power_zone -->
+                            <tr>
+                                <td style="width: 200">Питание в "{description}": </td>
+                                <td>
+                                    <div id="led_power_zone_{name}" class="led_big-off" style="margin: 5px; vertical-align: middle"></div>
+                                    <a class="button_without_led_green" onclick="ui.power.requestToPowerSocketOn('{name}')"></a>
+                                    <a class="button_without_led_red" onclick="ui.power.requestToPowerSocketOff('{name}')"></a>
+                                </td>
+                            </tr>
+                        <!-- END BLOCK : power_zone -->
+                    </table>
+                </div>
+            </div>
+
+            <div style="border: solid 1px;
+                        width: max-content;
+                        margin: 0 0 10 0">
+                <div style="background-color: #335577;
+                            text-align: center;
+                            padding: 3 0">
+                    Управление уличным освещением
+                </div>
+                <div style="padding: 0 20 10 20;">
+                    <table>
+                        <!-- START BLOCK : lighter -->
+                            <tr>
+                                <td style="width: 200">Освещение в "{description}": </td>
+                                <td>
+                                    <div id="led_lighter_{name}" class="led_big-off" style="margin: 5px; vertical-align: middle"></div>
+                                    <a class="button_without_led_green" onclick="ui.power.requestToLighterOn('{name}')"></a>
+                                    <a class="button_without_led_red" onclick="ui.power.requestToLighterOff('{name}')"></a>
+                                </td>
+                            </tr>
+                        <!-- END BLOCK : lighter -->
+                        <tr>
+                            <td>
+                                Автоматическое управление освещением
+                            </td>
+                            <td>
+                                <a class="button_with_led" onclick="ui.power.requestToSwitchLightersAutomatic()" style="margin: 10 5">
+                                    <div id="led_auto_lighter_enabled" class="led_mini-off" style="margin: 15px"></div>
+                                </a>
+                            </td>
+                        </tr>
+
+                    </table>
+                </div>
+            </div>
+        </td>
+
+        <td style="width: 33%;
+                   vertical-align: top;
+                   padding: 10px">
+
+            <div style="margin: 0 0 5 0;
+                        width: max-content;
+                        border: solid 1px">
+
+                <div style="background-color: #335577;
+                            text-align: center;
+                            padding: 3 0">
+                    Дверные замки
+                </div>
+                <div style="padding: 0 20 10 20;">
+                    <table>
+                        <!-- START BLOCK : doorlock -->
+                            <tr>
+                                <td style="width: 200">Замок "{description}": </td>
+                                <td>
+                                    <div id="led_doorlock_{name}" class="led_big-off" style="margin: 5px; vertical-align: middle"></div>
+                                    <a class="button_without_led_green" onclick="ui.power.requestToDoorLocksOn('{name}')"></a>
+                                    <a class="button_without_led_red" onclick="ui.power.requestToDoorLocksOff('{name}')"></a>
+                                </td>
+                            </tr>
+                        <!-- END BLOCK : doorlock -->
+                    </table>
+                </div>
+            </div>
+
+            <div style="border: solid 1px;
+                        width: max-content;
+                        margin: 0 0 10 0">
+                <div style="background-color: #335577;
+                            text-align: center;
+                            padding: 3 0">
+                    Откатные ворота
+                </div>
+                <div style="padding: 10 20 10 20;">
+
+                    <div>
+                        <div id="led_gates_closed" class="led_big-green"></div>
+                        Ворота закрыты
+                    </div>
+
+                    <div>
+                        <div id="led_gates_power" class="led_big-green"></div>
+                        Питание автоматики ворот
+                    </div>
+
+                    <div style="display: inline-block;
+                                text-align: center">
+                        <div class="button_box_green">
+                            <a onclick="ui.power.requestToGatesOpen()"></a>
+                        </div>
+                        <div>Открыть</div>
+                    </div>
+
+                    <div style="display: inline-block;
+                                text-align: center">
+                        <div class="button_box_green">
+                            <a onclick="ui.power.requestToGatesOpenPedestrian()"></a>
+                        </div>
+                        <div>Открыть пешеходу</div>
+                    </div>
+
+                    <div style="display: inline-block;
+                                text-align: center">
+                        <div class="button_box_red">
+                            <a onclick="ui.power.requestToGatesClose()"></a>
+                        </div>
+                        <div>Закрыть</div>
+                    </div>
+
+                </div>
+            </div>
+
+
+        </td>
+
+
+        <td style="width: 33%;
+                   vertical-align: top;
+                   padding: 10px">
+
+            <div style="margin: 0 0 5 0;
+                        width: max-content;
+                        border: solid 1px">
+                <div style="background-color: #335577;
+                            text-align: center;
+                            padding: 3 0">
+                    Питание
+                </div>
+                <div style="padding: 10 20 10 20;">
+                    <table>
+                        <tr>
+                            <td style="width: 250px">
+                                Питание на вводе</td>
+                            <td><div id="led_power_ext" class="led_big-green"></div></td>
+                        </tr>
+                        <tr>
+                            <td>Питание на входе в ИБП</td>
+                            <td><div id="led_power_ups_in" class="led_big-green"></div></td>
+                        </tr>
+                        <tr>
+                            <td>Выходное питание ИБП</td>
+                            <td><div id="led_power_ups_out" class="led_big-green"></div></td>
+                        </tr>
+                        <tr>
+                            <td>Внутреннее питание ИБП 14vdc</td>
+                            <td><div id="led_power_ups_14vdc" class="led_big-green"></div></td>
+                        </tr>
+                        <tr>
+                            <td>Состояние ИБП</td>
+                            <td><div class="status_box" id="ups_state">---</div></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <div style="border: solid 1px;
+                        width: max-content;
+                        margin: 0 0 10 0">
+
+                <div style="background-color: #335577;
+                            text-align: center;
+                            padding: 3 0">
+                    Водоснабжение
+                </div>
+                <div style="padding: 0 20 10 20;">
+                    <table>
+                        <tr>
+                            <td style="width: 180">Питание насоса: </td>
+                            <td>
+                                <div id="led_water_pump_enabled" class="led_big-off" style="margin: 5px; vertical-align: middle"></div>
+                                <a class="button_without_led_green" onclick="ui.power.requestToWaterPumpOn()"></a>
+                                <a class="button_without_led_red" onclick="ui.power.requestToWaterPumpOff()"></a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Блокировка насоса: </td>
+                            <td>
+                                <a class="button_with_led" onclick="ui.power.requestToSwitchWaterSupplyBlocking()" style="margin: 10 5">
+                                    <div id="led_watersupply_pump_is_locked" class="led_mini-off" style="margin: 15px"></div>
+                                </a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Автоматика насоса: </td>
+                            <td>
+                                <a class="button_with_led" onclick="ui.power.requestToSwitchWaterSupplyAutomatic()" style="margin: 10 5">
+                                    <div id="led_watersupply_automatic_enabled" class="led_mini-off" style="margin: 15px"></div>
+                                </a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Низкое давление в контуре</td>
+                            <td><div id="led_watersupply_low_pressure" class="led_big-red"></div></td>
+                        </tr>
+                    </table>
+
+                </div>
+            </div>
+
+
+        </td>
+
+    </tr>
+</table>
+

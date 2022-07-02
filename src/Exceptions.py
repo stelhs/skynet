@@ -42,6 +42,9 @@ class IoBoardMbioError(IoBoardError): # MBIO board errors
 class IoPortCachedStateExpiredError(IoBoardError):
     pass
 
+class IoPortBlockedError(IoBoardError): # Port is software blocked
+    pass
+
 
 # Thermosensors errors
 
@@ -120,3 +123,23 @@ class GatesError(AppError):
 class GatesNoPowerError(GatesError):
     pass
 
+
+# Water supply
+
+class WaterSupplyError(AppError):
+    pass
+
+class PumpIsBlockedError(WaterSupplyError):
+    pass
+
+
+# UPS
+
+class UpsError(AppError):
+    pass
+
+class BatteryVoltageError(UpsError): # No actual voltage information
+    pass
+
+class ChargeCurrentError(UpsError): # No actual current information
+    pass

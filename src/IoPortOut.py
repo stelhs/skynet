@@ -9,15 +9,13 @@ class IoPortOut(IoPortBase):
 
     def up(s, force=False):
         if s.isBlocked() and not force:
-            s.log.info("port is blocked, set state to '1' was ignored")
-            return
+            raise IoPortBlockedError(s.log, "port is blocked, set state to '1' was ignored")
         s.setState(1)
 
 
     def down(s, force=False):
         if s.isBlocked() and not force:
-            s.log.info("port is blocked, set state to '0' was ignored")
-            return
+            raise IoPortBlockedError(s.log, "port is blocked, set state to '0' was ignored")
         s.setState(0)
 
 

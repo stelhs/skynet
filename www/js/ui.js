@@ -91,7 +91,8 @@ class Ui {
         this.boiler = new Boiler(this)
         this.io = new Io(this)
         this.guard = new Guard(this)
-        this.modules = [this.boiler, this.io, this.guard];
+        this.power = new Power(this)
+        this.modules = [this.power, this.boiler, this.io, this.guard];
 //        this.modules = [this.boiler];
 
 //        this.noSleep = new NoSleep('no_sleep_video');
@@ -134,7 +135,7 @@ class Ui {
             mod.init()
         }
 
-        this.switchModule('boiler');
+        this.switchModule('power');
     }
 
     register() {
@@ -485,6 +486,70 @@ class Led {
                 this.set('on');
             else
                 this.set('off');
+        }
+    }
+}
+
+class SevenSeg {
+    constructor(divName, color, digits=3, actualizeTimeoutSec=0) {
+        this.divName = divName;
+        this.div = $("#" + divName);
+        this.color = color
+        this.digits = digits
+        this.actualizeTimeout = actualizeTimeoutSec
+        this.wrkId = NaN;
+        this.set('');
+    }
+
+    set(val) {
+        this.div.sevenSegArray({
+            value: val,
+            digits: this.digits,
+            segmentOptions: {
+                colorOff: "#003500",
+                colorOn: this.color,
+                slant: 10
+            }
+        });
+
+        if (this.actualizeTimeout && val != '') {
+            if (this.wrkId) {
+                clearTimeout(this.wrkId)
+                this.wrkId = NaN;
+            }
+
+            var cb = function() {
+                this.set('')
+                this.wrkId = NaN;
+            }
+            this.wrkId = setTimeout(cb.bind(this), this.actualizeTimeout * 1000)
+        }
+    }
+}
+
+class StatusBar {
+    constructor(divName, actualizeTimeoutSec=0) {
+        this.divName = divName;
+        this.div = $$(divName);
+        this.actualizeTimeout = actualizeTimeoutSec
+        this.wrkId = NaN;
+        this.set('---');
+    }
+
+    set(val) {
+        this.div.innerHTML = val;
+
+        if (this.actualizeTimeout && val != '---') {
+            if (this.wrkId) {
+                clearTimeout(this.wrkId)
+                this.wrkId = NaN;
+            }
+
+            var cb = function() {
+                this.set('---')
+                this.wrkId = NaN;
+            }
+            this.wrkId = setTimeout(cb.bind(this), this.actualizeTimeout * 1000)
         }
     }
 }

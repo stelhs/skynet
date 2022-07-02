@@ -8,11 +8,14 @@ from Boiler import *
 from WaterSupply import *
 from DoorLocks import *
 from PowerSockets import *
+from Lighters import *
 from Gates import *
 from Speakerphone import *
 from Guard import *
 from Io import *
 from Ui import *
+from Cron import *
+from Ups import *
 
 
 
@@ -30,16 +33,19 @@ class Skynet():
                                   s.conf.skynet['http_port'],
                                   s.conf.skynet['http_www'])
 
+        s.cron = Cron()
         s.ts = Termosensors(s)
         s.io = Io(s)
+        s.ui = Ui(s)
         s.boiler = Boiler(s)
         s.waterSupply = WaterSupply(s)
         s.doorLocks = DoorLocks(s)
         s.powerSockets = PowerSockets(s)
-        s.gates = Gates(s)
+        s.lighters = Lighters(s)
         s.speakerphone = Speakerphone(s)
+        s.gates = Gates(s)
         s.guard = Guard(s)
-        s.ui = Ui(s)
+        s.ups = Ups(s)
 
         s.httpHandlers = Skynet.HttpHandlers(s, s.httpServer)
 
@@ -72,6 +78,7 @@ class Skynet():
 
     def destroy(s):
         s.httpServer.destroy()
+        s.ups.destroy()
 
 
     class EventSubscriber():
