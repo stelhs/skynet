@@ -30,6 +30,12 @@ class IoBoardError(IoError): # Base of all IO board errors
 class IoBoardPortNotFound(IoBoardError): # IO port is not found on the selected board IO
     pass
 
+class IoBoardPortNoLastStateError(IoBoardError): # IO output port has not last state
+    pass
+
+class IoBoardPortNotConfiguredError(IoBoardError): # IO port is not configured
+    pass
+
 class IoBoardEmulatorError(IoBoardError): # IO board emulator errors
     pass
 

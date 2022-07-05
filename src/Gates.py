@@ -30,7 +30,7 @@ class Gates():
         s.powerPort.subscribe('Gates', lambda state: s.uiUpdater.call())
         s.isClosedPort.subscribe('Gates', lambda state: s.uiUpdater.call())
 
-        s.uiUpdater = s.skynet.ui.periodicNotifier.register("gates", s.uiUpdateHandler, 2000)
+        s.uiUpdater = s.skynet.periodicNotifier.register("gates", s.uiUpdateHandler, 2000)
 
 
     def uiUpdateHandler(s):

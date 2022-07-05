@@ -17,7 +17,6 @@ class Ui():
                                        ('io', 'boiler', 'termosensors', 'power_sockets',
                                         'lighters', 'water_supply', 'gates', 'guard',
                                         'door_locks', 'ups'))
-        s.periodicNotifier = PeriodicNotifier()
 
 
     def eventHandler(s, source, evType, data):

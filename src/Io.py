@@ -6,11 +6,13 @@ from Syslog import *
 
 class Io():
     def __init__(s, skynet):
-        s.log = Syslog('Io')
+        s.skynet = skynet
         s.conf = skynet.conf.io
         s.httpServer = skynet.httpServer
         s.db = skynet.db
         s.tc = skynet.tc
+
+        s.log = Syslog('Io')
         s.storage = Storage('io.json')
 
         s.dbw = Io.Db(s, s.db)
@@ -19,13 +21,16 @@ class Io():
         s.skynet = skynet
         s.skynet.registerEventSubscriber('Io', s.eventHandler, ('mbio', ), ('portTriggered', ))
         s.skynet.registerEventSubscriber('Io', s.boardStatusHandler, ('mbio', ), ('portsStates', ))
+        s.chechTask = Task.setPeriodic('IoCheckTask', 30000, s.checkBoards)
+
+
+    def toAdmin(s, msg):
+        s.tc.toAdmin("Io: %s" % msg)
 
 
     def boardStatusHandler(s, source, type, data):
-        for row in data['ports']:
-            port = s.port(row['port_name'])
-            port.updateCachedState(row['state'])
-
+        board = s.board(data['io_name'])
+        board.updateCachedState(data['ports'])
         s.skynet.emitEvent('io', 'portsStates', data)
 
 
@@ -37,10 +42,10 @@ class Io():
             board = s.board(bName)
             port = board.portByPn(pn)
         except KeyError as e:
-            s.tc.toAdmin("IO event handler error: field %s is absent in 'portTriggered' evType" % e)
+            s.toAdmin("IO event handler error: field %s is absent in 'portTriggered' evType" % e)
             return
         except IoError as e:
-            s.tc.toAdmin("IO event handler error: board '%s' send event for " \
+            s.toAdmin("IO event handler error: board '%s' send event for " \
                          "pn:%d, state:%d but it can't be processing: %s" % (bName, pn, state, e))
             return
 
@@ -51,7 +56,7 @@ class Io():
             port.updateCachedState(state)
             s.emitEvent(port.name(), state)
         except AppError as e:
-            s.tc.toAdmin("IO event handler %s error: %s" % (port, e))
+            s.toAdmin("IO event handler %s error: %s" % (port, e))
 
 
     def emitEvent(s, portName, state):
@@ -70,6 +75,9 @@ class Io():
         except KeyError as e:
             raise IoPortNotFound(s.log,
                     "Configuration for IO failed in field %s" % e) from e
+
+        for board in s.boards():
+            board.init()
 
 
     def port(s, pName):
@@ -106,6 +114,20 @@ class Io():
         list = listIn
         list.extend(listOut)
         s.skynet.emitEvent('io', 'boardsBlokedPortsList', list)
+
+
+    def checkBoards(s):
+        now = int(time.time())
+        for board in s.boards():
+            if (now - board.updatedTime) > 5:
+                s.log.err('Board %s is absent' % board.name())
+                s.toAdmin('Плата %s недоступна' % board.name())
+
+
+
+    def destroy(s):
+        print("destroy Io")
+        s.storage.destroy()
 
 
     def __repr__(s):
@@ -145,13 +167,15 @@ class Io():
         def outPortStates(s, args, body, attrs, conn):
             ioName = args['io']
             try:
-                s.io.board(ioName)
+                board = s.io.board(ioName)
+                ports = board.ports()
             except IoBoardNotFound:
                 raise HttpHandlerError("Io board '%s' is not registred" % ioName)
 
             try:
-                ports = s.dbw.loadLastOutputState(ioName)
-                return {'ports': ports}
+                listStates = [{'pn': port.pn(),
+                               'state': port.lastState()} for port in ports if port.mode() == 'out']
+                return {'listStates': listStates}
             except DatabaseConnectorError as e:
                 raise HttpHandlerError('Database error: %s' % e)
 
@@ -224,23 +248,6 @@ class Io():
             s.io = io
             s.db = db
 
-
-        def loadLastOutputState(s, ioName):
-            query = "SELECT io_events.io_name, " \
-                            "io_events.port, " \
-                            "io_events.port_name, " \
-                            "io_events.state " \
-                    "FROM io_events " \
-                    "INNER JOIN " \
-                        '( SELECT io_name, port_name, max(id) as last_id ' \
-                         'FROM io_events ' \
-                         'GROUP BY io_name, port_name ) as b ' \
-                     'ON io_events.port_name = b.port_name AND ' \
-                        'io_events.io_name = b.io_name AND ' \
-                        'io_events.id = b.last_id ' \
-                     "WHERE io_events.io_name = '%s' " \
-                     'ORDER BY io_events.io_name, io_events.port_name' % ioName
-            return s.db.queryList(query)
 
 
 

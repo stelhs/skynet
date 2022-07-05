@@ -5,6 +5,7 @@ class IoPortOut(IoPortBase):
         super().__init__(io, board, 'out', pn, pName)
         s.log = Syslog('IoOutPort')
         s.db = IoPortOut.Db(s)
+        s._lastState = None
 
 
     def up(s, force=False):
@@ -20,14 +21,21 @@ class IoPortOut(IoPortBase):
 
 
     def setState(s, state):
-        s.board().outputSetState(s, state);
-        s.db.storeState(state)
+        s._lastState = state
+        s.board().outputSetState(s, state)
         s.updateCachedState(state)
+        s.db.storeState(state)
         s.io.emitEvent(s.name(), state)
 
 
+    def lastState(s):
+        if s._lastState == None:
+            raise IoBoardPortNoLastStateError(s.log, "port %s Last state is absent" % s.name())
+        return s._lastState
+
+
     def blink(s, d1, d2=0, number=1):
-        s.board().setBlink(s, d1, d2, number);
+        s.board().setBlink(s, d1, d2, number)
 
 
     def state(s):

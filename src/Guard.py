@@ -38,8 +38,16 @@ class Guard():
         s.watchingZones = s.storage.key('/watchingZones', [])
 
         s.voicePowerPort = s.io.port("voice_power")
-        s.uiUpdater = s.ui.periodicNotifier.register("guard", s.uiUpdateHandler, 2000)
+        s.uiUpdater = s.skynet.periodicNotifier.register("guard", s.uiUpdateHandler, 2000)
         s.voicePowerPort.subscribe("Guard", lambda state: s.uiUpdater.call())
+
+
+    def toSkynet(s, msg):
+        s.tc.toSkynet("Guard: %s" % msg)
+
+
+    def toAdmin(s, msg):
+        s.tc.toAdmin("Guard: %s" % msg)
 
 
     def createZones(s):
@@ -235,7 +243,11 @@ class Guard():
             s.doBoilerStandby()
 
         try:
-            s.tc.toSkynet("Охрана включена");
+            s.toSkynet("Охрана включена");
+
+            notWatchedZoneNames = [zone.description() for zone in s.zones() if zone.name() not in s.watchingZones.val]
+            notWatchedZonesText = "\n\t".join(notWatchedZoneNames)
+            s.toSkynet("Зоны не под охраной:\n\t%s" % notWatchedZonesText);
         except AppError as e:
             pass
 
@@ -243,7 +255,7 @@ class Guard():
             shortListText = "<br> ".join([row[0] for row in s.errors])
             try:
                 fullListText = ";\n ".join(["%s: %s\n\n" % row for row in s.errors])
-                s.tc.toSkynet("Охрана включена, но возникли ошибки: \n%s" % fullListText);
+                s.toSkynet("Охрана включена, но возникли ошибки: \n%s" % fullListText);
             except AppError:
                 pass
             raise GuardError(s.log, "Guard was started but any errors has occured: %s" % shortListText)
@@ -271,13 +283,13 @@ class Guard():
             shortListText = "<br> ".join([row[0] for row in s.errors])
             try:
                 fullListText = ";\n ".join(["%s: %s\n\n" % row for row in s.errors])
-                s.tc.toSkynet("Охрана отключена, но возникли ошибки: \n%s" % fullListText);
+                s.toSkynet("Охрана отключена, но возникли ошибки: \n%s" % fullListText);
             except AppError:
                 pass
             raise GuardError(s.log, "Guard was stopped but any errors has occured: %s" % shortListText)
 
         try:
-            s.tc.toSkynet("Охрана отключена");
+            s.toSkynet("Охрана отключена");
         except AppError as e:
             pass
 
@@ -364,11 +376,19 @@ class Guard():
                 'blockedZoneLeds': blockedZoneLeds,
                 'notAllReady': notAllReady,
                 'isStarted': s.isStarted(),
-                'blockedZonesExisted': blockedZonesExisted,
-                'publicSound': s.voicePowerPort.cachedState()}
+                'blockedZonesExisted': blockedZonesExisted}
+
+        try:
+            data['publicSound'] = s.voicePowerPort.cachedState()
+        except IoPortCachedStateExpiredError:
+            pass
 
         s.skynet.emitEvent('guard', 'statusUpdate', data)
 
+
+    def destroy(s):
+        print("destroy Guard")
+        s.storage.destroy()
 
 
     class HttpHandlers():
@@ -586,6 +606,10 @@ class Guard():
             return s._name
 
 
+        def description(s):
+            return s._desc
+
+
         def sensors(s):
             return s._sensors
 
@@ -693,7 +717,7 @@ class Guard():
             now = int(time.time())
             if (now - s._lastTrigTime.val) > s.guard.conf["sensorAutolock"]["unlockInterval"]:
                 s.unlock()
-                s.tc.toAdmin("Датчик %s из зоны %s автоматически разблокирован" % (
+                s.toAdmin("Датчик %s из зоны %s автоматически разблокирован" % (
                              s.name(), s.zone.name()))
 
             return s._blocked.val
@@ -756,7 +780,7 @@ class Guard():
             if s.isBlocked():
                 print("blocked")
                 if (now - s._lastNotificationTime.val) > s.guard.conf['sensorAutolock']['notoficationInterval']:
-                    s.tc.toAdmin("Заблокированный датчик продолжает генерировать события. " \
+                    s.toAdmin("Заблокированный датчик продолжает генерировать события. " \
                                  "Нагенерировано событий: %d" % s._trigCnt.val)
                     s._lastNotificationTime.set(now)
                 return
@@ -775,7 +799,7 @@ class Guard():
                     print("cnt > 5: %s" % s.name())
                     s.lock()
                     s.attemptToLockTimer = None
-                    s.tc.toAdmin("Датчик %s из зоны %s заблокирован, " \
+                    s.toAdmin("Датчик %s из зоны %s заблокирован, " \
                                  "потому что он сработал более 5ти раз за 5 минут" % (
                                  s.name(), s.zone.name()))
                     return

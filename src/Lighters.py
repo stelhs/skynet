@@ -25,7 +25,7 @@ class Lighters():
 
 
         s.skynet.cron.registerEveryMin('lighter_automatic', s.timeHandler)
-        s.uiUpdater = s.skynet.ui.periodicNotifier.register("lighters", s.uiUpdateHandler, 2000)
+        s.uiUpdater = s.skynet.periodicNotifier.register("lighters", s.uiUpdateHandler, 2000)
         s.initAutomtic()
 
 
@@ -119,6 +119,13 @@ class Lighters():
 
         data['automatic'] = s._enableAutomatic.val
         s.skynet.emitEvent('lighters', 'statusUpdate', data)
+
+
+    def destroy(s):
+        print("destroy Lighters")
+        s.storage.destroy()
+
+
 
 
     class HttpHandlers():

@@ -25,8 +25,9 @@ class Skynet():
         s.eventSubscribers = []
         s.log = Syslog("Skynet")
         s.conf = ConfSkynet()
-        s.db = DatabaseConnector(s.conf.db)
+        s.periodicNotifier = PeriodicNotifier()
         s.tc = TelegramClientSkynet(s, s.telegramHandler)
+        s.db = DatabaseConnector(s, s.conf.db)
         Task.setErrorCb(s.taskExceptionHandler)
 
         s.httpServer = HttpServer(s.conf.skynet['http_host'],
@@ -77,8 +78,15 @@ class Skynet():
 
 
     def destroy(s):
-        s.httpServer.destroy()
+        s.guard.destroy()
+        s.lighters.destroy()
+        s.waterSupply.destroy()
         s.ups.destroy()
+        s.io.destroy()
+        s.httpServer.destroy()
+        s.powerSockets.destroy()
+        s.doorLocks.destroy()
+        s.db.destroy()
 
 
     class EventSubscriber():

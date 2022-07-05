@@ -24,9 +24,15 @@ class IoBoardBase():
             raise IoBoardConfigureErr(s.log,
                     "Configuration for board IO '%s' error in field %s" % (ioName, e)) from e
 
+
         s.emulator = None
         if s.conf['emulate']:
             s.emulator = IoBoardBase.Emulator(s)
+
+
+    def init(s):
+        if s.emulator:
+            s.emulator.init()
 
 
     def name(s):
@@ -120,6 +126,11 @@ class IoBoardBase():
             s.loadOutputs()
 
 
+        def init(s):
+            s.updater = s.board.io.skynet.periodicNotifier.register(
+                            "mbio_%s_emulator", s.updateHandler, 2000)
+
+
         def parse(s, fName):
             list = {}
             c = fileGetContent(fName)
@@ -176,4 +187,20 @@ class IoBoardBase():
 
         def inputState(s, port):
             return s.inputs[port.name()]
+
+
+        def updateHandler(s):
+            ports = []
+            for port in s.board.ports():
+                if not port.name():
+                    continue
+
+                info = {'port_name': port.name(),
+                        'type': port.mode(),
+                        'state': port.state()}
+                ports.append(info)
+
+            data = {'io_name': s.board.name(), 'ports': ports}
+            s.board.io.boardStatusHandler('mbio', 'portsStates', data)
+
 

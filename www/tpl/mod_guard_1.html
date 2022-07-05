@@ -15,6 +15,18 @@
                             padding: 3 0">
                     Условия включения охраны
                 </div>
+
+                <div style="width: max-content;
+                            border: solid 0px white;
+                            padding: 10px 15px 10px 15px;
+                            margin: 5px">
+
+                    <div class="button_box_green">
+                        <a onclick="ui.guard.requestToStartGuard()"></a>
+                    </div>
+                    <span>Включить охрану</span>
+                </div>
+
                 <div style="padding: 0 20 10 20;">
 
                     <div style="margin: 10 0 0 20">
@@ -96,18 +108,6 @@
                         </div>
 
                     </div>
-
-
-                    <div style="width: max-content;
-                                border: solid 0px white;
-                                padding: 10px 15px 10px 15px;
-                                margin: 5px">
-
-                        <div class="button_box_green">
-                            <a onclick="ui.guard.requestToStartGuard()"></a>
-                        </div>
-                        <span>Включить охрану</span>
-                    </div>
                 </div>
             </div>
         </td>
@@ -128,6 +128,19 @@
                     Условия отключения охраны
                 </div>
                 <div style="padding: 0 20 10 20;">
+
+                    <div style="width: max-content;
+                                border: solid 0px white;
+                                padding: 10px 15px 10px 15px;
+                                margin: 5px">
+
+                        <div class="button_box_red">
+                            <a onclick="ui.guard.requestToStopGuard()"></a>
+                        </div>
+                        <span>Отключить охрану</span>
+
+                    </div>
+
 
                     <div style="margin: 15 0 0 20">
                         <label class="switch" style="vertical-align: middle">
@@ -156,18 +169,6 @@
                                 {description}
                             </div>
                         <!-- END BLOCK : guard_stopping_doorlock_power -->
-                    </div>
-
-                    <div style="width: max-content;
-                                border: solid 0px white;
-                                padding: 10px 15px 10px 15px;
-                                margin: 5px">
-
-                        <div class="button_box_red">
-                            <a onclick="ui.guard.requestToStopGuard()"></a>
-                        </div>
-                        <span>Отключить охрану</span>
-
                     </div>
                 </div>
             </div>

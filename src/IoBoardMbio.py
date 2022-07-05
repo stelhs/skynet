@@ -1,4 +1,4 @@
-import requests, simplejson
+import requests, simplejson, time
 from Exceptions import *
 from IoBoardBase import *
 
@@ -14,12 +14,22 @@ class IoBoardMbio(IoBoardBase):
                     "Configuration for mbio '%s' error in field %s" % (ioName, e)) from e
 
         s.log = Syslog('Mbio')
+        s.updatedTime = 0
         s.resetMbio()
 
         for port in s.ports():
+            if port.mode() == 'out':
+                port._lastState = 0
             try:
-                port.updateCachedState(bool(port.state()))
+                if port.state() == 'not_configured':
+                    continue
+                state = int(port.state())
+                port.updateCachedState(state)
+                if port.mode() == 'out':
+                    port._lastState = state
             except IoBoardError:
+                pass
+            except IoBoardPortNotConfiguredError:
                 pass
 
 
@@ -58,6 +68,8 @@ class IoBoardMbio(IoBoardBase):
             return s.emulator.outputState(port)
         try:
             ret = s.send('io/output_get', {'pn': port.pn()})
+            if ret['state'] == 'not_configured':
+                raise IoBoardPortNotConfiguredError(s.log, "Port %s is not configured" % port.name())
             return ret['state']
         except KeyError as e:
             raise IoBoardMbioError(s.log,
@@ -101,4 +113,10 @@ class IoBoardMbio(IoBoardBase):
         except IoBoardError:
             pass
 
+
+    def updateCachedState(s, portStateList):
+        s.updatedTime = int(time.time())
+        for row in portStateList:
+            port = s.io.port(row['port_name'])
+            port.updateCachedState(row['state'])
 

@@ -46,17 +46,17 @@
 
                         <tr>
                             <td>Состояние ИБП</td>
-                            <td><div class="status_box" id="power2_ups_state">---</div></td>
+                            <td><div class="status_box" id="power2_ups_state" style="width: 100">---</div></td>
                         </tr>
 
                         <tr>
                             <td>Напряжение на АКБ</td>
-                            <td><div class="status_box" id="battery_voltage">---</div></td>
+                            <td><div class="status_box" id="battery_voltage" style="width: 100">---</div></td>
                         </tr>
 
                         <tr>
                             <td>Ток заряда</td>
-                            <td><div class="status_box" id="charger_current">---</div></td>
+                            <td><div class="status_box" id="charger_current" style="width: 100">---</div></td>
                         </tr>
 
                     </table>
@@ -130,13 +130,13 @@
                             <td>Разряд:</td>
                             <td>
                                 <div id="led_charge_discharge" class="led_big-off" style="margin: 5px; vertical-align: middle"></div>
-                                <a class="button_without_led_green" onclick="ui.power.requestToSwitchToCharge()"></a>
-                                <a class="button_without_led_red" onclick="ui.power.requestToSwitchToDischarge()"></a>
+                                <a class="button_without_led_green" onclick="ui.power.requestToSwitchToDischarge()"></a>
+                                <a class="button_without_led_red" onclick="ui.power.requestToSwitchToCharge()"></a>
                             </td>
                         </tr>
 
                         <tr>
-                            <td>Питание реле АКБ:</td>
+                            <td>Отключатель питания реле АКБ:</td>
                             <td>
                                 <div id="led_main_relay_enabled" class="led_big-off" style="margin: 5px; vertical-align: middle"></div>
                                 <a class="button_without_led_green" onclick="ui.power.requestToBatteryRelayOn()"></a>
@@ -177,35 +177,35 @@
                         </tr>
                         <tr>
                             <td>Причина запуска:</td>
-                            <td><div class="status_box" id="charger_status_reason_started">---</div></td>
+                            <td><div class="status_box" id="charger_status_reason_started" style="width:100">---</div></td>
                         </tr>
                         <tr>
                             <td>Веремя начала заряда:</td>
-                            <td><div class="status_box" id="charger_status_start_time">---</div></td>
+                            <td><div class="status_box" id="charger_status_start_time" style="width:100">---</div></td>
                         </tr>
                         <tr>
                             <td>Веремя окончания заряда:</td>
-                            <td><div class="status_box" id="charger_status_end_time">---</div></td>
+                            <td><div class="status_box" id="charger_status_end_time" style="width:100">---</div></td>
                         </tr>
                         <tr>
                             <td>Начальное напряжение АКБ:</td>
-                            <td><div class="status_box" id="charger_status_start_voltage">---</div></td>
+                            <td><div class="status_box" id="charger_status_start_voltage" style="width:100">---</div></td>
                         </tr>
                         <tr>
                             <td>Время заряда 3A:</td>
-                            <td><div class="status_box" id="charger_status_max_current_duration">---</div></td>
+                            <td><div class="status_box" id="charger_status_max_current_duration" style="width:100">---</div></td>
                         </tr>
                         <tr>
                             <td>Время заряда 1.5A:</td>
-                            <td><div class="status_box" id="charger_status_middle_current_duration">---</div></td>
+                            <td><div class="status_box" id="charger_status_middle_current_duration" style="width:100">---</div></td>
                         </tr>
                         <tr>
                             <td>Время заряда 0.5A:</td>
-                            <td><div class="status_box" id="charger_status_min_current_duration">---</div></td>
+                            <td><div class="status_box" id="charger_status_min_current_duration" style="width:100">---</div></td>
                         </tr>
                         <tr>
                             <td>Сумарное время заряда:</td>
-                            <td><div class="status_box" id="charger_status_duration">---</div></td>
+                            <td><div class="status_box" id="charger_status_duration" style="width:100">---</div></td>
                         </tr>
                     </table>
                 </div>
@@ -228,27 +228,27 @@
                         </tr>
                         <tr>
                             <td>Причина запуска:</td>
-                            <td><div class="status_box" id="discharge_status_reason_started">---</div></td>
+                            <td><div class="status_box" id="discharge_status_reason_started" style="width:100">---</div></td>
                         </tr>
                         <tr>
                             <td>Веремя начала разряда:</td>
-                            <td><div class="status_box" id="discharge_status_start_time">---</div></td>
+                            <td><div class="status_box" id="discharge_status_start_time" style="width:100">---</div></td>
                         </tr>
                         <tr>
                             <td>Веремя окончания разряда:</td>
-                            <td><div class="status_box" id="discharge_status_end_time">---</div></td>
+                            <td><div class="status_box" id="discharge_status_end_time" style="width:100">---</div></td>
                         </tr>
                         <tr>
                             <td>Начальное напряжение АКБ:</td>
-                            <td><div class="status_box" id="discharge_status_start_voltage">---</div></td>
+                            <td><div class="status_box" id="discharge_status_start_voltage" style="width:100">---</div></td>
                         </tr>
                         <tr>
                             <td>Оконечное напряжение АКБ:</td>
-                            <td><div class="status_box" id="discharge_status_finished_voltage">---</div></td>
+                            <td><div class="status_box" id="discharge_status_finished_voltage" style="width:100">---</div></td>
                         </tr>
                         <tr>
                             <td>Время разряда:</td>
-                            <td><div class="status_box" id="discharge_status_duration">---</div></td>
+                            <td><div class="status_box" id="discharge_status_duration" style="width:100">---</div></td>
                         </tr>
                     </table>
                 </div>

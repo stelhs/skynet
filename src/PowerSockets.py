@@ -1,18 +1,20 @@
 from Exceptions import *
 from Syslog import *
 from HttpServer import *
+from Storage import *
 
 
 class PowerSockets():
     def __init__(s, skynet):
         s.skynet = skynet
-        s.log = Syslog('PowerSockets')
-        s.conf = skynet.conf.powerSockets
         s.io = skynet.io
+        s.conf = skynet.conf.powerSockets
         s.httpServer = skynet.httpServer
+        s.storage = Storage('power_sockets.json')
+        s.log = Syslog('PowerSockets')
         s._sockets = []
         s.httpHandlers = PowerSockets.HttpHandlers(s)
-        s.uiUpdater = s.skynet.ui.periodicNotifier.register("power_sockets", s.uiUpdateHandler, 2000)
+        s.uiUpdater = s.skynet.periodicNotifier.register("power_sockets", s.uiUpdateHandler, 2000)
 
         for name, inf in s.conf.items():
             dl = PowerSockets.PowerSocket(s, name, inf['description'], inf['port'])
@@ -44,6 +46,10 @@ class PowerSockets():
                 pass
         s.skynet.emitEvent('power_sockets', 'statusUpdate', data)
 
+
+    def destroy(s):
+        print('destroy PowerSockets')
+        s.storage.destroy()
 
 
     class HttpHandlers():
@@ -78,8 +84,14 @@ class PowerSockets():
             s.manager = manager
             s._name = name
             s._description = description
+            s._state = s.manager.storage.key('/lastState/%s' % name, False)
             s._port = s.manager.io.port(pName)
             s._port.subscribe("PowerSocket", lambda state: s.manager.uiUpdater.call())
+
+            if s._state.val:
+                s.up()
+            else:
+                s.down()
 
 
         def name(s):
@@ -88,10 +100,12 @@ class PowerSockets():
 
         def up(s):
             s._port.up()
+            s._state.set(True)
 
 
         def down(s):
             s._port.down()
+            s._state.set(False)
 
 
         def isDown(s):

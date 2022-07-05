@@ -34,8 +34,12 @@ class WaterSupply():
         s._enableAutomatic = s.storage.key('/automatic', True)
         s._isBlocked = s.storage.key('/blocked', False)
 
-        s.uiUpdater = s.skynet.ui.periodicNotifier.register("water_supply", s.uiUpdateHandler, 2000)
+        s.uiUpdater = s.skynet.periodicNotifier.register("water_supply", s.uiUpdateHandler, 2000)
 
+
+    def toAdmin(s, msg):
+        s.log.err("WaterSupply: %s" % msg)
+        s.tc.toAdmin("WaterSupply: %s" % msg)
 
 
     def uiUpdateHandler(s):
@@ -104,10 +108,13 @@ class WaterSupply():
 
 
     def buttPressedHandler(s, state):
-        if s.isStarted():
-            s.pumpStop()
-        else:
-            s.pumpRun()
+        try:
+            if s.isStarted():
+                s.pumpStop()
+            else:
+                s.pumpRun()
+        except IoError as e:
+            s.toAdmin('Can`t start/stop water by button pressed: %s' % e)
 
 
     def lowPressureHandler(s, state):
@@ -115,7 +122,16 @@ class WaterSupply():
             return
 
         s.restartAutoStop()
-        s.pumpRun()
+        try:
+            s.pumpRun()
+        except IoError as e:
+            s.toAdmin('Can`t start water by low pressure: %s' % e)
+
+
+    def destroy(s):
+        print("destroy WaterSupply")
+        s.storage.destroy()
+
 
 
     class HttpHandlers():

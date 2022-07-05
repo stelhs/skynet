@@ -32,8 +32,8 @@ class Boiler():
                             op, e)) from e
         except simplejson.errors.JSONDecodeError as e:
             raise BoilerError(s.log,
-                    "Response for '%s' from boiler '%s' parse error: %s. Response: %s" % (
-                            op, s.name, e, r.content)) from e
+                    "Response for '%s' from boiler parse error: %s. Response: %s" % (
+                            op, e, r.content)) from e
         except KeyError as e:
             raise BoilerError(s.log,
                     "Request '%s' to boiler return incorrect json: %s" % (

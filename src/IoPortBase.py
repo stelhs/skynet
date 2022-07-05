@@ -50,9 +50,6 @@ class IoPortBase():
 
 
     def cachedState(s):
-        if s.mode() == 'out':
-            return s._cachedState
-
         if (time.time() - s.updatedTime) > s.io.conf['cachedInterval']:
             raise IoPortCachedStateExpiredError(s.log, 'Cached state of port %s was expired' % s.name())
         return s._cachedState

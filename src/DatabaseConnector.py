@@ -6,18 +6,27 @@ from MySQL import *
 
 
 class DatabaseConnector():
-    def __init__(s, conf):
+    def __init__(s, skynet, conf):
+        s.skynet = skynet
+        s.conf = conf
+        s.tc = skynet.tc
         s.log = Syslog('DatabaseConnector')
         s.mysql = MySQL(conf)
         s.attempts = 0
         s.task = Task('DatabaseConnector', s.reconnector)
         s.task.start()
+        s._lock = threading.Lock()
+
+
+    def toAdmin(s, msg):
+        s.tc.toAdmin("DatabaseConnector: %s" % msg)
 
 
     def reconnector(s):
         while 1:
             if s.attempts > 30:
-                pass # TODO send to telegram
+                s.toAdmin('Can`t connect to MySQL server')
+                s.attempts = 0
 
             if not s.mysql.isClosed():
                 s.mysql.close()
@@ -48,7 +57,8 @@ class DatabaseConnector():
 
         while 1:
             try:
-                return s.mysql.query(query)
+                with s._lock:
+                    return s.mysql.query(query)
             except mysql.connector.errors.OperationalError as e:
                 s.log.info('Cant request query(): SQL query: "%s". Error: %s' % (query, e))
                 s.waitForConnect()
@@ -62,7 +72,8 @@ class DatabaseConnector():
 
         while 1:
             try:
-                return s.mysql.queryList(query)
+                with s._lock:
+                    return s.mysql.queryList(query)
             except mysql.connector.errors.OperationalError as e:
                 s.log.info('Cant request queryList(): SQL query: "%s". Error: %s' % (query, e))
                 s.waitForConnect()
@@ -70,13 +81,14 @@ class DatabaseConnector():
                 raise DatabaseConnectorError(s.log, "queryList() '%s' error: %s" % (query, e)) from e
 
 
-    def insert(s, tableName, dataWithComma, dataWithOutComma = []):
+    def insert(s, tableName, dataWithComma=[], dataWithOutComma=[]):
         if s.mysql.isClosed():
             s.waitForConnect()
 
         while 1:
             try:
-                return s.mysql.insert(tableName, dataWithComma, dataWithOutComma)
+                with s._lock:
+                    return s.mysql.insert(tableName, dataWithComma, dataWithOutComma)
             except mysql.connector.errors.OperationalError as e:
                 s.log.info('Cant insert to table "%s": Error: %s' % (tableName, e))
                 s.waitForConnect()
@@ -85,13 +97,14 @@ class DatabaseConnector():
                         "insert() in table %s error: %s" % (tableName, e)) from e
 
 
-    def update(s, tableName, id, dataWithComma, dataWithOutComma = []):
+    def update(s, tableName, id, dataWithComma=[], dataWithOutComma=[]):
         if s.mysql.isClosed():
             s.waitForConnect()
 
         while 1:
             try:
-                return s.mysql.update(tableName, id, dataWithComma, dataWithOutComma)
+                with s._lock:
+                    return s.mysql.update(tableName, id, dataWithComma, dataWithOutComma)
             except mysql.connector.errors.OperationalError as e:
                 s.log.info('Cant update table "%s": SQL query: "%s". Error: %s' % (tableName, query, e))
                 s.waitForConnect()
@@ -102,6 +115,10 @@ class DatabaseConnector():
                         "update() table %s, id:%d error: %s" % (tableName, id, e)) from e
 
 
+    def destroy(s):
+        print("destroy DatabaseConnector")
+        with s._lock:
+            s.mysql.close()
 
 
 

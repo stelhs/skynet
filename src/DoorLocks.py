@@ -1,17 +1,20 @@
 from Exceptions import *
 from Syslog import *
 from HttpServer import *
+from Storage import *
 
 class DoorLocks():
     def __init__(s, skynet):
         s.skynet = skynet
-        s.log = Syslog('DoorLocks')
-        s.conf = skynet.conf.doorLocks
         s.io = skynet.io
         s.httpServer = skynet.httpServer
+        s.conf = skynet.conf.doorLocks
+
+        s.log = Syslog('DoorLocks')
+        s.storage = Storage('door_locks.json')
         s._locks = []
         s.httpHandlers = DoorLocks.HttpHandlers(s)
-        s.uiUpdater = s.skynet.ui.periodicNotifier.register("door_locks", s.uiUpdateHandler, 2000)
+        s.uiUpdater = s.skynet.periodicNotifier.register("door_locks", s.uiUpdateHandler, 2000)
 
         for name, inf in s.conf.items():
             dl = DoorLocks.DoorLock(s, name, inf['description'], inf['port'])
@@ -37,6 +40,11 @@ class DoorLocks():
             except AppError:
                 pass
         s.skynet.emitEvent('door_locks', 'statusUpdate', data)
+
+
+    def destroy(s):
+        print('destroy DoorLocks')
+        s.storage.destroy()
 
 
     class HttpHandlers():
@@ -72,6 +80,12 @@ class DoorLocks():
             s._description = description
             s._port = s.manager.io.port(pName)
             s._port.subscribe("DoorLock", lambda state: s.manager.uiUpdater.call())
+            s._state = s.manager.storage.key('/lastState/%s' % name, False)
+
+            if s._state.val:
+                s.open()
+            else:
+                s.close()
 
 
         def doEventProcessing(s, port, state):
@@ -84,10 +98,12 @@ class DoorLocks():
 
         def open(s):
             s._port.up()
+            s._state.set(True)
 
 
         def close(s):
             s._port.down()
+            s._state.set(False)
 
 
         def isClosed(s):

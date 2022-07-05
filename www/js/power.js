@@ -96,7 +96,7 @@ class Power extends ModuleBase {
         this.ledsUps['ledHighCurrent'] = new Led('led_charger_current_max_enabled', 'green', 3);
         this.ledsUps['ledMiddleCurrent'] = new Led('led_charger_current_middle_enabled', 'green', 3);
         this.ledsUps['ledChargeDischarge'] = new Led('led_charge_discharge', 'red', 3);
-        this.ledsUps['ledBatteryRelayPort'] = new Led('led_main_relay_enabled', 'green', 3);
+        this.ledsUps['ledBatteryRelayPort'] = new Led('led_main_relay_enabled', 'red', 3);
         this.ledsUps['ledUpsBreakPowerPort'] = new Led('led_power_ups_disabled', 'red', 3);
         this.ledsUps['ledDischarging'] = new Led('led_discharge_status_activated', 'red', 3);
 
