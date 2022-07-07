@@ -25,20 +25,27 @@
                 <a class="button_switch_page" onclick="ui.{name}.switchNextPage()">-></a>
             <!-- END BLOCK : page_selector -->
 
+
             <a style="vertical-align: bottom;
-                       position: absolute;
-                       right: 50px"
-                class="button_admin_mode" onclick="ui.{name}.enableSuperMode()">
+                     float: right;
+                     margin-right: 10px;"
+                class="button_admin_mode" onclick="ui.logout()">
+                <img id="button_disable_super_mode"
+                     style="height: 40px;
+                            display: inline-block"
+                     src="{img_dir}/eye_off.png">
+            </a>
+
+            <a style="vertical-align: bottom;
+                     float: right;
+                     margin-right: 20px;"
+                class="button_admin_mode" onclick="ui.pinCodeDialog()">
                 <img id="button_enable_super_mode"
                      style="height: 40px;
                             display: block"
                      src="{img_dir}/eye_on.png">
-
-                <img id="button_disable_super_mode"
-                     style="height: 40px;
-                            display: none"
-                     src="{img_dir}/eye_off.png">
             </a>
+
         </div>
 
         <!-- START BLOCK : page -->

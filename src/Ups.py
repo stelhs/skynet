@@ -984,32 +984,38 @@ class Ups():
     class HttpHandlers():
         def __init__(s, ups):
             s.ups = ups
-            hs = ups.httpServer
-            hs.setReqHandler("GET", "/ups/switch_automatic", s.switchAutomatic)
+            s.skynet = ups.skynet
+            s.regUiHandler('w', "GET", "/ups/switch_automatic", s.switchAutomatic)
 
-            hs.setReqHandler("GET", "/ups/start_charger", s.chargerStart)
-            hs.setReqHandler("GET", "/ups/stop_charger", s.chargerStop)
+            s.regUiHandler('w', "GET", "/ups/start_charger", s.chargerStart)
+            s.regUiHandler('w', "GET", "/ups/stop_charger", s.chargerStop)
 
-            hs.setReqHandler("GET", "/ups/charger_hw_on", s.chargerHwOn)
-            hs.setReqHandler("GET", "/ups/charger_hw_off", s.chargerHwOff)
+            s.regUiHandler('w', "GET", "/ups/charger_hw_on", s.chargerHwOn)
+            s.regUiHandler('w', "GET", "/ups/charger_hw_off", s.chargerHwOff)
 
-            hs.setReqHandler("GET", "/ups/high_current_on", s.highCurrentOn)
-            hs.setReqHandler("GET", "/ups/high_current_off", s.highCurrentOff)
+            s.regUiHandler('w', "GET", "/ups/high_current_on", s.highCurrentOn)
+            s.regUiHandler('w', "GET", "/ups/high_current_off", s.highCurrentOff)
 
-            hs.setReqHandler("GET", "/ups/middle_current_on", s.middleCurrentOn)
-            hs.setReqHandler("GET", "/ups/middle_current_off", s.middleCurrentOff)
+            s.regUiHandler('w', "GET", "/ups/middle_current_on", s.middleCurrentOn)
+            s.regUiHandler('w', "GET", "/ups/middle_current_off", s.middleCurrentOff)
 
-            hs.setReqHandler("GET", "/ups/switch_to_charge", s.switchToCharge)
-            hs.setReqHandler("GET", "/ups/switch_to_discharge", s.switchToDischarge)
+            s.regUiHandler('w', "GET", "/ups/switch_to_charge", s.switchToCharge)
+            s.regUiHandler('w', "GET", "/ups/switch_to_discharge", s.switchToDischarge)
 
-            hs.setReqHandler("GET", "/ups/battery_relay_on", s.batteryRelayOn)
-            hs.setReqHandler("GET", "/ups/battery_relay_off", s.batteryRelayOff)
+            s.regUiHandler('w', "GET", "/ups/battery_relay_on", s.batteryRelayOn)
+            s.regUiHandler('w', "GET", "/ups/battery_relay_off", s.batteryRelayOff)
 
-            hs.setReqHandler("GET", "/ups/input_power_off", s.inputPowerOff)
-            hs.setReqHandler("GET", "/ups/input_power_on", s.inputPowerOn)
+            s.regUiHandler('w', "GET", "/ups/input_power_off", s.inputPowerOff)
+            s.regUiHandler('w', "GET", "/ups/input_power_on", s.inputPowerOn)
 
 
-        def switchAutomatic(s, args, body, attrs, conn):
+        def regUiHandler(s, permissionMode, method, url, handler,
+                                requiredFields=[], retJson=True):
+            s.skynet.ui.setReqHandler('ups', permissionMode, method,
+                                       url, handler, requiredFields, retJson)
+
+
+        def switchAutomatic(s, args, conn):
             if s.ups._automaticEnabled.val:
                 s.ups._automaticEnabled.set(False)
             else:
@@ -1017,7 +1023,7 @@ class Ups():
             s.ups.uiUpdater.call()
 
 
-        def chargerStart(s, args, body, attrs, conn):
+        def chargerStart(s, args, conn):
             with s.ups._lock:
                 if s.ups.isDischarge():
                     raise HttpHandlerError("Can't start charger: Input power has absent")
@@ -1027,7 +1033,7 @@ class Ups():
                     raise HttpHandlerError("Can't start charger: %s" % e)
 
 
-        def chargerStop(s, args, body, attrs, conn):
+        def chargerStop(s, args, conn):
             with s.ups._lock:
                 if not s.ups.charger.isStarted():
                     raise HttpHandlerError("Charger is not started")
@@ -1038,84 +1044,84 @@ class Ups():
 
 
 
-        def chargerHwOn(s, args, body, attrs, conn):
+        def chargerHwOn(s, args, conn):
             try:
                 s.ups.hw.enablePort.up()
             except IoError as e:
                 raise HttpHandlerError("Can't enable charger: %s" % e)
 
 
-        def chargerHwOff(s, args, body, attrs, conn):
+        def chargerHwOff(s, args, conn):
             try:
                 s.ups.hw.enablePort.down()
             except IoError as e:
                 raise HttpHandlerError("Can't disable charger: %s" % e)
 
 
-        def highCurrentOn(s, args, body, attrs, conn):
+        def highCurrentOn(s, args, conn):
             try:
                 s.ups.hw.highCurrentPort.up()
             except IoError as e:
                 raise HttpHandlerError("Can't upper io port high current: %s" % e)
 
 
-        def highCurrentOff(s, args, body, attrs, conn):
+        def highCurrentOff(s, args, conn):
             try:
                 s.ups.hw.highCurrentPort.down()
             except IoError as e:
                 raise HttpHandlerError("Can't lower io port high current: %s" % e)
 
 
-        def middleCurrentOn(s, args, body, attrs, conn):
+        def middleCurrentOn(s, args, conn):
             try:
                 s.ups.hw.middleCurrentPort.up()
             except IoError as e:
                 raise HttpHandlerError("Can't upper io port middle current: %s" % e)
 
 
-        def middleCurrentOff(s, args, body, attrs, conn):
+        def middleCurrentOff(s, args, conn):
             try:
                 s.ups.hw.middleCurrentPort.down()
             except IoError as e:
                 raise HttpHandlerError("Can't lower io port middle current: %s" % e)
 
 
-        def switchToCharge(s, args, body, attrs, conn):
+        def switchToCharge(s, args, conn):
             try:
                 s.ups.hw.chargeDischargePort.down()
             except IoError as e:
                 raise HttpHandlerError("Can't switch to charge: %s" % e)
 
 
-        def switchToDischarge(s, args, body, attrs, conn):
+        def switchToDischarge(s, args, conn):
             try:
                 s.ups.hw.chargeDischargePort.up()
             except IoError as e:
                 raise HttpHandlerError("Can't switch to discharge: %s" % e)
 
 
-        def batteryRelayOn(s, args, body, attrs, conn):
+        def batteryRelayOn(s, args, conn):
             try:
                 s.ups.hw.batteryRelayPort.up()
             except IoError as e:
                 raise HttpHandlerError("Can't enable battery relay: %s" % e)
 
 
-        def batteryRelayOff(s, args, body, attrs, conn):
+        def batteryRelayOff(s, args, conn):
             try:
                 s.ups.hw.batteryRelayPort.down()
             except IoError as e:
                 raise HttpHandlerError("Can't disable battery relay: %s" % e)
 
 
-        def inputPowerOff(s, args, body, attrs, conn):
+        def inputPowerOff(s, args, conn):
             try:
                 s.ups.hw.upsBreakPowerPort.up()
             except IoError as e:
                 raise HttpHandlerError("Can't break ups input power: %s" % e)
 
 
-        def inputPowerOn(s, args, body, attrs, conn):
+        def inputPowerOn(s, args, conn):
             try:
                 s.ups.hw.upsBreakPowerPort.down()
             except IoError as e:

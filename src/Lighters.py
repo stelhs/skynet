@@ -29,7 +29,6 @@ class Lighters():
         s.initAutomtic()
 
 
-
     def initAutomtic(s):
         if not s._enableAutomatic.val:
             return
@@ -131,13 +130,19 @@ class Lighters():
     class HttpHandlers():
         def __init__(s, manager):
             s.manager = manager
-            s.hs = manager.httpServer
-            s.hs.setReqHandler("GET", "/lighters/on", s.lighterOnHandler, ('name', ))
-            s.hs.setReqHandler("GET", "/lighters/off", s.lighterOffHandler, ('name', ))
-            s.hs.setReqHandler("GET", "/lighters/switch_automatic_control", s.autoControlSwitchHandler)
+            s.skynet = manager.skynet
+            s.regUiHandler('w', "GET", "/lighters/on", s.lighterOnHandler, ('name', ))
+            s.regUiHandler('w', "GET", "/lighters/off", s.lighterOffHandler, ('name', ))
+            s.regUiHandler('w', "GET", "/lighters/switch_automatic_control", s.autoControlSwitchHandler)
 
 
-        def lighterOnHandler(s, args, body, attrs, conn):
+        def regUiHandler(s, permissionMode, method, url, handler,
+                                requiredFields=[], retJson=True):
+            s.skynet.ui.setReqHandler('lighters', permissionMode, method,
+                                      url, handler, requiredFields, retJson)
+
+
+        def lighterOnHandler(s, args, conn):
             try:
                 name = args['name']
                 lighter = s.manager.lighter(name)
@@ -146,7 +151,7 @@ class Lighters():
                 raise HttpHandlerError("Can't turn on lighter %s: %s" % (name, e))
 
 
-        def lighterOffHandler(s, args, body, attrs, conn):
+        def lighterOffHandler(s, args, conn):
             try:
                 name = args['name']
                 lighter = s.manager.lighter(name)
@@ -155,7 +160,7 @@ class Lighters():
                 raise HttpHandlerError("Can't turn off lighter %s: %s" % (name, e))
 
 
-        def autoControlSwitchHandler(s, args, body, attrs, conn):
+        def autoControlSwitchHandler(s, args, conn):
             if s.manager._enableAutomatic.val:
                 s.manager._enableAutomatic.set(False)
             else:

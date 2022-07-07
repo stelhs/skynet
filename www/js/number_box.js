@@ -1,7 +1,7 @@
 
 class NumberBox {
     constructor(ui, resultCb, header, inputs) {
-        // inputs = [name, header, min, max]
+        // inputs = [name, header, min, max, color, hide]
         this.ui = ui;
         this.resultCb = resultCb
         this.header = header;
@@ -119,10 +119,15 @@ class NumberBox {
             var min = input[2];
             var max = input[3];
             var color = input[4];
+            var hide = input[5];
 
             var str = "";
             for (var i in this.digits[name]) {
                 var digit = this.digits[name][i];
+                if (hide) {
+                    str += '-';
+                    continue;
+                }
                 str += digit;
             }
 

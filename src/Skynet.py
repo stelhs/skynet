@@ -3,7 +3,7 @@ from ConfSkynet import *
 from DatabaseConnector import *
 from HttpServer import *
 from TelegramClientSkynet import *
-from Termosensors import *
+from Users import *
 from Boiler import *
 from WaterSupply import *
 from DoorLocks import *
@@ -15,6 +15,7 @@ from Guard import *
 from Io import *
 from Ui import *
 from Cron import *
+from Termosensors import *
 from Ups import *
 
 
@@ -34,10 +35,12 @@ class Skynet():
                                   s.conf.skynet['http_port'],
                                   s.conf.skynet['http_www'])
 
+        s.users = Users(s)
         s.cron = Cron()
         s.ts = Termosensors(s)
-        s.io = Io(s)
         s.ui = Ui(s)
+        s.io = Io(s)
+        s.ui.init()
         s.boiler = Boiler(s)
         s.waterSupply = WaterSupply(s)
         s.doorLocks = DoorLocks(s)
@@ -75,6 +78,7 @@ class Skynet():
     def taskExceptionHandler(s, task, errMsg):
         s.tc.sendToChat('stelhs',
                 "Skynet: task '%s' error:\n%s" % (task.name(), errMsg))
+
 
 
     def destroy(s):

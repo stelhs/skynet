@@ -157,7 +157,7 @@ class Boiler extends ModuleBase {
 
         var numberBox = new NumberBox(this.ui, cb.bind(this),
                                       'Установить температуру',
-                                      [['t', 't°', 2, 30, 'lime']]);
+                                      [['t', 't°', 2, 30, 'lime', false]]);
         this.ui.showDialogBox(numberBox)
     }
 

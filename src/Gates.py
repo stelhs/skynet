@@ -125,30 +125,38 @@ class Gates():
 
 
 
+
+
     class HttpHandlers():
         def __init__(s, gates):
             s.gates = gates
-            s.hs = gates.httpServer
-            s.hs.setReqHandler("GET", "/gates/open", s.openHandler)
-            s.hs.setReqHandler("GET", "/gates/close", s.closeHandler)
-            s.hs.setReqHandler("GET", "/gates/open_pedestrian", s.openPedestrianHandler)
+            s.skynet = gates.skynet
+            s.regUiHandler('w', "GET", "/gates/open", s.openHandler)
+            s.regUiHandler('w', "GET", "/gates/close", s.closeHandler)
+            s.regUiHandler('w', "GET", "/gates/open_pedestrian", s.openPedestrianHandler)
 
 
-        def openHandler(s, args, body, attrs, conn):
+        def regUiHandler(s, permissionMode, method, url, handler,
+                                requiredFields=[], retJson=True):
+            s.skynet.ui.setReqHandler('gates', permissionMode, method,
+                                      url, handler, requiredFields, retJson)
+
+
+        def openHandler(s, args, conn):
             try:
                 s.gates.open()
             except AppError as e:
                 raise HttpHandlerError("Can't open gates: %s" % e)
 
 
-        def closeHandler(s, args, body, attrs, conn):
+        def closeHandler(s, args, conn):
             try:
                 s.gates.close()
             except AppError as e:
                 raise HttpHandlerError("Can't close gates: %s" % e)
 
 
-        def openPedestrianHandler(s, args, body, attrs, conn):
+        def openPedestrianHandler(s, args, conn):
             try:
                 s.gates.openPed()
             except AppError as e:

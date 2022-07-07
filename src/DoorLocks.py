@@ -50,12 +50,18 @@ class DoorLocks():
     class HttpHandlers():
         def __init__(s, manager):
             s.manager = manager
-            s.hs = manager.httpServer
-            s.hs.setReqHandler("GET", "/doorlooks/on", s.doorlookOnHandler, ('name', ))
-            s.hs.setReqHandler("GET", "/doorlooks/off", s.doorlookOffHandler, ('name', ))
+            s.skynet = manager.skynet
+            s.regUiHandler('w', "GET", "/doorlooks/on", s.doorlookOnHandler, ('name', ))
+            s.regUiHandler('w', "GET", "/doorlooks/off", s.doorlookOffHandler, ('name', ))
 
 
-        def doorlookOnHandler(s, args, body, attrs, conn):
+        def regUiHandler(s, permissionMode, method, url, handler,
+                                requiredFields=[], retJson=True):
+            s.skynet.ui.setReqHandler('door_locks', permissionMode, method,
+                                       url, handler, requiredFields, retJson)
+
+
+        def doorlookOnHandler(s, args, conn):
             try:
                 name = args['name']
                 doorLock = s.manager.doorLock(name)
@@ -64,7 +70,7 @@ class DoorLocks():
                 raise HttpHandlerError("Can't open door lock %s: %s" % (name, e))
 
 
-        def doorlookOffHandler(s, args, body, attrs, conn):
+        def doorlookOffHandler(s, args, conn):
             try:
                 name = args['name']
                 doorLock = s.manager.doorLock(name)

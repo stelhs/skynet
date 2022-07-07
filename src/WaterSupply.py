@@ -137,28 +137,34 @@ class WaterSupply():
     class HttpHandlers():
         def __init__(s, ws):
             s.ws = ws
-            s.hs = ws.httpServer
-            s.hs.setReqHandler("GET", "/water_supply/pump_on", s.pumpOnHandler)
-            s.hs.setReqHandler("GET", "/water_supply/pump_off", s.pumpOffHandler)
-            s.hs.setReqHandler("GET", "/water_supply/switch_automatic_control", s.autoControlSwitchHandler)
-            s.hs.setReqHandler("GET", "/water_supply/switch_lock_unlock", s.lockUnlockSwitchHandler)
+            s.skynet = ws.skynet
+            s.regUiHandler('w', "GET", "/water_supply/pump_on", s.pumpOnHandler)
+            s.regUiHandler('w', "GET", "/water_supply/pump_off", s.pumpOffHandler)
+            s.regUiHandler('w', "GET", "/water_supply/switch_automatic_control", s.autoControlSwitchHandler)
+            s.regUiHandler('w', "GET", "/water_supply/switch_lock_unlock", s.lockUnlockSwitchHandler)
 
 
-        def pumpOnHandler(s, args, body, attrs, conn):
+        def regUiHandler(s, permissionMode, method, url, handler,
+                                requiredFields=[], retJson=True):
+            s.skynet.ui.setReqHandler('water_supply', permissionMode, method,
+                                      url, handler, requiredFields, retJson)
+
+
+        def pumpOnHandler(s, args, conn):
             try:
                 s.ws.pumpRun()
             except AppError as e:
                 raise HttpHandlerError("Can't start water pump: %s" % e)
 
 
-        def pumpOffHandler(s, args, body, attrs, conn):
+        def pumpOffHandler(s, args, conn):
             try:
                 s.ws.pumpStop()
             except AppError as e:
                 raise HttpHandlerError("Can't stop water pump: %s" % e)
 
 
-        def autoControlSwitchHandler(s, args, body, attrs, conn):
+        def autoControlSwitchHandler(s, args, conn):
             if s.ws._enableAutomatic.val:
                 s.ws._enableAutomatic.set(False)
             else:
@@ -166,7 +172,7 @@ class WaterSupply():
             s.ws.uiUpdater.call()
 
 
-        def lockUnlockSwitchHandler(s, args, body, attrs, conn):
+        def lockUnlockSwitchHandler(s, args, conn):
             if s.ws._isBlocked.val:
                 s.ws._isBlocked.set(False)
             else:

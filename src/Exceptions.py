@@ -12,6 +12,15 @@ class EventHandlerError(AppError):
     pass
 
 
+# Users
+
+class UserError(AppError): # Base of all User Errors
+    pass
+
+class UserNotRegistredError(UserError):
+    pass
+
+
 
 # IO boars errors
 
@@ -149,3 +158,6 @@ class BatteryVoltageError(UpsError): # No actual voltage information
 
 class ChargeCurrentError(UpsError): # No actual current information
     pass
+
+
+

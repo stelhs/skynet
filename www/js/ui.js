@@ -138,8 +138,12 @@ class Ui {
         this.switchModule('power');
     }
 
-    register() {
-        var c = syncAjaxReq('ui/subscribe');
+    register(login=NaN, password=NaN) {
+        var args = {}
+        if (login && password)
+            args = {'login': login,
+                    'password': password}
+        var c = syncAjaxReq('ui/subscribe', args);
         var resp = JSON.parse(c)
         this.subscriberId = resp.subscriber_id;
     }
@@ -176,8 +180,13 @@ class Ui {
                     return;
                 }
 
+                if (resp.errCode == 'subscriberAbsent') {
+                    this.loginDialog();
+                    return;
+                }
+
                 this.errorBoxShow('Ошибка',
-                                  'Ошибка сервера: status: ' + resp.status + '<br>' +
+                                  'Ошибка сервера ' + resp.errCode + ': status: ' + resp.status + '<br>' +
                                   'Причина: ' + resp.reason.replace('\n', '<br>'));
                 var retry = function () {
                     this.eventReceiver();
@@ -283,6 +292,64 @@ class Ui {
         var page = $$('module_' + modName + '_page_' + pageNum + '_content');
         page.innerHTML = content
     }
+
+
+    pinCodeDialog() {
+        var cb = function(results) {
+            var success = function(responceText) {
+                var resp = JSON.parse(responceText)
+                if (resp.status == 'error') {
+                    this.logErr("send PIN code error: " + resp.reason)
+                    return;
+                }
+                this.logInfo("PIN code success")
+            }
+
+            var error = function(reason, errCode) {
+                this.logErr('Can`t send PIN code: ' + reason)
+            }
+
+            var pin = results['pin'];
+            asyncAjaxReq('GET', 'ui/pin_code',
+                         {'pin': pin},
+                          success.bind(this), error.bind(this))
+        }
+
+        var numberBox = new NumberBox(this, cb.bind(this),
+                                      'PIN код',
+                                      [['pin', '', 0, 9999, 'lime', true]]);
+        this.showDialogBox(numberBox)
+    }
+
+    logout() {
+        var success = function(responceText) {
+            var resp = JSON.parse(responceText)
+            if (resp.status == 'error') {
+                this.logErr("Logout error: " + resp.reason)
+                return;
+            }
+            $.cookie("auth", null, { path: '/' });
+            this.logInfo("Logout success")
+        }
+
+        var error = function(reason, errCode) {
+            this.logErr('Logout error: ' + reason)
+        }
+
+        asyncAjaxReq('GET', 'ui/logout', {'subscriber_id': this.subscriberId},
+                      success.bind(this), error.bind(this))
+    }
+
+    loginDialog() {
+        var cb = function(login, password) {
+            this.register(login, password)
+            this.eventReceiver();
+        }
+
+        var loginBox = new LoginBox(this, cb.bind(this));
+        this.showDialogBox(loginBox)
+    }
+
 }
 
 

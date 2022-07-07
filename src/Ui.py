@@ -1,4 +1,5 @@
 import threading
+from Exceptions import *
 from HttpServer import *
 from PeriodicNotifier import *
 import os
@@ -8,24 +9,43 @@ import time
 
 class Ui():
     def __init__(s, skynet):
-        s.httpServer = skynet.httpServer
-        s.io = skynet.io
         s.skynet = skynet
+        s.httpServer = skynet.httpServer
+
+
+    def init(s):
+        s.io = s.skynet.io
+        s.users = s.skynet.users
         s.em = Ui.EventManager()
         s.httpHandlers = Ui.HttpHandlers(s)
-        skynet.registerEventSubscriber('Ui', s.eventHandler,
-                                       ('io', 'boiler', 'termosensors', 'power_sockets',
-                                        'lighters', 'water_supply', 'gates', 'guard',
-                                        'door_locks', 'ups'))
+        s.skynet.registerEventSubscriber('Ui', s.eventHandler,
+                                         ('io', 'boiler', 'termosensors', 'power_sockets',
+                                          'lighters', 'water_supply', 'gates', 'guard',
+                                          'door_locks', 'ups'))
+
 
 
     def eventHandler(s, source, evType, data):
         s.em.send(source, evType, data)
 
 
+    def setReqHandler(s, subsystem, permissionMode, method,
+                        url, handler, requiredFields=[], retJson=True):
+        def cb(args, conn):
+            user = s.users.userByHttpConn(conn)
+            if not user:
+                raise HttpHandlerError("User not authorized", 'loginError')
+            if not user.checkWebAccess(subsystem, permissionMode):
+                raise HttpHandlerError("Permission denied")
+            user.pinExtendAcceptance()
+            handler(args, conn)
+        s.httpServer.setReqHandler(method, url, cb, requiredFields, retJson)
+
+
     class EventManager():
         class Subsriber():
-            def __init__(s):
+            def __init__(s, user):
+                s.user = user
                 s.lock = threading.Lock()
                 s._events = []
                 s.id = str(uuid.uuid4().hex)
@@ -42,6 +62,8 @@ class Ui():
 
 
             def pushEvent(s, event):
+                if not s.user.checkWebAccess(event['source'], 'r'):
+                    return
                 with s.lock:
                     s._events.append(event)
 
@@ -91,11 +113,19 @@ class Ui():
             return subscriber.pullEvents()
 
 
-        def subscribe(s):
-            subscriber = Ui.EventManager.Subsriber()
+        def subscribe(s, user):
+            subscriber = Ui.EventManager.Subsriber(user)
             with s.lock:
                 s.subscribers.append(subscriber)
             return subscriber
+
+
+        def unSubscribe(s, id):
+            print('unSubscribe')
+            subscriber = s.subscriberById(id)
+            if not subscriber:
+                return
+            s.subscribers.remove(subscriber)
 
 
         def subscriberById(s, id):
@@ -113,20 +143,22 @@ class Ui():
                         s.subscribers.remove(subscriber)
 
 
-
     class HttpHandlers():
         def __init__(s, ui):
             s.ui = ui
             s.io = ui.io
             s.skynet = ui.skynet
+            s.users = s.skynet.users
             s.httpServer = ui.httpServer
             s.httpServer.setReqHandler("GET", "/ui/get_teamplates", s.teamplates)
             s.httpServer.setReqHandler("GET", "/ui/get_events", s.events)
             s.httpServer.setReqHandler("GET", "/ui/subscribe", s.subscribe)
             s.httpServer.setReqHandler("GET", "/ui/configs", s.configs)
+            s.httpServer.setReqHandler("GET", "/ui/logout", s.logout, ('subscriber_id',))
+            s.httpServer.setReqHandler("GET", "/ui/pin_code", s.pinCodePermit, ('pin',))
 
 
-        def teamplates(s, args, body, attrs, conn):
+        def teamplates(s, args, conn):
             tplDir = "%s/tpl" % s.httpServer.wwwDir()
             files = os.listdir(tplDir)
             list = {}
@@ -138,23 +170,37 @@ class Ui():
             return list
 
 
-        def subscribe(s, args, body, attrs, conn):
-            subscriber = s.ui.em.subscribe()
+        def subscribe(s, args, conn):
+            user = s.users.userByHttpConn(conn)
+            if not user:
+                try:
+                    login = args['login']
+                    password = args['password']
+                    user = s.users.userByLogin(login)
+                    if not user.checkPass(password):
+                        raise HttpHandlerError("User or login is incorrect", 'loginError')
+                    conn.setCookie('auth', user.secret())
+                except KeyError:
+                    raise HttpHandlerError("User or login is incorrect", 'loginError')
+                except UserNotRegistredError:
+                    raise HttpHandlerError("User or login is incorrect", 'loginError')
+
+            subscriber = s.ui.em.subscribe(user)
             return {'subscriber_id': subscriber.id}
 
 
-        def events(s, args, body, attrs, conn):
+        def events(s, args, conn):
             if not 'subscriber_id' in args:
                 raise HttpHandlerError("'subscriber_id' is absent", 'subscriberAbsent')
-
             subscriberId = args['subscriber_id']
+
             events = s.ui.em.events(conn.task(), subscriberId)
             if events == None:
                 raise HttpHandlerError("'subscriberId' %s is not registred" % subscriberId, 'subscriberNotRegistred')
             return {'events': events}
 
 
-        def configs(s, args, body, attrs, conn):
+        def configs(s, args, conn):
             return {"io": s.skynet.conf.io,
                     "guard": s.skynet.conf.guard,
                     "doorLocks": s.skynet.conf.doorLocks,
@@ -163,6 +209,29 @@ class Ui():
                     "lighters": s.skynet.conf.lighters,
                     "doorlocks": s.skynet.conf.doorLocks}
 
+
+        def logout(s, args, conn):
+            if not 'subscriber_id' in args:
+                raise HttpHandlerError("'subscriber_id' is absent", 'subscriberAbsent')
+            subscriberId = args['subscriber_id']
+
+            user = s.users.userByHttpConn(conn)
+            if not user:
+                raise HttpHandlerError("User not logined")
+            user.pinResetAcceptance()
+            conn.removeCookie('auth')
+            s.ui.em.unSubscribe(subscriberId)
+
+
+        def pinCodePermit(s, args, conn):
+            user = s.users.userByHttpConn(conn)
+            if not user:
+                raise HttpHandlerError("Can`t detect user")
+
+            pin = args['pin']
+            rc = user.pinAccept(pin)
+            if not rc:
+                raise HttpHandlerError("wrong pin code")
 
 
 

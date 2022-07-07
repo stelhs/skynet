@@ -39,25 +39,25 @@ class Boiler():
                     "Request '%s' to boiler return incorrect json: %s" % (
                             op, r.content)) from e
 
-
     def setTarget_t(s, t):
         s.send('boiler/set_target_t', {'t': t})
 
 
-    def boilerEnable(s, args, body, attrs, conn):
-        s.send('boiler/enable')
+    def start(s):
+        s.send('boiler/start')
 
 
-    def heaterEnable(s, args, body, attrs, conn):
+    def heaterEnable(s):
         s.send('boiler/fun_heater_enable')
 
 
-    def heaterDisable(s, args, body, attrs, conn):
+    def heaterDisable(s):
         s.send('boiler/fun_heater_disable')
 
 
     def uiErr(s, msg):
         s.skynet.emitEvent('boiler', 'error', msg)
+
 
 
     class Db():
@@ -83,49 +83,49 @@ class Boiler():
             s.boiler = boiler
             s.skynet = boiler.skynet
             s.dbw = dbw
-            s.httpServer = httpServer
-            s.httpServer.setReqHandler("GET", "/boiler/set_target_t",
-                                        s.setTarget_tHandler, ('t', ))
-            s.httpServer.setReqHandler("GET", "/boiler/boiler_start",
-                                        s.boilerStartHandler)
-            s.httpServer.setReqHandler("GET", "/boiler/heater_enable",
-                                        s.heaterEnableHandler)
-            s.httpServer.setReqHandler("GET", "/boiler/heater_disable",
-                                        s.heaterDisableHandler)
-            s.httpServer.setReqHandler("GET", "/boiler/request_fuel_compsumption_stat",
-                                        s.reqFuelConsumptionStatHandler)
+            s.regUiHandler('w', "GET", "/boiler/set_target_t", s.setTarget_tHandler, ('t', ))
+            s.regUiHandler('w', "GET", "/boiler/boiler_start", s.boilerStartHandler)
+            s.regUiHandler('w', "GET", "/boiler/heater_enable", s.heaterEnableHandler)
+            s.regUiHandler('w', "GET", "/boiler/heater_disable", s.heaterDisableHandler)
+            s.regUiHandler('r', "GET", "/boiler/request_fuel_compsumption_stat",
+                                  s.reqFuelConsumptionStatHandler)
 
 
-        def setTarget_tHandler(s, args, body, attrs, conn):
+        def regUiHandler(s, permissionMode, method, url, handler,
+                                requiredFields=[], retJson=True):
+            s.skynet.ui.setReqHandler('boiler', permissionMode, method,
+                                      url, handler, requiredFields, retJson)
+
+
+        def setTarget_tHandler(s, args, conn):
             try:
                 s.boiler.setTarget_t(args['t'])
             except BoilerError as e:
                 raise HttpHandlerError('Can`t set target temperature: %s' % e)
 
 
-
-        def boilerStartHandler(s, args, body, attrs, conn):
+        def boilerStartHandler(s, args, conn):
             try:
-                s.boiler.send('boiler/start')
+                s.boiler.start()
             except BoilerError as e:
                 raise HttpHandlerError('Can`t enable boiler: %s' % e)
 
 
-        def heaterEnableHandler(s, args, body, attrs, conn):
+        def heaterEnableHandler(s, args, conn):
             try:
-                s.boiler.send('boiler/fun_heater_enable')
+                s.boiler.heaterEnable()
             except BoilerError as e:
                 raise HttpHandlerError('Can`t enable heater: %s' % e)
 
 
-        def heaterDisableHandler(s, args, body, attrs, conn):
+        def heaterDisableHandler(s, args, conn):
             try:
-                s.boiler.send('boiler/fun_heater_disable')
+                s.boiler.heaterDisable()
             except BoilerError as e:
                 raise HttpHandlerError('Can`t disable heater: %s' % e)
 
 
-        def reqFuelConsumptionStatHandler(s, args, body, attrs, conn):
+        def reqFuelConsumptionStatHandler(s, args, conn):
             def report():
                 endYear = date.today().year;
                 startYear = endYear - 5;

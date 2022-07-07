@@ -238,9 +238,9 @@ class Io extends ModuleBase {
         }
         var numberBox = new NumberBox(this.ui, cb.bind(this),
                                       'Режим blink для порта ' + portName + '/' + ioName,
-                                      [['d1', 'Вкл. время, сек', 0.3, 9999, 'lime'],
-                                       ['d2', 'Выкл. время, сек', 0.3, 9999, 'lime'],
-                                       ['number', 'Количество', 1, 9999, 'red']]);
+                                      [['d1', 'Вкл. время, сек', 0.3, 9999, 'lime', false],
+                                       ['d2', 'Выкл. время, сек', 0.3, 9999, 'lime', false],
+                                       ['number', 'Количество', 1, 9999, 'red', false]]);
         this.ui.showDialogBox(numberBox)
     }
 

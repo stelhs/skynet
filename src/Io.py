@@ -15,8 +15,7 @@ class Io():
         s.log = Syslog('Io')
         s.storage = Storage('io.json')
 
-        s.dbw = Io.Db(s, s.db)
-        s.httpHandlers = Io.HttpHandlers(s, s.httpServer, s.dbw)
+        s.httpHandlers = Io.HttpHandlers(s)
         s.registerBoards()
         s.skynet = skynet
         s.skynet.registerEventSubscriber('Io', s.eventHandler, ('mbio', ), ('portTriggered', ))
@@ -142,20 +141,27 @@ class Io():
 
 
     class HttpHandlers():
-        def __init__(s, io, httpServer, dbw):
+        def __init__(s, io):
             s.io = io
-            s.dbw = dbw
-            s.hs = httpServer
+            s.skynet = io.skynet
+            s.hs = s.skynet.httpServer
             s.hs.setReqHandler("GET", "/io/port_config", s.config, ('io',))
             s.hs.setReqHandler("GET", "/io/out_port_states", s.outPortStates, ('io',))
-            s.hs.setReqHandler("GET", "/io/request_io_blocked_ports", s.requestIoBlockedPorts)
-            s.hs.setReqHandler("GET", "/io/port/toggle_lock_unlock", s.portLockUnlock, ('port_name',))
-            s.hs.setReqHandler("GET", "/io/port/toggle_blocked_state", s.portBlockedState, ('port_name',))
-            s.hs.setReqHandler("GET", "/io/port/toggle_out_state", s.portToggleOutState, ('port_name',))
-            s.hs.setReqHandler("GET", "/io/port/blink", s.portSetBlink, ('port_name', 'd1', 'd2', 'number'))
+
+            s.regUiHandler('r', "GET", "/io/request_io_blocked_ports", s.requestIoBlockedPorts)
+            s.regUiHandler('w', "GET", "/io/port/toggle_lock_unlock", s.portLockUnlock, ('port_name',))
+            s.regUiHandler('w', "GET", "/io/port/toggle_blocked_state", s.portBlockedState, ('port_name',))
+            s.regUiHandler('w', "GET", "/io/port/toggle_out_state", s.portToggleOutState, ('port_name',))
+            s.regUiHandler('w', "GET", "/io/port/blink", s.portSetBlink, ('port_name', 'd1', 'd2', 'number'))
 
 
-        def config(s, args, body, attrs, conn):
+        def regUiHandler(s, permissionMode, method, url, handler,
+                                requiredFields=[], retJson=True):
+            s.skynet.ui.setReqHandler('io', permissionMode, method,
+                                      url, handler, requiredFields, retJson)
+
+
+        def config(s, args, conn):
             try:
                 ioName = args['io']
                 conf = s.io.conf['boards'][ioName]
@@ -164,7 +170,7 @@ class Io():
             return {'config': conf}
 
 
-        def outPortStates(s, args, body, attrs, conn):
+        def outPortStates(s, args, conn):
             ioName = args['io']
             try:
                 board = s.io.board(ioName)
@@ -180,11 +186,11 @@ class Io():
                 raise HttpHandlerError('Database error: %s' % e)
 
 
-        def requestIoBlockedPorts(s, args, body, attrs, conn):
+        def requestIoBlockedPorts(s, args, conn):
             s.io.uiUpdateBlockedPorts()
 
 
-        def portLockUnlock(s, args, body, attrs, conn):
+        def portLockUnlock(s, args, conn):
             portName = args['port_name']
             try:
                 port = s.io.port(portName)
@@ -198,7 +204,7 @@ class Io():
                 raise HttpHandlerError("Can't toggle Lock/Unlock port %s: %s" % (portName ,e))
 
 
-        def portBlockedState(s, args, body, attrs, conn):
+        def portBlockedState(s, args, conn):
             portName = args['port_name']
             try:
                 port = s.io.port(portName)
@@ -213,7 +219,7 @@ class Io():
                 raise HttpHandlerError("Can't change blocked state for 'in' port %s: %s" % (portName, e))
 
 
-        def portToggleOutState(s, args, body, attrs, conn):
+        def portToggleOutState(s, args, conn):
             portName = args['port_name']
             try:
                 port = s.io.port(portName)
@@ -228,7 +234,7 @@ class Io():
                 raise HttpHandlerError("Can't change output state for 'out' port %s: %s" % (portName, e))
 
 
-        def portSetBlink(s, args, body, attrs, conn):
+        def portSetBlink(s, args, conn):
             portName = args['port_name']
             d1 = args['d1']
             d2 = args['d2']
@@ -242,11 +248,6 @@ class Io():
             except AppError as e:
                 raise HttpHandlerError("Can't set blink for 'out' port %s: %s" % (portName, e))
 
-
-    class Db():
-        def __init__(s, io, db):
-            s.io = io
-            s.db = db
 
 
 

@@ -394,16 +394,21 @@ class Guard():
     class HttpHandlers():
         def __init__(s, guard):
             s.guard = guard
-            hs = guard.httpServer
-            hs.setReqHandler("GET", "/guard/zone_lock_unlock", s.zoneLockUnlockHandler, ('zone_name', ))
-            hs.setReqHandler("GET", "/guard/obtain_settings", s.obtainSettingsHandler)
-            hs.setReqHandler("POST", "/guard/start_with_settings", s.startWithSettingsHandler)
-            hs.setReqHandler("POST", "/guard/stop_with_settings", s.stopWithSettingsHandler)
-            hs.setReqHandler("GET", "/guard/stop_public_sound", s.stopPublicSoundHandler)
+            s.skynet = guard.skynet
+            s.regUiHandler('w', "GET", "/guard/zone_lock_unlock", s.zoneLockUnlockHandler, ('zone_name', ))
+            s.regUiHandler('r', "GET", "/guard/obtain_settings", s.obtainSettingsHandler)
+            s.regUiHandler('w', "POST", "/guard/start_with_settings", s.startWithSettingsHandler)
+            s.regUiHandler('w', "POST", "/guard/stop_with_settings", s.stopWithSettingsHandler)
+            s.regUiHandler('w', "GET", "/guard/stop_public_sound", s.stopPublicSoundHandler)
 
 
+        def regUiHandler(s, permissionMode, method, url, handler,
+                                requiredFields=[], retJson=True):
+            s.skynet.ui.setReqHandler('guard', permissionMode, method,
+                                      url, handler, requiredFields, retJson)
 
-        def zoneLockUnlockHandler(s, args, body, attrs, conn):
+
+        def zoneLockUnlockHandler(s, args, conn):
             try:
                 zone = s.guard.zone(args['zone_name'])
                 if zone.isBlocked():
@@ -415,13 +420,14 @@ class Guard():
                 raise HttpHandlerError('Can`t switch zone lock/unlock: %s' % e)
 
 
-        def obtainSettingsHandler(s, args, body, attrs, conn):
+        def obtainSettingsHandler(s, args, conn):
             data = {'startSettings': s.guard.startSettings.asDict(),
                     'stopSettings': s.guard.stopSettings.asDict()}
             s.guard.skynet.emitEvent('guard', 'guardSettings', data)
 
 
-        def startWithSettingsHandler(s, args, body, attrs, conn):
+        def startWithSettingsHandler(s, args, conn):
+            body = conn.body()
             try:
                 data = json.loads(body)
                 s.guard.startSettings.fromDict(data)
@@ -441,7 +447,8 @@ class Guard():
                 raise HttpHandlerError("Guard was started but UI notifier error: %s" % e)
 
 
-        def stopWithSettingsHandler(s, args, body, attrs, conn):
+        def stopWithSettingsHandler(s, args, conn):
+            body = conn.body()
             try:
                 data = json.loads(body)
                 s.guard.stopSettings.fromDict(data)
@@ -461,7 +468,7 @@ class Guard():
                 raise HttpHandlerError("Guard was stopped but UI notifier error: %s" % e)
 
 
-        def stopPublicSoundHandler(s, args, body, attrs, conn):
+        def stopPublicSoundHandler(s, args, conn):
             try:
                 s.guard.speakerphone.shutUp()
             except AppError as e:

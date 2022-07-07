@@ -5,6 +5,7 @@ class ConfSkynet(ConfParser):
         super().__init__()
 
         s.addConfig('db', 'database.conf')
+        s.addConfig('users', 'users.conf')
         s.addConfig('io', 'io.conf')
         s.addConfig('boiler', 'boiler.conf')
         s.addConfig('skynet', 'skynet.conf')

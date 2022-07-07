@@ -55,12 +55,18 @@ class PowerSockets():
     class HttpHandlers():
         def __init__(s, manager):
             s.manager = manager
-            s.hs = manager.httpServer
-            s.hs.setReqHandler("GET", "/power_sockets/on", s.powerOnHandler, ('name', ))
-            s.hs.setReqHandler("GET", "/power_sockets/off", s.powerOffHandler, ('name', ))
+            s.skynet = manager.skynet
+            s.regUiHandler('w', "GET", "/power_sockets/on", s.powerOnHandler, ('name', ))
+            s.regUiHandler('w', "GET", "/power_sockets/off", s.powerOffHandler, ('name', ))
 
 
-        def powerOnHandler(s, args, body, attrs, conn):
+        def regUiHandler(s, permissionMode, method, url, handler,
+                                requiredFields=[], retJson=True):
+            s.skynet.ui.setReqHandler('power_sockets', permissionMode, method,
+                                       url, handler, requiredFields, retJson)
+
+
+        def powerOnHandler(s, args, conn):
             try:
                 name = args['name']
                 socket = s.manager.socket(name)
@@ -69,7 +75,7 @@ class PowerSockets():
                 raise HttpHandlerError("Can't power on for socket %s: %s" % (name, e))
 
 
-        def powerOffHandler(s, args, body, attrs, conn):
+        def powerOffHandler(s, args, conn):
             try:
                 name = args['name']
                 socket = s.manager.socket(name)
