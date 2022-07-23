@@ -27,8 +27,10 @@ class Skynet():
         s.log = Syslog("Skynet")
         s.conf = ConfSkynet()
         s.periodicNotifier = PeriodicNotifier()
-        s.tc = TelegramClientSkynet(s, s.telegramHandler)
+
+        s.tc = None
         s.db = DatabaseConnector(s, s.conf.db)
+        s.tc = TelegramClientSkynet(s)
         Task.setErrorCb(s.taskExceptionHandler)
 
         s.httpServer = HttpServer(s.conf.skynet['http_host'],
@@ -52,6 +54,7 @@ class Skynet():
         s.ups = Ups(s)
 
         s.httpHandlers = Skynet.HttpHandlers(s, s.httpServer)
+        s.TgHandlers = Skynet.TgHandlers(s)
 
 
     def registerEventSubscriber(s, name, cb, sources=(), evTypes=()):
@@ -68,11 +71,6 @@ class Skynet():
             except AppError as e:
                 s.tc.toAdmin("Error in event handler '%s' for source: '%s', " \
                              "evType: '%s': %s" % (sb.name, source, evType, e))
-
-
-    def telegramHandler(tc, text, msgId, date, fromName,
-                        fromId, chatId, chatType):
-        print("received %s" % text)
 
 
     def taskExceptionHandler(s, task, errMsg):
@@ -142,5 +140,16 @@ class Skynet():
 
             s.skynet.emitEvent(source, evType, data)
 
+
+    class TgHandlers():
+        def __init__(s, skynet):
+            s.skynet = skynet
+            s.tc = skynet.tc
+
+            s.tc.registerHandler('skynet', s.status, 'r', ('статус', 'status'))
+
+
+        def status(s, arg, replyFn):
+            replyFn("Делаю...")
 
 

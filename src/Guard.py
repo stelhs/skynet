@@ -31,7 +31,7 @@ class Guard():
         s.startSettings = Guard.StartSettings(s)
         s.stopSettings = Guard.StopSettings(s)
         s.httpHandlers = Guard.HttpHandlers(s)
-
+        s.TgHandlers = Guard.TgHandlers(s)
         s._state = s.storage.key('/state', 'sleep')
         s._stateTime = s.storage.key('/state_time', int(time.time()))
         s._stateId = s.storage.key('/stateId', 0)
@@ -223,75 +223,77 @@ class Guard():
 
 
     def start(s):
-        s.errors = []
+        with s._lock:
+            s.errors = []
 
-        s.doLampBlinkAbort()
-        s.doSpeakerphoneShutUp()
-        s.doSetReadyState()
+            s.doLampBlinkAbort()
+            s.doSpeakerphoneShutUp()
+            s.doSetReadyState()
 
-        if s.isStarted():
-            s.uiInfo('Updated guard settings')
-            s.doDoorLocksOnStart()
-            s.doPowerSocketsOnStart()
-            s.doWaterSupplyOnStart()
-        else:
-            s.doLampBlinkOnStart()
-            s.doGatesClose()
-            s.doDoorLocksOnStart()
-            s.doPowerSocketsOnStart()
-            s.doWaterSupplyOnStart()
-            s.doBoilerStandby()
+            if s.isStarted():
+                s.uiInfo('Updated guard settings')
+                s.doDoorLocksOnStart()
+                s.doPowerSocketsOnStart()
+                s.doWaterSupplyOnStart()
+            else:
+                s.doLampBlinkOnStart()
+                s.doGatesClose()
+                s.doDoorLocksOnStart()
+                s.doPowerSocketsOnStart()
+                s.doWaterSupplyOnStart()
+                s.doBoilerStandby()
 
-        try:
-            s.toSkynet("Охрана включена");
-
-            notWatchedZoneNames = [zone.description() for zone in s.zones() if zone.name() not in s.watchingZones.val]
-            notWatchedZonesText = "\n\t".join(notWatchedZoneNames)
-            s.toSkynet("Зоны не под охраной:\n\t%s" % notWatchedZonesText);
-        except AppError as e:
-            pass
-
-        if len(s.errors):
-            shortListText = "<br> ".join([row[0] for row in s.errors])
             try:
-                fullListText = ";\n ".join(["%s: %s\n\n" % row for row in s.errors])
-                s.toSkynet("Охрана включена, но возникли ошибки: \n%s" % fullListText);
-            except AppError:
+                s.toSkynet("Охрана включена");
+
+                notWatchedZoneNames = [zone.description() for zone in s.zones() if zone.name() not in s.watchingZones.val]
+                notWatchedZonesText = "\n\t".join(notWatchedZoneNames)
+                s.toSkynet("Зоны не под охраной:\n\t%s" % notWatchedZonesText);
+            except AppError as e:
                 pass
-            raise GuardError(s.log, "Guard was started but any errors has occured: %s" % shortListText)
 
-#        s.uiInfo('Guard ')
+            if len(s.errors):
+                shortListText = "<br> ".join([row[0] for row in s.errors])
+                try:
+                    fullListText = ";\n ".join(["%s: %s\n\n" % row for row in s.errors])
+                    s.toSkynet("Охрана включена, но возникли ошибки: \n%s" % fullListText);
+                except AppError:
+                    pass
+                raise GuardError(s.log, "Guard was started but any errors has occured: %s" % shortListText)
+
+    #        s.uiInfo('Guard ')
 
 
-#        $this->send_screnshots();
- #       $this->send_video_url($event_time);
+    #        $this->send_screnshots();
+     #       $this->send_video_url($event_time);
 
 
     def stop(s):
-        s.errors = []
-        s.doLampBlinkAbort()
-        s.doSpeakerphoneShutUp()
-        s.doSetSleepState()
-        s.doGatesOpen()
-        s.doLampBlinkOnStop()
-        s.doPowerSocketsOnStop()
-        s.doDoorLocksOnStop()
-        s.doWaterSupplyOnStop()
-        s.doBoilerReady()
+        with s._lock:
+            s.errors = []
+            s.doLampBlinkAbort()
+            s.doSpeakerphoneShutUp()
+            s.doSetSleepState()
+            s.doGatesOpen()
+            s.doLampBlinkOnStop()
+            s.doPowerSocketsOnStop()
+            s.doDoorLocksOnStop()
+            s.doWaterSupplyOnStop()
+            s.doBoilerReady()
 
-        if len(s.errors):
-            shortListText = "<br> ".join([row[0] for row in s.errors])
+            if len(s.errors):
+                shortListText = "<br> ".join([row[0] for row in s.errors])
+                try:
+                    fullListText = ";\n ".join(["%s: %s\n\n" % row for row in s.errors])
+                    s.toSkynet("Охрана отключена, но возникли ошибки: \n%s" % fullListText);
+                except AppError:
+                    pass
+                raise GuardError(s.log, "Guard was stopped but any errors has occured: %s" % shortListText)
+
             try:
-                fullListText = ";\n ".join(["%s: %s\n\n" % row for row in s.errors])
-                s.toSkynet("Охрана отключена, но возникли ошибки: \n%s" % fullListText);
-            except AppError:
+                s.toSkynet("Охрана отключена");
+            except AppError as e:
                 pass
-            raise GuardError(s.log, "Guard was stopped but any errors has occured: %s" % shortListText)
-
-        try:
-            s.toSkynet("Охрана отключена");
-        except AppError as e:
-            pass
 
 
     def isStarted(s):
@@ -387,8 +389,9 @@ class Guard():
 
 
     def destroy(s):
-        print("destroy Guard")
-        s.storage.destroy()
+        with s._lock:
+            print("destroy Guard")
+            s.storage.destroy()
 
 
     class HttpHandlers():
@@ -475,6 +478,31 @@ class Guard():
                 raise HttpHandlerError("Can't stop public sound: %s" % e)
 
 
+    class TgHandlers():
+        def __init__(s, guard):
+            s.guard = guard
+            s.tc = guard.tc
+
+            s.tc.registerHandler('guard', s.stop, 'w', ('отключи охрану', 'guard stop'))
+            s.tc.registerHandler('guard', s.start, 'w', ('включи охрану', 'guard start'))
+
+
+        def stop(s, arg, replyFn):
+            replyFn("Делаю...")
+            try:
+                s.guard.stop()
+            except AppError as e:
+                replyFn("Возникли ошибки: %s" % e)
+
+
+        def start(s, arg, replyFn):
+            replyFn("Делаю...")
+            try:
+                s.guard.start()
+            except AppError as e:
+                replyFn("Возникли ошибки: %s" % e)
+
+
     class StartSettings():
         def __init__(s, guard):
             s.guard = guard
@@ -538,6 +566,7 @@ class Guard():
             if 'doorLocks' in data:
                 for name, val in data['doorLocks'].items():
                     s.doorLocks[name].set(data['doorLocks'][name])
+
 
 
     class StopSettings():

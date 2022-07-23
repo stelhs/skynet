@@ -9,11 +9,13 @@ class Boiler():
     def __init__(s, skynet):
         s.log = Syslog('Boiler')
         s.skynet = skynet
+        s.tc = skynet.tc
         s.conf = skynet.conf.boiler
         s.httpServer = skynet.httpServer
         s.db = skynet.db
         s.dbw = Boiler.Db(s, s.db)
         s.httpHandlers = Boiler.HttpHandlers(s, s.httpServer, s.dbw)
+        s.TgHandlers = Boiler.TgHandlers(s)
 
 
     def send(s, op, args = {}):
@@ -154,5 +156,34 @@ class Boiler():
 
             Task.asyncRunSingle("requestFuelConsumption", report)
 
+
+
+    class TgHandlers():
+        def __init__(s, boiler):
+            s.boiler = boiler
+            s.tc = boiler.tc
+
+            s.tc.registerHandler('boiler', s.setFixed, 'w', ('еду',))
+            s.tc.registerHandler('boiler', s.setT, 'w', ('установи температуру', 'boiler set t'))
+
+
+        def setFixed(s, arg, replyFn):
+            fixedT = 17.0
+            try:
+                s.boiler.setTarget_t(fixedT)
+            except AppError as e:
+                return replyFn("Не удалось установить температуру: %s" % e)
+            replyFn("Установлена температура %.1f градусов" % fixedT)
+
+
+        def setT(s, arg, replyFn):
+            try:
+                t = float(arg)
+                s.boiler.setTarget_t(t)
+            except ValueError as e:
+                return replyFn("Не удалось понять какую температуру необходимо установить: %s" % e)
+            except AppError as e:
+                return replyFn("Не удалось установить температуру: %s" % e)
+            replyFn("Установлена температура %.1f градусов" % t)
 
 

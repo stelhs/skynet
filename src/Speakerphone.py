@@ -12,6 +12,7 @@ class Speakerphone():
         s.sp = None
         s.mutePublic = skynet.conf.skynet['mute_public']
         s.tc = skynet.tc
+        s.TgHandlers = Speakerphone.TgHandlers(s)
 
 
     def setVolume(s, vol):
@@ -106,6 +107,24 @@ class Speakerphone():
 
 
 
+    class TgHandlers():
+        def __init__(s, sp):
+            s.sp = sp
+            s.tc = sp.tc
+
+            s.tc.registerHandler('speakerphone', s.tell, 'w', ('скажи',))
+
+
+        def tell(s, arg, replyFn):
+            msg = arg.strip()
+            if not msg:
+                return replyFn("Не понятно что нужно сказать по громкоговорителю: %s" % arg)
+
+            try:
+                s.sp.speak(msg, 100)
+            except AppError as e:
+                return replyFn("Не удалось озвучить сообщение '%s': %s" % (msg, e))
+            replyFn("Озвучивается")
 
 
 

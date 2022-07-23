@@ -879,7 +879,7 @@ class Ups():
 
         class Subscriber():
             def __init__(s, hw, name, fn, eventSource):
-                s.jw = hw
+                s.hw = hw
                 s.name = name
                 s.fn = fn
                 s.eventSource = eventSource

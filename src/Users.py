@@ -41,7 +41,7 @@ class Users():
     def userByHttpConn(s, conn):
         user = None
         try:
-            user = s.skynet.users.userByIp(conn.remoteAddr())
+            user = s.userByIp(conn.remoteAddr())
         except HttpConnectionCookieError:
             pass
         except UserNotRegistredError:
@@ -56,6 +56,18 @@ class Users():
             except UserNotRegistredError:
                 pass
         return user
+
+
+    def userByTgId(s, tgUserId, tgUserName):
+        for user in s._users:
+            if user.tgChatId == tgUserId:
+                return user
+        raise UserNotRegistredError(s.log, 'User %s:%s is not registred' % (tgUserId, tgUserName))
+
+
+    def users(s):
+        return s._users
+
 
 
 
@@ -76,6 +88,10 @@ class User():
         s.webWritePin = None
         s.pinAcceptedTime = 0
 
+        s.tgWriteAccess = None
+        s.tgChatId = None
+        s.tgPrivateEnabled = False
+
         if 'web' in userConf:
             s.webReadAccess = userConf['web']['readAccess']
             s.webWriteAccess = userConf['web']['writeAccess']
@@ -92,6 +108,12 @@ class User():
                 s._uiLogin = userConf['web']['login']
                 s._uiUserPass = userConf['web']['pass']
                 s._secret = userConf['web']['secret']
+
+        if 'telegram' in userConf:
+            s.tgWriteAccess = userConf['telegram']['writeAccess']
+            s.tgChatId = userConf['telegram']['chatId']
+            if 'private' in userConf['telegram']:
+                s.tgPrivateEnabled = userConf['telegram']['private']
 
 
     def name(s):
@@ -201,6 +223,23 @@ class User():
 
         if mode == 'w':
             return checkRead() and (checkWrite() or ckeckWriteByPin())
+
+
+    def checkTgWriteAccess(s, subsystem):
+        if not s.tgWriteAccess:
+            return False
+        permit = False
+        for word in s.tgWriteAccess:
+            if word == 'all':
+                permit = True
+
+            if word == subsystem:
+                permit = True
+
+            if len(word) and word[0] == '-':
+                if word[1:] == subsystem:
+                    permit = False
+        return permit
 
 
     def __repr__(s):

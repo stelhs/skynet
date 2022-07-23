@@ -19,7 +19,10 @@ class DatabaseConnector():
 
 
     def toAdmin(s, msg):
-        s.tc.toAdmin("DatabaseConnector: %s" % msg)
+        if not s.tc:
+            s.tc = s.skynet
+        if s.tc:
+            s.tc.toAdmin("DatabaseConnector: %s" % msg)
 
 
     def reconnector(s):
@@ -94,7 +97,9 @@ class DatabaseConnector():
                 s.waitForConnect()
             except mysql.connector.errors.Error as e:
                 raise DatabaseConnectorError(s.log,
-                        "insert() in table %s error: %s" % (tableName, e)) from e
+                        "insert() in table %s error: %s. " \
+                        "dataWithComma: %s, dataWithOutComma: %s" % (
+                            tableName, e, dataWithComma, dataWithOutComma)) from e
 
 
     def update(s, tableName, id, dataWithComma=[], dataWithOutComma=[]):

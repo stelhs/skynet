@@ -15,6 +15,7 @@ class Lighters():
         s.httpServer = skynet.httpServer
         s._lighters = []
         s.httpHandlers = Lighters.HttpHandlers(s)
+        s.TgHandlers = Lighters.TgHandlers(s)
 
         s.storage = Storage('lighters.json')
         s._enableAutomatic = s.storage.key('/automatic', True)
@@ -168,6 +169,31 @@ class Lighters():
             s.manager.uiUpdater.call()
 
 
+    class TgHandlers():
+        def __init__(s, manager):
+            s.manager = manager
+            s.tc = manager.tc
+
+            s.tc.registerHandler('lighters', s.on, 'w', ('включи свет', 'lighters on'))
+            s.tc.registerHandler('lighters', s.off, 'w', ('отключи свет', 'lighters off'))
+
+
+        def on(s, arg, replyFn):
+            try:
+                s.manager.up()
+            except AppError as e:
+                return replyFn("Не удалось включить свет: %s" % e)
+            replyFn("Свет включён")
+
+
+        def off(s, arg, replyFn):
+            try:
+                s.manager.down()
+            except AppError as e:
+                return replyFn("Не удалось отключить свет: %s" % e)
+            replyFn("Свет выключён")
+
+
 
     class Lighter():
         def __init__(s, manager, name, description, pName):
@@ -196,3 +222,6 @@ class Lighters():
 
         def __repr__(s):
             return "Lighter:%s" % s.name()
+
+
+

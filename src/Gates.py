@@ -1,3 +1,4 @@
+import threading
 from Exceptions import *
 from Syslog import *
 from HttpServer import *
@@ -7,6 +8,7 @@ class Gates():
         s.skynet = skynet
         s.io = skynet.io
         s.tc = skynet.tc
+        s._lock = threading.Lock()
         s.log = Syslog("Gates")
         s.powerPort = s.io.port('gates_power')
         s.closePort = s.io.port('gates_close')
@@ -20,6 +22,7 @@ class Gates():
 
         s.httpServer = skynet.httpServer
         s.httpHandlers = Gates.HttpHandlers(s)
+        s.TgHandlers = Gates.TgHandlers(s)
 
         s.lastRemoteButton = 'open'
 
@@ -47,26 +50,29 @@ class Gates():
 
 
     def open(s):
-        if not s.isPowerEnabled():
-            raise GatesNoPowerError(s.log, "Can't open gates. Power is absent")
-        s.closePort.down()
-        s.openPort.blink(1000, 500, 1)
+        with s._lock:
+            if not s.isPowerEnabled():
+                raise GatesNoPowerError(s.log, "Can't open gates. Power is absent")
+            s.closePort.down()
+            s.openPort.blink(1000, 500, 1)
 
 
     def openPed(s):
-        if not s.isPowerEnabled():
-            raise GatesNoPowerError(s.log, "Can't open gates. Power is absent")
-        s.closePort.down()
-        s.openPedPort.blink(1000, 500, 1)
+        with s._lock:
+            if not s.isPowerEnabled():
+                raise GatesNoPowerError(s.log, "Can't open gates. Power is absent")
+            s.closePort.down()
+            s.openPedPort.blink(1000, 500, 1)
 
 
     def close(s):
-        if not s.isPowerEnabled():
-            raise GatesNoPowerError(s.log, "Can't open gates. Power is absent")
-        if s.isClosed():
-            return
-        s.openPort.down()
-        s.closePort.blink(1000, 500, 1)
+        with s._lock:
+            if not s.isPowerEnabled():
+                raise GatesNoPowerError(s.log, "Can't open gates. Power is absent")
+            if s.isClosed():
+                return
+            s.openPort.down()
+            s.closePort.blink(1000, 500, 1)
 
 
     def isClosed(s):
@@ -162,4 +168,37 @@ class Gates():
             except AppError as e:
                 raise HttpHandlerError("Can't open gates for pedestrian : %s" % e)
 
+
+    class TgHandlers():
+        def __init__(s, gates):
+            s.gates = gates
+            s.tc = gates.tc
+
+            s.tc.registerHandler('gates', s.open, 'w', ('открой ворота', 'gates open'))
+            s.tc.registerHandler('gates', s.openPed, 'w', ('открой пешеходу', 'gates open ped'))
+            s.tc.registerHandler('gates', s.close, 'w', ('закрой ворота', 'gates close'))
+
+
+        def open(s, arg, replyFn):
+            try:
+                s.gates.open()
+            except AppError as e:
+                return replyFn("Не удалось открыть ворота: %s" % e)
+            replyFn("Ворота открываются")
+
+
+        def openPed(s, arg, replyFn):
+            try:
+                s.gates.openPed()
+            except AppError as e:
+                return replyFn("Не удалось открыть ворота: %s" % e)
+            replyFn("Ворота открываются")
+
+
+        def close(s, arg, replyFn):
+            try:
+                s.gates.close()
+            except AppError as e:
+                return replyFn("Не удалось закрыть ворота: %s" % e)
+            replyFn("Ворота закрываются")
 
