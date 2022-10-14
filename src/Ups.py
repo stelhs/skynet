@@ -2,7 +2,7 @@ import threading
 from Exceptions import *
 from Syslog import *
 from HttpServer import *
-from Storage import *
+from SkynetStorage import *
 
 
 class Ups():
@@ -19,7 +19,7 @@ class Ups():
         s.noVoltage = False
         s.upsTask = Task.setPeriodic('ups', 1000, s.doControlUps)
 
-        s.storage = Storage('ups.json')
+        s.storage = SkynetStorage(skynet, 'ups.json')
         s._mode = s.storage.key('/mode', 'charge') # 'charge', 'discharge', 'waiting', 'stopped'
         s._automaticEnabled = s.storage.key('/charger/automatic_enabled', True)
 

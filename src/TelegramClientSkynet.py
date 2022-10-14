@@ -36,16 +36,19 @@ class TelegramClientSkynet(TelegramClient):
         except UserNotRegistredError:
             return reply("Вы не зарегистрированы")
 
-        s.db.insert('telegram_msg',
-                    {'update_id': updateId,
-                     'msg_id': msgId,
-                     'date': date,
-                     'from_name': fromName,
-                     'from_id': fromId,
-                     'chat_id': chatId,
-                     'chat_name': chatName,
-                     'chat_type': chatType,
-                     'text': text})
+        try:
+            s.db.insert('telegram_msg',
+                        {'update_id': updateId,
+                         'msg_id': msgId,
+                         'date': date,
+                         'from_name': fromName,
+                         'from_id': fromId,
+                         'chat_id': chatId,
+                         'chat_name': chatName,
+                         'chat_type': chatType,
+                         'text': text})
+        except DatabaseConnectorError as e:
+            pass
 
         words = text.split()
         if not len(words):

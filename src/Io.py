@@ -2,6 +2,7 @@ from Exceptions import *
 from IoBoardMbio import *
 from HttpServer import *
 from Syslog import *
+from SkynetStorage import *
 
 
 class Io():
@@ -13,7 +14,7 @@ class Io():
         s.tc = skynet.tc
 
         s.log = Syslog('Io')
-        s.storage = Storage('io.json')
+        s.storage = SkynetStorage(skynet, 'io.json')
 
         s.httpHandlers = Io.HttpHandlers(s)
         s.registerBoards()
@@ -60,6 +61,17 @@ class Io():
 
     def emitEvent(s, portName, state):
         port = s.port(portName)
+
+        try:
+            s.db.insert('io_events',
+                        {'mode': 'in',
+                         'port_name': port.name(),
+                         'io_name': port.board().name(),
+                         'port': port.pn(),
+                         'state': state});
+        except DatabaseConnectorError as e:
+            pass
+
         port.emitEvent(state)
 
 
@@ -247,8 +259,6 @@ class Io():
                 port.blink(d1, d2, number)
             except AppError as e:
                 raise HttpHandlerError("Can't set blink for 'out' port %s: %s" % (portName, e))
-
-
 
 
 

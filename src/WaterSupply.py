@@ -1,7 +1,7 @@
 import threading
 from Exceptions import *
 from Syslog import *
-from Storage import *
+from SkynetStorage import *
 from Task import *
 from HttpServer import *
 
@@ -30,7 +30,7 @@ class WaterSupply():
         s.pumpPort.subscribe("WaterSupply", lambda state: s.uiUpdater.call())
         s.lowPressureSense.subscribe("WaterSupply", lambda state: s.uiUpdater.call())
 
-        s.storage = Storage('water_supply.json')
+        s.storage = SkynetStorage(skynet, 'water_supply.json')
         s._enableAutomatic = s.storage.key('/automatic', True)
         s._isBlocked = s.storage.key('/blocked', False)
 

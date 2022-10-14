@@ -1,7 +1,7 @@
 from Exceptions import *
 from Syslog import *
 from HttpServer import *
-from Storage import *
+from SkynetStorage import *
 
 class DoorLocks():
     def __init__(s, skynet):
@@ -11,7 +11,7 @@ class DoorLocks():
         s.conf = skynet.conf.doorLocks
 
         s.log = Syslog('DoorLocks')
-        s.storage = Storage('door_locks.json')
+        s.storage = SkynetStorage(skynet, 'door_locks.json')
         s._locks = []
         s.httpHandlers = DoorLocks.HttpHandlers(s)
         s.uiUpdater = s.skynet.periodicNotifier.register("door_locks", s.uiUpdateHandler, 2000)

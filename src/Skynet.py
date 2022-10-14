@@ -20,7 +20,6 @@ from Ups import *
 
 
 
-
 class Skynet():
     def __init__(s):
         s.eventSubscribers = []
@@ -127,7 +126,7 @@ class Skynet():
             s.httpServer.setReqHandler("POST", "/send_event", s.eventHandler)
 
 
-        def eventHandler(s, args, body, attrs, conn):
+        def eventHandler(s, args, conn):
             try:
                 dt = json.loads(body)
                 source = dt['source']
@@ -151,5 +150,6 @@ class Skynet():
 
         def status(s, arg, replyFn):
             replyFn("Делаю...")
+
 
 

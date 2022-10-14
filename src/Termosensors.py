@@ -87,7 +87,7 @@ class Termosensors():
             s.httpServer.setReqHandler("GET", "/io/termosensor_config", s.termosensor, ['io'])
 
 
-        def termosensor(s, args, body, attrs, conn):
+        def termosensor(s, args, conn):
             ioBoardName = args['io']
             list = []
             for sensor in s.ts.sensors:

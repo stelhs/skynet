@@ -2,7 +2,7 @@ import datetime
 from Exceptions import *
 from Syslog import *
 from HttpServer import *
-from Storage import *
+from SkynetStorage import *
 
 
 class Lighters():
@@ -17,7 +17,7 @@ class Lighters():
         s.httpHandlers = Lighters.HttpHandlers(s)
         s.TgHandlers = Lighters.TgHandlers(s)
 
-        s.storage = Storage('lighters.json')
+        s.storage = SkynetStorage(skynet, 'lighters.json')
         s._enableAutomatic = s.storage.key('/automatic', True)
 
         for name, inf in s.conf['lighters'].items():

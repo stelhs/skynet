@@ -1,7 +1,7 @@
 import threading, time, json
 from Exceptions import *
 from Task import *
-from Storage import *
+from SkynetStorage import *
 from HttpServer import *
 
 class Guard():
@@ -24,7 +24,7 @@ class Guard():
         s.tc = skynet.tc
 
         s.dbw = Guard.Db(s, s.db)
-        s.storage = Storage('guard.json')
+        s.storage = SkynetStorage(skynet, 'guard.json')
         s._lock = threading.Lock()
         s._zones = []
         s.createZones()
@@ -84,7 +84,7 @@ class Guard():
                                   {'state': 'ready',
                                    'config': s.storage.jsonData()});
             s._stateId.set(stateId)
-        except AppError as e:
+        except DatabaseConnectorError as e:
             s.errors.append(("Can't insert into table guard_states", e))
 
 
@@ -167,7 +167,7 @@ class Guard():
                                   {'state': 'sleep',
                                    'config': s.storage.jsonData()});
             s._stateId.set(stateId)
-        except AppError as e:
+        except DatabaseConnectorError as e:
             s.errors.append(("Can't insert into table guard_states", e))
 
 
@@ -311,9 +311,12 @@ class Guard():
 
 
     def zoneTrig(s, zone):
-        alarmId = s.db.insert('guard_alarms',
-                              {'zone': zone.name(),
-                               'state_id': s._stateId.val});
+        try:
+            alarmId = s.db.insert('guard_alarms',
+                                  {'zone': zone.name(),
+                                   'state_id': s._stateId.val});
+        except DatabaseConnectorError as e:
+            s.errors.append(("Can't insert into table guard_alarms", e))
 
         s.tc.toAlarm("!!! Внимание, Тревога !!!\n" \
                      "Сработала зона: '%s', событие: %d" % (

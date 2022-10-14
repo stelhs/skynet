@@ -5,6 +5,11 @@ from sr90Exceptions import *
 class DatabaseConnectorError(AppError):
     pass
 
+class DatabaseConnectorQueryError(DatabaseConnectorError):
+    pass
+
+class DatabaseConnectorConnectError(DatabaseConnectorError):
+    pass
 
 # errors in subsystem event handler
 

@@ -1,7 +1,7 @@
 from Exceptions import *
 from Syslog import *
 from HttpServer import *
-from Storage import *
+from SkynetStorage import *
 
 
 class PowerSockets():
@@ -10,7 +10,7 @@ class PowerSockets():
         s.io = skynet.io
         s.conf = skynet.conf.powerSockets
         s.httpServer = skynet.httpServer
-        s.storage = Storage('power_sockets.json')
+        s.storage = SkynetStorage(skynet, 'power_sockets.json')
         s.log = Syslog('PowerSockets')
         s._sockets = []
         s.httpHandlers = PowerSockets.HttpHandlers(s)
