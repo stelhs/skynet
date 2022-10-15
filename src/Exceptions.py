@@ -44,9 +44,6 @@ class IoBoardError(IoError): # Base of all IO board errors
 class IoBoardPortNotFound(IoBoardError): # IO port is not found on the selected board IO
     pass
 
-class IoBoardPortNoLastStateError(IoBoardError): # IO output port has not last state
-    pass
-
 class IoBoardPortNotConfiguredError(IoBoardError): # IO port is not configured
     pass
 
@@ -59,7 +56,10 @@ class IoBoardConfigureErr(IoBoardError): # Configuring of all IO boards errors
 class IoBoardMbioError(IoBoardError): # MBIO board errors
     pass
 
-class IoPortCachedStateExpiredError(IoBoardError):
+class IoBoardNotAccessible(IoBoardError): # MBIO don't send 'portsStates' update periodically
+    pass
+
+class IoPortNotAccessible(IoBoardError):
     pass
 
 class IoPortBlockedError(IoBoardError): # Port is software blocked

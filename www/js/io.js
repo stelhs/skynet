@@ -184,7 +184,8 @@ class Io extends ModuleBase {
 
     updateTermoSensors(data) {
         for (var name in data)
-            this.termoSensors[name].set(data[name])
+            if (data[name])
+                this.termoSensors[name].set(data[name])
     }
 
     updatePortStates(data) {

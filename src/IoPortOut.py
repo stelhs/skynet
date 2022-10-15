@@ -25,31 +25,14 @@ class IoPortOut(IoPortBase):
         s.board().outputSetState(s, state)
         s.updateCachedState(state)
 
-        try:
-            s.db.insert('io_events',
-                        {'mode': 'out',
-                         'port_name': s.name(),
-                         'io_name': s.board().name(),
-                         'port': s.pn(),
-                         'state': state});
-        except DatabaseConnectorError as e:
-            pass
-
-        s.io.emitEvent(s.name(), state)
-
 
     def lastState(s):
-        if s._lastState == None:
-            raise IoBoardPortNoLastStateError(s.log, "port %s Last state is absent" % s.name())
         return s._lastState
 
 
     def blink(s, d1, d2=0, number=1):
         s.board().setBlink(s, d1, d2, number)
 
-
-    def state(s):
-        return s.board().outputState(s);
 
 
 

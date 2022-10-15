@@ -368,7 +368,7 @@ class Guard():
                 isTriggered = sensor.isTriggered()
                 try:
                     sensorsLeds[sensor.name()] = sensor.state()
-                except IoPortCachedStateExpiredError:
+                except IoError:
                     continue
 
                 if isTriggered:
@@ -384,8 +384,8 @@ class Guard():
                 'blockedZonesExisted': blockedZonesExisted}
 
         try:
-            data['publicSound'] = s.voicePowerPort.cachedState()
-        except IoPortCachedStateExpiredError:
+            data['publicSound'] = s.voicePowerPort.state()
+        except IoError:
             pass
 
         s.skynet.emitEvent('guard', 'statusUpdate', data)
@@ -740,7 +740,7 @@ class Guard():
         def isTriggered(s):
             try:
                 return s.state() == s.trigState
-            except IoPortCachedStateExpiredError:
+            except IoError:
                 return False
 
 
@@ -787,7 +787,7 @@ class Guard():
 
 
         def state(s):
-            return s.port.cachedState()
+            return s.port.state()
 
 
         def name(s):

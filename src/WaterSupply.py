@@ -45,13 +45,13 @@ class WaterSupply():
     def uiUpdateHandler(s):
         data = {}
         try:
-            data['waterPumpEnabled'] = s.pumpPort.cachedState()
-        except IoPortCachedStateExpiredError:
+            data['waterPumpEnabled'] = s.pumpPort.state()
+        except IoError:
             pass
 
         try:
-            data['watersupplyLowPressure'] = s.lowPressureSense.cachedState()
-        except IoPortCachedStateExpiredError:
+            data['watersupplyLowPressure'] = s.lowPressureSense.state()
+        except IoError:
             pass
 
         data['watersupplyPumpIsLocked'] = s.isBlocked()
@@ -104,7 +104,7 @@ class WaterSupply():
 
 
     def isStarted(s):
-        return s.pumpPort.cachedState()
+        return s.pumpPort.state()
 
 
     def buttPressedHandler(s, state):

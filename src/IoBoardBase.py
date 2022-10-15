@@ -10,6 +10,7 @@ class IoBoardBase():
         s.ioName = ioName
         s.log = Syslog('Board_%s' % ioName)
         s.conf = s.io.conf['boards'][ioName]
+        s.updatedTime = 0
 
         s._ports = []
 
@@ -49,17 +50,6 @@ class IoBoardBase():
             return
 
 
-    def outputState(s, port):
-        if s.emulator:
-            return s.emulator.outputState(port)
-        return
-
-
-    def inputState(s, port):
-        if s.emulator:
-            return s.emulator.outputState(port)
-
-
     def port(pName):
         for port in s._ports:
             if port.name() == pName:
@@ -86,18 +76,19 @@ class IoBoardBase():
         return list
 
 
-    def trigAllPorts(s):
-        for port in s._ports('in'):
-            state = port.state();
-            s.io.emitEvent(port, state)
-
-
     def __repr__(s):
         return "b:%s" % s.name()
 
 
     def __str__(s):
         return "Board %s" % s.name()
+
+
+    def updateCachedState(s, portStateList):
+        s.updatedTime = int(time.time())
+        for row in portStateList:
+            port = s.io.port(row['port_name'])
+            port.updateCachedState(row['state'])
 
 
 
@@ -181,23 +172,19 @@ class IoBoardBase():
             s.save(s.outputFileName, s.outputs)
 
 
-        def outputState(s, port):
-            return s.outputs[port.name()]
-
-
-        def inputState(s, port):
-            return s.inputs[port.name()]
-
-
         def updateHandler(s):
             ports = []
             for port in s.board.ports():
                 if not port.name():
                     continue
 
-                info = {'port_name': port.name(),
-                        'type': port.mode(),
-                        'state': port.state()}
+                try:
+                    state = port.state()
+                    info = {'port_name': port.name(),
+                            'type': port.mode(),
+                            'state': port.state()}
+                except IoError:
+                    continue
                 ports.append(info)
 
             data = {'io_name': s.board.name(), 'ports': ports}

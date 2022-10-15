@@ -54,25 +54,22 @@ class Io():
 
         try:
             port.updateCachedState(state)
-            s.emitEvent(port.name(), state)
+            s.emitEvent(port, state)
         except AppError as e:
             s.toAdmin("IO event handler %s error: %s" % (port, e))
 
 
-    def emitEvent(s, portName, state):
-        port = s.port(portName)
-
+    def emitEvent(s, port, state):
+        port.emitEvent(state)
         try:
             s.db.insert('io_events',
-                        {'mode': 'in',
+                        {'mode': port.mode(),
                          'port_name': port.name(),
                          'io_name': port.board().name(),
                          'port': port.pn(),
                          'state': state});
         except DatabaseConnectorError as e:
             pass
-
-        port.emitEvent(state)
 
 
     def registerBoards(s):
@@ -127,7 +124,7 @@ class Io():
         s.skynet.emitEvent('io', 'boardsBlokedPortsList', list)
 
 
-    def checkBoards(s):
+    def checkBoards(s, task):
         now = int(time.time())
         for board in s.boards():
             if (now - board.updatedTime) > 5:
@@ -192,7 +189,8 @@ class Io():
 
             try:
                 listStates = [{'pn': port.pn(),
-                               'state': port.lastState()} for port in ports if port.mode() == 'out']
+                               'state': port.lastState()} for port in ports \
+                              if port.mode() == 'out' and port.lastState() != None]
                 return {'listStates': listStates}
             except DatabaseConnectorError as e:
                 raise HttpHandlerError('Database error: %s' % e)

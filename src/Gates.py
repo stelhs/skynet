@@ -39,12 +39,12 @@ class Gates():
     def uiUpdateHandler(s):
         data = {}
         try:
-            data['gatesClosed'] = s.isClosedPort.cachedState()
-        except IoPortCachedStateExpiredError:
+            data['gatesClosed'] = s.isClosedPort.state()
+        except IoError:
             pass
         try:
-            data['gatesPower'] = not s.powerPort.cachedState()
-        except IoPortCachedStateExpiredError:
+            data['gatesPower'] = not s.powerPort.state()
+        except IoError:
             pass
         s.skynet.emitEvent('gates', 'statusUpdate', data)
 
@@ -95,30 +95,41 @@ class Gates():
         if s.skynet.guard.isStarted():
             return
 
-        s.io.port('guard_lamp').blink(200, 200, 2)
+        try:
+            s.io.port('guard_lamp').blink(200, 200, 2)
+        except IoBoardError as e:
+            s.tc.toAdmin("Не удалось помигать лампой на воротах: %s" % e)
 
-        if s.isClosed():
-            s.lastRemoteButton = 'open'
-            return s.open()
+        try:
+            if s.isClosed():
+                s.lastRemoteButton = 'open'
+                return s.open()
 
-        if s.lastRemoteButton == 'open':
+            if s.lastRemoteButton == 'open':
+                s.lastRemoteButton = 'close'
+                return s.close()
+
             s.lastRemoteButton = 'close'
-            return s.close()
-
-        s.lastRemoteButton = 'close'
-        return s.open()
+            return s.open()
+        except AppError as e:
+            s.tc.toAdmin("Ошибка открытия/закрытия ворот: %s" % e)
 
 
     def buttOpenClosePedHandler(s, state):
         if s.guard.isStarted():
             return
 
-        s.io.port('guard_lamp').blink(200, 200, 1)
+        try:
+            s.io.port('guard_lamp').blink(200, 200, 1)
+        except IoBoardError as e:
+            s.tc.toAdmin("Не удалось помигать лампой на воротах: %s" % e)
 
-        if s.isClosed():
-            return s.openPed()
-
-        s.close()
+        try:
+            if s.isClosed():
+                return s.openPed()
+            s.close()
+        except AppError as e:
+            s.tc.toAdmin("Ошибка открытия/закрытия ворот для пешехода: %s" % e)
 
 
     def senseGatesClosedHandler(s, state):

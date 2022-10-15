@@ -87,11 +87,18 @@ class DoorLocks():
             s._port = s.manager.io.port(pName)
             s._port.subscribe("DoorLock", lambda state: s.manager.uiUpdater.call())
             s._state = s.manager.storage.key('/lastState/%s' % name, False)
+            Task.setPeriodic('doorlooks_actualizer_%s' % name, 1000, s.actualizer_cb)
 
-            if s._state.val:
-                s.open()
-            else:
-                s.close()
+
+        def actualizer_cb(s, task):
+            try:
+                if s._state.val:
+                    s.open()
+                else:
+                    s.close()
+            except IoError:
+                return
+            task.remove()
 
 
         def doEventProcessing(s, port, state):
@@ -113,7 +120,7 @@ class DoorLocks():
 
 
         def isClosed(s):
-            return not s._port.cachedState()
+            return not s._port.state()
 
 
         def __repr__(s):

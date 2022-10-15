@@ -42,7 +42,7 @@ class PowerSockets():
         for ps in s.list():
             try:
                 data[ps.name()] = not ps.isDown()
-            except AppError:
+            except IoError:
                 pass
         s.skynet.emitEvent('power_sockets', 'statusUpdate', data)
 
@@ -94,10 +94,18 @@ class PowerSockets():
             s._port = s.manager.io.port(pName)
             s._port.subscribe("PowerSocket", lambda state: s.manager.uiUpdater.call())
 
-            if s._state.val:
-                s.up()
-            else:
-                s.down()
+            Task.setPeriodic('power_socket_actualizer_%s' % name, 1000, s.actualizer_cb)
+
+
+        def actualizer_cb(s, task):
+            try:
+                if s._state.val:
+                    s.up()
+                else:
+                    s.down()
+            except IoError:
+                return
+            task.remove()
 
 
         def name(s):
@@ -115,7 +123,7 @@ class PowerSockets():
 
 
         def isDown(s):
-            return not s._port.cachedState()
+            return not s._port.state()
 
 
         def __repr__(s):

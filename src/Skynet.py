@@ -128,7 +128,7 @@ class Skynet():
 
         def eventHandler(s, args, conn):
             try:
-                dt = json.loads(body)
+                dt = json.loads(conn.body())
                 source = dt['source']
                 evType = dt['type']
                 data = dt['data']

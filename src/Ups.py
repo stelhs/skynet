@@ -39,21 +39,26 @@ class Ups():
         s.charger = Ups.Charger(s)
 
         s.uiUpdater = s.skynet.periodicNotifier.register("ups", s.uiUpdateHandler, 2000)
-        s.init()
         s.httpHandlers = Ups.HttpHandlers(s)
 
+        Task.setPeriodic('ups_actualizer', 1000, s.actualizer_cb)
 
-    def init(s):
-        with s._lock:
-            if s.isDischarge():
-                s.enterToPowerLoss()
 
-            if s.mode() == 'discharge' and not s.isDischarge():
-                s.chargerStart(1)
-                return
+    def actualizer_cb(s, task):
+        try:
+            with s._lock:
+                if s.isDischarge():
+                    s.enterToPowerLoss()
 
-            if s.mode() == 'charge':
-                s.noVoltage = True
+                if s.mode() == 'discharge' and not s.isDischarge():
+                    s.chargerStart(1)
+                    return
+
+                if s.mode() == 'charge':
+                    s.noVoltage = True
+        except IoError:
+            return
+        task.remove()
 
 
     def enterToPowerLoss(s):
@@ -90,56 +95,59 @@ class Ups():
 
     def inputPowerEventHandler(s, state):
         with s._lock:
-            if not state: # Power is absent
-                if s.mode() == 'discharge':
-                    return
-                s.log.info('UPS input power is lost')
-                Task.sleep(500)
-                if s.charger.isStarted():
-                    s.chargerStop()
-                s.enterToPowerLoss()
-                s.toAdmin('Пропало питание ИБП')
-                return
-
-            # Power resumed
-            if s.mode() != 'discharge':
-                return
-            s.log.info('UPS input power is restored')
-            s.exitFromPowerLoss()
-            s.toAdmin('питание ИБП востановлено')
             try:
+                # Power is absent
+                if not state:
+                    if s.mode() == 'discharge':
+                        return
+                    s.log.info('UPS input power is lost')
+                    Task.sleep(500)
+                    if s.charger.isStarted():
+                        s.chargerStop()
+                    s.enterToPowerLoss()
+                    s.toAdmin('Пропало питание ИБП')
+                    return
+            except AppError as e:
+                s.toAdmin('Не удалось корректно обработать отключение питания ИБП: %s' % e)
+
+            try:
+                # Power resumed
+                if s.mode() != 'discharge':
+                    return
+                s.log.info('UPS input power is restored')
+                s.exitFromPowerLoss()
+                s.toAdmin('питание ИБП востановлено')
                 s.chargerStart(1, 'power_lost')
-            except BatteryVoltageError:
-                s.log.err('Can`t start charger: no battery voltage information')
-                s.toAdmin('Не удалось запустить зарядку: нет информации о напряжении АКБ')
-                s.chargerStop()
+            except AppError as e:
+                s.toAdmin('Не удалось запустить зарядку АКБ: %s' % e)
 
 
     def extPowerEventHandler(s, state):
         with s._lock:
-            if not state: # Power is absent
-                if s.mode() == 'discharge':
-                    return
-                Task.sleep(500)
-                if s.charger.isStarted():
-                    s.chargerStop()
-                s.enterToPowerLoss()
-                s.log.info('External power is lost')
-                s.toAdmin('Пропало внешнее питание')
-                return
-
-            # Power resumed
-            if s.mode() != 'discharge':
-                return
-            s.exitFromPowerLoss()
-            s.log.info('External power is restored')
-            s.toAdmin('Внешнее питание восстановлено')
             try:
+                if not state: # Power is absent
+                    if s.mode() == 'discharge':
+                        return
+                    Task.sleep(500)
+                    if s.charger.isStarted():
+                        s.chargerStop()
+                    s.enterToPowerLoss()
+                    s.log.info('External power is lost')
+                    s.toAdmin('Пропало внешнее питание')
+                    return
+            except AppError as e:
+                s.toAdmin('Не удалось корректно обработать отключение внешнего питания: %s' % e)
+
+            try:
+                # Power resumed
+                if s.mode() != 'discharge':
+                    return
+                s.exitFromPowerLoss()
+                s.log.info('External power is restored')
+                s.toAdmin('Внешнее питание восстановлено')
                 s.chargerStart(1, 'power_lost')
-            except BatteryVoltageError:
-                s.log.err('Can`t start charger: no battery voltage information')
-                s.toAdmin('Не удалось запустить зарядку: нет информации о напряжении АКБ')
-                s.chargerStop()
+            except AppError as e:
+                s.toAdmin('Не удалось запустить зарядку АКБ: %s' % e)
 
 
     def mode(s):
@@ -150,7 +158,7 @@ class Ups():
         s._mode.set(mode)
 
 
-    def doControlUps(s):
+    def doControlUps(s, task):
         with s._lock:
             s.doCheckUpsHw()
 
@@ -194,13 +202,19 @@ class Ups():
 
 
     def doCheckUpsHw(s):
-        if not s.hw.powerOutUpsPort.cachedState():
-            s.log.err('250VDC Error')
-            s.toAdmin("Нет выходного питания бесперебойника 250vdc")
+        try:
+            if not s.hw.powerOutUpsPort.state():
+                s.log.err('250VDC Error')
+                s.toAdmin("Нет выходного питания бесперебойника 250vdc")
+        except IoError:
+            pass
 
-        if not s.hw.powerUps14vdcPort.cachedState():
-            s.log.err('14VDC Error')
-            s.toAdmin("Нет внутреннего питания бесперебойника 14vdc")
+        try:
+            if not s.hw.powerUps14vdcPort.state():
+                s.log.err('14VDC Error')
+                s.toAdmin("Нет внутреннего питания бесперебойника 14vdc")
+        except IoError:
+            pass
 
 
     def doDischarge(s, voltage):
@@ -252,21 +266,15 @@ class Ups():
 
 
     def isDischarge(s):
-        try:
-            if not s.hw.powerExtPort.cachedState():
-                return True
-            if not s.hw.powerInUpsPort.cachedState():
-                return True
-            return False
-        except IoPortCachedStateExpiredError:
-            return False
+        if not s.hw.powerExtPort.state():
+            return True
+        if not s.hw.powerInUpsPort.state():
+            return True
+        return False
 
 
     def isNoExtPower(s):
-        try:
-            return not s.hw.powerExtPort.cachedState()
-        except IoPortCachedStateExpiredError:
-            return False
+        return not s.hw.powerExtPort.state()
 
 
     def toAdmin(s, msg):
@@ -306,23 +314,23 @@ class Ups():
 
         data = {}
         try:
-            data['ledPowerExtExist'] = s.hw.powerExtPort.cachedState()
-        except IoPortCachedStateExpiredError:
+            data['ledPowerExtExist'] = s.hw.powerExtPort.state()
+        except IoError:
             pass
 
         try:
-            data['ledPowerInUps'] = s.hw.powerInUpsPort.cachedState()
-        except IoPortCachedStateExpiredError:
+            data['ledPowerInUps'] = s.hw.powerInUpsPort.state()
+        except IoError:
             pass
 
         try:
-            data['ledPowerOutUpsIsAbsent'] = not s.hw.powerOutUpsPort.cachedState()
-        except IoPortCachedStateExpiredError:
+            data['ledPowerOutUpsIsAbsent'] = not s.hw.powerOutUpsPort.state()
+        except IoError:
             pass
 
         try:
-            data['ledPower14vdcUpsAbsent'] = not s.hw.powerUps14vdcPort.cachedState()
-        except IoPortCachedStateExpiredError:
+            data['ledPower14vdcUpsAbsent'] = not s.hw.powerUps14vdcPort.state()
+        except IoError:
             pass
 
         data['ledAutomaticCharhing'] = s._automaticEnabled.val
@@ -347,33 +355,33 @@ class Ups():
             pass
 
         try:
-            data['ledChargerEnPort'] = s.hw.enablePort.cachedState()
-        except IoPortCachedStateExpiredError:
+            data['ledChargerEnPort'] = s.hw.enablePort.state()
+        except IoError:
             pass
 
         try:
-            data['ledHighCurrent'] = s.hw.highCurrentPort.cachedState()
-        except IoPortCachedStateExpiredError:
+            data['ledHighCurrent'] = s.hw.highCurrentPort.state()
+        except IoError:
             pass
 
         try:
-            data['ledMiddleCurrent'] = s.hw.middleCurrentPort.cachedState()
-        except IoPortCachedStateExpiredError:
+            data['ledMiddleCurrent'] = s.hw.middleCurrentPort.state()
+        except IoError:
             pass
 
         try:
-            data['ledChargeDischarge'] = s.hw.chargeDischargePort.cachedState()
-        except IoPortCachedStateExpiredError:
+            data['ledChargeDischarge'] = s.hw.chargeDischargePort.state()
+        except IoError:
             pass
 
         try:
-            data['ledBatteryRelayPort'] = s.hw.batteryRelayPort.cachedState()
-        except IoPortCachedStateExpiredError:
+            data['ledBatteryRelayPort'] = s.hw.batteryRelayPort.state()
+        except IoError:
             pass
 
         try:
-            data['ledUpsBreakPowerPort'] = s.hw.upsBreakPowerPort.cachedState()
-        except IoPortCachedStateExpiredError:
+            data['ledUpsBreakPowerPort'] = s.hw.upsBreakPowerPort.state()
+        except IoError:
             pass
 
         if s.charger.chargingReason.val:
@@ -398,7 +406,7 @@ class Ups():
 
         try:
             data['ledDischarging'] = s.isDischarge()
-        except IoPortCachedStateExpiredError:
+        except IoError:
             pass
 
         if s.dischargeReason.val:
@@ -520,21 +528,24 @@ class Ups():
             if not s.isStarted():
                 return
 
-            if s.stage() == 1 and voltage >= 13.8:
-                s.startStage(2)
-                s.dbw.updateChargeStageDuration(1)
+            try:
+                if s.stage() == 1 and voltage >= 13.8:
+                    s.startStage(2)
+                    s.dbw.updateChargeStageDuration(1)
 
 
-            if s.stage() == 2 and voltage >= 14.4:
-                s.startStage(3)
-                s.dbw.updateChargeStageDuration(2)
+                if s.stage() == 2 and voltage >= 14.4:
+                    s.startStage(3)
+                    s.dbw.updateChargeStageDuration(2)
 
 
-            if s.stage() == 3 and voltage >= 15.1:
-                s.ups.setMode('waiting')
-                s.log.info('Charger finished')
-                s.ups.toAdmin('Заряд окончен, напряжение на АКБ %.2fv' % voltage)
-                s.stop()
+                if s.stage() == 3 and voltage >= 15.1:
+                    s.ups.setMode('waiting')
+                    s.log.info('Charger finished')
+                    s.ups.toAdmin('Заряд окончен, напряжение на АКБ %.2fv' % voltage)
+                    s.stop()
+            except IoError:
+                pass
 
 
         def voltage(s):
@@ -616,11 +627,8 @@ class Ups():
                         Task.sleep(20 * 1000)
                         s.hw.switchToDischarge()
                         Task.sleep(30 * 1000)
-
-            except IoError as e:
-                s.stop()
-                s.log.err('Charger error: %s' % e)
-                s.toAdmin('Ошибка зарядки АКБ: %s' % e)
+            except IoError:
+                pass
 
 
         def taskExitHandler(s):
@@ -867,6 +875,7 @@ class Ups():
             with s._lock:
                 s.highCurrentPort.up()
                 s.middleCurrentPort.down()
+
 
         def stopCharger(s):
             with s._lock:
