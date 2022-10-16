@@ -26,6 +26,8 @@ class Ui():
 
 
     def eventHandler(s, source, evType, data):
+        if evType == "ups":
+            print(data)
         s.em.send(source, evType, data)
 
 

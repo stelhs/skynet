@@ -95,59 +95,49 @@ class Ups():
 
     def inputPowerEventHandler(s, state):
         with s._lock:
-            try:
-                # Power is absent
-                if not state:
-                    if s.mode() == 'discharge':
-                        return
-                    s.log.info('UPS input power is lost')
-                    Task.sleep(500)
-                    if s.charger.isStarted():
-                        s.chargerStop()
-                    s.enterToPowerLoss()
-                    s.toAdmin('Пропало питание ИБП')
+            if not state:
+                if s.mode() == 'discharge':
                     return
-            except AppError as e:
-                s.toAdmin('Не удалось корректно обработать отключение питания ИБП: %s' % e)
 
-            try:
-                # Power resumed
-                if s.mode() != 'discharge':
-                    return
-                s.log.info('UPS input power is restored')
-                s.exitFromPowerLoss()
-                s.toAdmin('питание ИБП востановлено')
-                s.chargerStart(1, 'power_lost')
-            except AppError as e:
-                s.toAdmin('Не удалось запустить зарядку АКБ: %s' % e)
+                # Power is absent
+                s.log.info('UPS input power is lost')
+                if s.charger.isStarted():
+                    s.chargerStop()
+                s.enterToPowerLoss()
+                s.toAdmin('Пропало питание ИБП')
+                return
+
+            # Power resumed
+            if s.mode() != 'discharge':
+                return
+            s.log.info('UPS input power is restored')
+            s.exitFromPowerLoss()
+            s.chargerStart(1, 'power_lost')
+            s.toAdmin('питание ИБП востановлено')
+
 
 
     def extPowerEventHandler(s, state):
         with s._lock:
-            try:
-                if not state: # Power is absent
-                    if s.mode() == 'discharge':
-                        return
-                    Task.sleep(500)
-                    if s.charger.isStarted():
-                        s.chargerStop()
-                    s.enterToPowerLoss()
-                    s.log.info('External power is lost')
-                    s.toAdmin('Пропало внешнее питание')
+            if not state:
+                if s.mode() == 'discharge':
                     return
-            except AppError as e:
-                s.toAdmin('Не удалось корректно обработать отключение внешнего питания: %s' % e)
 
-            try:
-                # Power resumed
-                if s.mode() != 'discharge':
-                    return
-                s.exitFromPowerLoss()
-                s.log.info('External power is restored')
-                s.toAdmin('Внешнее питание восстановлено')
-                s.chargerStart(1, 'power_lost')
-            except AppError as e:
-                s.toAdmin('Не удалось запустить зарядку АКБ: %s' % e)
+                # Power is absent
+                s.log.info('External power is lost')
+                if s.charger.isStarted():
+                    s.chargerStop()
+                s.enterToPowerLoss()
+                s.toAdmin('Пропало внешнее питание')
+                return
+
+            # Power resumed
+            if s.mode() != 'discharge':
+                return
+            s.log.info('External power is restored')
+            s.exitFromPowerLoss()
+            s.chargerStart(1, 'power_lost')
+            s.toAdmin('Внешнее питание восстановлено')
 
 
     def mode(s):
@@ -175,6 +165,7 @@ class Ups():
                     s.toAdmin("Ошибка получения информации о напряжении на АКБ.\n" \
                                   "Контроль за АКБ утерян.")
 
+            # Voltage is present, resume controlling
             if s.noVoltage and voltage != None:
                 s.noVoltage = False
                 s.log.info('Battery voltage restored. Charger is resumed')
@@ -189,16 +180,19 @@ class Ups():
             if s.noVoltage:
                 return
 
-            if s.isDischarge() and s.mode() != 'discharge':
-                s.enterToPowerLoss()
-                s.log.info('UPS input power is lost')
-                s.toAdmin('Пропало питание ИБП')
+            try:
+                if s.isDischarge() and s.mode() != 'discharge':
+                    s.enterToPowerLoss()
+                    s.log.info('UPS input power is lost')
+                    s.toAdmin('Пропало питание ИБП')
 
-            if s.mode() == 'waiting':
-                return s.doWaiting(voltage)
+                if s.mode() == 'waiting':
+                    return s.doWaiting(voltage)
 
-            if s.mode() == 'discharge':
-                return s.doDischarge(voltage)
+                if s.mode() == 'discharge':
+                    return s.doDischarge(voltage)
+            except IoError:
+                pass
 
 
     def doCheckUpsHw(s):
@@ -504,7 +498,6 @@ class Ups():
                 return
             now = int(time.time())
             s.stopStage()
-            s.hw.stopCharger()
             s.stopTime.set(now)
             s.dbw.updateChargeStageDuration(s.stageNum.val)
             s.dbw.updateChargeEndTime()
@@ -931,7 +924,7 @@ class Ups():
 
             def eventHandler(s, source, type, data):
                 try:
-                    if data['io_name'] != 'mbio1':
+                    if data['io_name'] != 'mbio4':
                         return
                     now = int(time.time())
 
@@ -968,7 +961,7 @@ class Ups():
                 now = int(time.time())
                 if (now - s._chargerCurrentUpdatedTime) > 10:
                     raise ChargeCurrentError(s.log, "Charger current not available")
-                if not s._chargeCurrent:
+                if s._chargeCurrent == None:
                     raise ChargeCurrentError(s.log, "Charger current not available")
                 return s._chargeCurrent
 
@@ -995,6 +988,7 @@ class Ups():
             s.ups = ups
             s.skynet = ups.skynet
             s.regUiHandler('w', "GET", "/ups/switch_automatic", s.switchAutomatic)
+            s.regUiHandler('w', "GET", "/ups/set_zero_charger_current", s.setZeroChargerCurrent)
 
             s.regUiHandler('w', "GET", "/ups/start_charger", s.chargerStart)
             s.regUiHandler('w', "GET", "/ups/stop_charger", s.chargerStop)
@@ -1030,6 +1024,14 @@ class Ups():
             else:
                 s.ups._automaticEnabled.set(True)
             s.ups.uiUpdater.call()
+
+
+        def setZeroChargerCurrent(s, args, conn):
+            try:
+                board = s.ups.skynet.io.board('mbio4')
+                board.setZeroChargerCurrents()
+            except AppError as e:
+                raise HttpHandlerError("Can't set zero charger current: %s" % e)
 
 
         def chargerStart(s, args, conn):

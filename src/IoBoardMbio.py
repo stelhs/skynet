@@ -93,6 +93,12 @@ class IoBoardMbio(IoBoardBase):
                     "Request 'batteryInfo'return json w/o 'data' field: %s" % ret)
 
 
+    def setZeroChargerCurrents(s):
+        if (time.time() - s.updatedTime) > s.io.conf['cachedInterval']:
+            raise IoBoardNotAccessible(s.log, 'mbio board %s is not accessible' % s.name())
+        s.send('set_zero_charger_current')
+
+
     def resetMbio(s):
         try:
             s.send('reset')

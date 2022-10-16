@@ -217,9 +217,9 @@ class Power extends ModuleBase {
         }
 
         for (var name in this.textBars) {
-            var led = this.textBars[name]
+            var bar = this.textBars[name]
             if (name in data)
-                led.set(data[name])
+                bar.set(data[name])
         }
     }
 
@@ -306,6 +306,11 @@ class Power extends ModuleBase {
     requestToSwitchAutomatic() {
         this.logInfo('Request to switch automatic charging');
         this.skynetGetRequest('ups/switch_automatic');
+    }
+
+    requestToSetZeroChargerCurrent() {
+        this.logInfo('Request to set zero charger current');
+        this.skynetGetRequest('ups/set_zero_charger_current');
     }
 
     requestToEnableHwCharger() {
