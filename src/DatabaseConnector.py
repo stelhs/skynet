@@ -36,7 +36,7 @@ class DatabaseConnector():
 
             try:
                 s.mysql.connect()
-            except mysql.connector.errors.DatabaseError:
+            except (mysql.connector.errors.DatabaseError, mysql.connector.errors.InterfaceError):
                 s.attempts += 1
                 Task.sleep(1000)
                 continue
