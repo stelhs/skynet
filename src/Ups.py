@@ -866,8 +866,8 @@ class Ups():
 
         def setCurrentHigh(s):
             with s._lock:
+                s.middleCurrentPort.up()
                 s.highCurrentPort.up()
-                s.middleCurrentPort.down()
 
 
         def stopCharger(s):
