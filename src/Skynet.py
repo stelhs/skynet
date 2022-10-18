@@ -61,6 +61,13 @@ class Skynet():
         s.eventSubscribers.append(subscriber)
 
 
+    def unsubscribeEvents(s, name):
+        for es in s.eventSubscribers:
+            if es.name == name:
+                s.eventSubscribers.remove(es)
+                return
+
+
     def emitEvent(s, source, evType, data):
         for sb in s.eventSubscribers:
             if not sb.match(source, evType):
@@ -76,6 +83,19 @@ class Skynet():
         s.tc.sendToChat('stelhs',
                 "Skynet: task '%s' error:\n%s" % (task.name(), errMsg))
 
+
+    def catchEvent(s, source=None, evType=None):
+        def eventHandler(source, type, data):
+            print('catched source = %s, evType = %s, data = %s' % (source, type, data))
+
+        source = (source, ) if source else ()
+        evType = (evType, ) if evType else ()
+        s.registerEventSubscriber('catchEvent', eventHandler, source, evType)
+        try:
+            Task.sleep(5000)
+        except KeyboardInterrupt:
+            pass
+        s.unsubscribeEvents('catchEvent')
 
 
     def destroy(s):
