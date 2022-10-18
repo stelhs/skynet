@@ -114,6 +114,8 @@ class Termosensor():
 
 
     def update(s, t):
+        if not t or t == 'None':
+            return
         with s._lock:
             s._t = float(t)
             s.updateTime = int(time.time())
