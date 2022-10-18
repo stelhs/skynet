@@ -94,7 +94,9 @@ class Boiler extends ModuleBase {
 
     actualizeSevenSeg(data, field) {
         if (field in data)
-            this.sevenSegs[field].set(data[field].toString())
+            var val = data[field].toString()
+            val = Math.round(val * 10) / 10
+            this.sevenSegs[field].set(val)
     }
 
     updateStatus(data) {

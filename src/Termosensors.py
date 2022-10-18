@@ -74,7 +74,7 @@ class Termosensors():
         data = {}
         for sensor in s.sensors:
             try:
-                data[sensor.name()] = sensor.t()
+                data[sensor.name()] = round(sensor.t(), 1)
             except TermosensorNoDataError:
                 pass
         s.skynet.emitEvent('termosensors', 'termosensorsUpdate', data)
@@ -115,7 +115,7 @@ class Termosensor():
 
     def update(s, t):
         with s._lock:
-            s._t = t
+            s._t = float(t)
             s.updateTime = int(time.time())
 
 
