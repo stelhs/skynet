@@ -10,6 +10,7 @@ class Termosensors():
         s.conf = skynet.conf.termosensors
         s.skynet = skynet
         s.sensors = []
+        s.log = Syslog("Termosensors")
 
         try:
             for sName, sInfo in s.conf['sensors'].items():
@@ -38,7 +39,7 @@ class Termosensors():
                     pass
         except KeyError as e:
             raise EventHandlerError(s.log,
-                    "eventHandler of '%s' failed: field %s is absent in event data" % (s.name(), e)) from e
+                    "eventHandler mbio failed: field %s is absent in event data" % e) from e
         s.updateUi()
 
 
@@ -50,7 +51,7 @@ class Termosensors():
             s.sensor('workshop_radiators').update(data['return_t'])
         except KeyError as e:
             raise EventHandlerError(s.log,
-                    "eventHandler of '%s' failed: field %s is absent in event data" % (s.name(), e)) from e
+                    "eventHandler boiler failed: field %s is absent in event data" % e) from e
         s.updateUi()
 
 
