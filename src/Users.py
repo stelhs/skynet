@@ -195,7 +195,6 @@ class User():
 
                 if word == subsystem:
                     permit = True
-
                 if len(word) and word[0] == '-':
                     if word[1:] == subsystem:
                         permit = False
@@ -204,6 +203,9 @@ class User():
         def ckeckWriteByPin():
             permit = False
             if not s.pinAccepted():
+                return False
+
+            if not s.webWritePinAccess:
                 return False
 
             for word in s.webWritePinAccess:
