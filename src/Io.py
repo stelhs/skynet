@@ -21,7 +21,8 @@ class Io():
         s.skynet = skynet
         s.skynet.registerEventSubscriber('Io', s.eventHandler, ('mbio', ), ('portTriggered', ))
         s.skynet.registerEventSubscriber('Io', s.boardStatusHandler, ('mbio', ), ('portsStates', ))
-        s.chechTask = Task.setPeriodic('IoCheckTask', 30000, s.checkBoards)
+
+        s.chechTask = Task.setPeriodic('IoCheckTask', 30 * 1000, s.checkBoards)
 
 
     def toAdmin(s, msg):
@@ -29,9 +30,26 @@ class Io():
 
 
     def boardStatusHandler(s, source, type, data):
-        board = s.board(data['io_name'])
-        board.updateCachedState(data['ports'])
-        s.skynet.emitEvent('io', 'portsStates', data)
+        leds = {}
+        labels = {}
+        labelsCnt = 0
+        for row in data['ports']:
+            pName = row['port_name']
+            state = row['state']
+            if 'blinking' in row:
+                val = '(%d/%d:%d)' % (row['d1'], row['d2'], row['cnt'])
+                labels['labelIoPortBlink_%s' % pName] = val
+                leds['ledIoPortBlink_%s' % pName] = True
+                labelsCnt += 1
+
+            leds['ledIoPortState_%s' % pName] = state
+            port = s.port(pName)
+            port.updateCachedState(state)
+
+        s.skynet.emitEvent('io', 'ledsUpdate', leds)
+        if labelsCnt:
+            s.skynet.emitEvent('io', 'labelsBarsUpdate', labels)
+
 
 
     def eventHandler(s, source, type, data):
@@ -113,15 +131,13 @@ class Io():
         raise IoBoardNotFound(s.log, "board() failed: IO board '%s' is not registred" % name)
 
 
-    def uiUpdateBlockedPorts(s):
-        listIn = [{'state': int(p.blockedState()), 'type': p.mode(),
-                   'port_name': p.name(), 'isBlocked': p.isBlocked()}
-                   for p in s.ports(mode='in')]
-        listOut = [{'state': 0, 'type': p.mode(),
-                    'port_name': p.name()} for p in s.ports(mode='out', blocked=True)]
-        list = listIn
-        list.extend(listOut)
-        s.skynet.emitEvent('io', 'boardsBlokedPortsList', list)
+    def uiUpdateLedsBlockedPorts(s):
+        leds = {}
+        for p in s.ports:
+            leds["ledIoPortBlocked_%s" % p.name()] = p.isBlocked()
+            if p.mode() == 'in':
+                leds["ledIoPortEmulate_%s" % p.name()] = p.isBlocked() and p.blockedState()
+        s.skynet.emitEvent('io', 'ledsUpdate', leds)
 
 
     def checkBoards(s, task):
@@ -197,7 +213,7 @@ class Io():
 
 
         def requestIoBlockedPorts(s, args, conn):
-            s.io.uiUpdateBlockedPorts()
+            s.io.uiUpdateLedsBlockedPorts()
 
 
         def portLockUnlock(s, args, conn):

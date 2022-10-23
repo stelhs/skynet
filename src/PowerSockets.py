@@ -41,10 +41,10 @@ class PowerSockets():
         data = {}
         for ps in s.list():
             try:
-                data[ps.name()] = not ps.isDown()
+                data['ledPowerZone_%s' % ps.name()] = not ps.isDown()
             except IoError:
                 pass
-        s.skynet.emitEvent('power_sockets', 'statusUpdate', data)
+        s.skynet.emitEvent('power_sockets', 'ledsUpdate', data)
 
 
     def destroy(s):

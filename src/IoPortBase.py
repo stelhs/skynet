@@ -58,6 +58,7 @@ class IoPortBase():
     def updateCachedState(s, state):
         s.updatedTime = time.time()
         s._cachedState = state
+        s._board.updatedTime = s.updatedTime
 
 
     def subscribe(s, name, cb, level=None):

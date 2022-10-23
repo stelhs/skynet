@@ -39,14 +39,14 @@ class Gates():
     def uiUpdateHandler(s):
         data = {}
         try:
-            data['gatesClosed'] = s.isClosedPort.state()
+            data['ledGatesClosed'] = s.isClosedPort.state()
         except IoError:
             pass
         try:
-            data['gatesPower'] = not s.powerPort.state()
+            data['ledGatesPower'] = not s.powerPort.state()
         except IoError:
             pass
-        s.skynet.emitEvent('gates', 'statusUpdate', data)
+        s.skynet.emitEvent('gates', 'ledsUpdate', data)
 
 
     def open(s):

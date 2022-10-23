@@ -55,6 +55,9 @@ class Skynet():
         s.httpHandlers = Skynet.HttpHandlers(s, s.httpServer)
         s.TgHandlers = Skynet.TgHandlers(s)
 
+        s.tc.toAdmin("Skynet запущен")
+
+
 
     def registerEventSubscriber(s, name, cb, sources=(), evTypes=()):
         subscriber = Skynet.EventSubscriber(name, cb, sources, evTypes)
@@ -80,8 +83,7 @@ class Skynet():
 
 
     def taskExceptionHandler(s, task, errMsg):
-        s.tc.sendToChat('stelhs',
-                "Skynet: task '%s' error:\n%s" % (task.name(), errMsg))
+        s.tc.toAdmin("Skynet: task '%s' error:\n%s" % (task.name(), errMsg))
 
 
     def catchEvent(s, source=None, evType=None):
@@ -99,6 +101,7 @@ class Skynet():
 
 
     def destroy(s):
+        s.tc.toAdmin("Skynet остановлен")
         s.guard.destroy()
         s.lighters.destroy()
         s.waterSupply.destroy()

@@ -26,7 +26,7 @@ class Termosensors():
         skynet.registerEventSubscriber('TermosensorsMbio', s.eventHandlerMbio,
                                         ('mbio', ), ('termoStates', ))
         skynet.registerEventSubscriber('TermosensorsBoiler', s.eventHandlerBoiler,
-                                        ('boiler', ), ('boilerStatus', ))
+                                        ('boiler', ), ('boilerState', ))
 
 
     def eventHandlerMbio(s, source, type, data):
@@ -75,10 +75,10 @@ class Termosensors():
         data = {}
         for sensor in s.sensors:
             try:
-                data[sensor.name()] = round(sensor.t(), 1)
+                data["ssTermosensor_%s" % sensor.name()] = round(sensor.t(), 1)
             except TermosensorNoDataError:
                 pass
-        s.skynet.emitEvent('termosensors', 'termosensorsUpdate', data)
+        s.skynet.emitEvent('termosensors', 'sevenSegsUpdate', data)
 
 
     class HttpHandlers():

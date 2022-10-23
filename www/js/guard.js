@@ -7,8 +7,6 @@ class Guard extends ModuleBase {
         this.confPowerSockets = ui.configs['powerSockets'];
         this.confDoorLocks = ui.configs['doorLocks'];
         this.sensorLeds = {};
-        this.readyZoneLeds = {};
-        this.blockedZoneLeds = {};
         this.startGuardPowerSocketSwitches = {};
         this.startGuardDoorLocksSwitches = {};
         this.stopGuardDoorLocksSwitches = {};
@@ -23,7 +21,7 @@ class Guard extends ModuleBase {
     }
 
     eventSources() {
-        return ['guard'];
+        return [];
     }
 
     setContentPagePrimary(content) {
@@ -66,129 +64,38 @@ class Guard extends ModuleBase {
 
         for (var zName in this.confGuard['zones']) {
             var zInfo = this.confGuard['zones'][zName];
-            var led = new Led('led_zone_' + zName + '_ready', 'red', 3);
-            this.readyZoneLeds[zName] = led;
-
-            led = new Led('led_zone_' + zName + '_blocked', 'green', 3, 'mini');
-            this.blockedZoneLeds[zName] = led;
-
-            for (var sName in zInfo['io_sensors']) {
-                var led = new Led('led_sensor_' + sName + '_state', 'red', 3);
-                this.sensorLeds[sName] = led;
-            }
+            this.ui.ledRegister('ledGuardZoneReady_' + zName, 'green');
+            this.ui.ledRegister('ledGuardZoneBlocked_' + zName, 'green', 'mini');
+            for (var sName in zInfo['io_sensors'])
+                this.ui.ledRegister('ledGuardSensorState_' + sName, 'red');
         }
 
         for (var name in this.confPowerSockets)
-            this.startGuardPowerSocketSwitches[name] = $$('guard_starting_power_zone_' + name);
+            this.ui.switchRegister('swGuardStartingPowerZone_' + name);
 
         for (var name in this.confDoorLocks) {
-            this.startGuardDoorLocksSwitches[name] = $$('guard_starting_doorlock_power_' + name);
-            this.stopGuardDoorLocksSwitches[name] = $$('guard_stopping_doorlock_power_' + name);
+            this.ui.switchRegister('swGuardStartingDoorlockPower_' + name);
+            this.ui.switchRegister('swGuardStoppingDoorlockPower_' + name);
         }
 
-        this.guardStartedLed = new Led('led_guard_state', 'green', 3);
-        this.notReadyZonesLed = new Led('led_not_watched_zones', 'red', 3);
-        this.blockedZonesLed = new Led('led_blocked_zones', 'red', 3);
-        this.allZonesReadyLed = new Led('led_all_zones_ready', 'red', 3);
-        this.publicAudioLed = new Led('led_public_audio', 'red', 3);
+        this.ui.ledRegister('ledGuardState', 'green');
+        this.ui.ledRegister('ledGuardNotWatchedZones', 'red');
+        this.ui.ledRegister('ledGuardBlockedZones', 'red');
+        this.ui.ledRegister('ledGuardAllZonesReady', 'red');
+        this.ui.ledRegister('ledGuardPublicAudio', 'red');
 
-        this.noWatchWorkshopSwitch = $$('guard_starting_no_watch_workshop');
-        this.enabledAlarmSoundSwitch = $$('guard_alarm_sound_enabled');
-        this.enabledSMSSwitch = $$('guard_alarm_sms_enabled');
-        this.enabledSkynetGroupNotifySwitch = $$('guard_alarm_skynet_enabled');
-        this.waterSupplySwitch = $$('guard_starting_water_supply');
-
-        this.openGatesSwitch = $$('guard_stopping_open_gates');
-        this.stopDvrSwitch = $$('guard_stopping_stop_dvr');
+        this.ui.switchRegister('swGuardStartingNoWatchWorkshop');
+        this.ui.switchRegister('swGuardAlarmSoundEnabled');
+        this.ui.switchRegister('swGuardAlarmSmsEnabled');
+        this.ui.switchRegister('swGuardAlarmSkynetEnabled');
+        this.ui.switchRegister('swGuardStartingWaterSupply');
+        this.ui.switchRegister('swGuardStoppingOpenGates');
+        this.ui.switchRegister('swGuardStoppingStopDvr');
 
         this.requestToObtainGuardSettings();
     }
 
     eventHandler(source, type, data) {
-        switch (type) {
-        case 'statusUpdate':
-            return this.updateStatus(data)
-
-        case 'guardSettings':
-            return this.updateGuardSettings(data)
-
-        case 'error':
-            this.logErr(data)
-            return
-
-        case 'info':
-            this.logInfo(data)
-            return
-
-        default:
-            this.logErr("Incorrect event type: " + type)
-        }
-    }
-
-    updateStatus(data) {
-        if ('sensorsLeds' in data) {
-            for (var sName in data['sensorsLeds']) {
-                var mode = data['sensorsLeds'][sName];
-                this.sensorLeds[sName].light(mode);
-            }
-        }
-
-        if ('readyZoneLeds' in data) {
-            for (var zName in data['readyZoneLeds']) {
-                var mode = data['readyZoneLeds'][zName];
-                this.readyZoneLeds[zName].light(mode);
-            }
-        }
-
-        if ('blockedZoneLeds' in data) {
-            for (var zName in data['blockedZoneLeds']) {
-                var mode = data['blockedZoneLeds'][zName];
-                this.blockedZoneLeds[zName].light(mode);
-            }
-        }
-
-        if ('notAllReady' in data) {
-            this.notReadyZonesLed.light(data['notAllReady'])
-            this.allZonesReadyLed.light(!data['notAllReady'])
-        }
-
-        if ('isStarted' in data)
-            this.guardStartedLed.light(data['isStarted'])
-
-        if ('blockedZonesExisted' in data)
-            this.blockedZonesLed.light(data['blockedZonesExisted'])
-
-        if ('publicSound' in data)
-            this.publicAudioLed.light(data['publicSound'])
-    }
-
-    updateGuardSettings(data) {
-        var startSettings = data['startSettings'];
-        var stopSettings = data['stopSettings'];
-
-        for (name in startSettings['powerSockets']) {
-            var val = Boolean(startSettings['powerSockets'][name]);
-            this.startGuardPowerSocketSwitches[name].checked = val;
-        }
-
-        for (name in startSettings['doorLocks']) {
-            var val = Boolean(startSettings['doorLocks'][name]);
-            this.startGuardDoorLocksSwitches[name].checked = val;
-        }
-
-        this.noWatchWorkshopSwitch.checked = Boolean(startSettings['noWatchWorkshop']);
-        this.enabledAlarmSoundSwitch.checked = Boolean(startSettings['enabledAlarmSound']);
-        this.enabledSMSSwitch.checked = Boolean(startSettings['enabledSMS']);
-        this.enabledSkynetGroupNotifySwitch.checked = Boolean(startSettings['enabledSkynetGroupNotify']);
-        this.waterSupplySwitch.checked = Boolean(startSettings['waterSupply']);
-
-        for (name in stopSettings['doorLocks']) {
-            var val = Boolean(stopSettings['doorLocks'][name]);
-            this.stopGuardDoorLocksSwitches[name].checked = val;
-        }
-
-        this.openGatesSwitch.checked = Boolean(stopSettings['openGates']);
-        this.stopDvrSwitch.checked = Boolean(stopSettings['stopDvr']);
     }
 
     logErr(msg) {
@@ -211,21 +118,17 @@ class Guard extends ModuleBase {
 
     requestToStartGuard() {
         var data = {};
+        data['swGuardStartingNoWatchWorkshop'] = this.ui.switchByName('swGuardStartingNoWatchWorkshop').state()
+        data['swGuardAlarmSoundEnabled'] = this.ui.switchByName('swGuardAlarmSoundEnabled').state()
+        data['swGuardAlarmSmsEnabled'] = this.ui.switchByName('swGuardAlarmSmsEnabled').state()
+        data['swGuardAlarmSkynetEnabled'] = this.ui.switchByName('swGuardAlarmSkynetEnabled').state()
+        data['swGuardStartingWaterSupply'] = this.ui.switchByName('swGuardStartingWaterSupply').state()
 
-        data['noWatchWorkshop'] = this.noWatchWorkshopSwitch.checked;
-        data['enabledAlarmSound'] = this.enabledAlarmSoundSwitch.checked;
-        data['enabledSMS'] = this.enabledSMSSwitch.checked;
-        data['enabledSkynetGroupNotify'] = this.enabledSkynetGroupNotifySwitch.checked;
-
-        data['waterSupply'] = this.waterSupplySwitch.checked;
-
-        data['powerSockets'] = {};
         for (var name in this.confPowerSockets)
-            data['powerSockets'][name] = this.startGuardPowerSocketSwitches[name].checked;
+            data['swGuardStartingPowerZone_' + name] = this.ui.switchByName('swGuardStartingPowerZone_' + name).state()
 
-        data['doorLocks'] = {};
         for (var name in this.confDoorLocks)
-            data['doorLocks'][name] = this.startGuardDoorLocksSwitches[name].checked;
+            data['swGuardStartingDoorlockPower_' + name] = this.ui.switchByName('swGuardStartingDoorlockPower_' + name).state()
 
         this.logInfo('Post guard start settings and starting');
         this.skynetPostRequest('guard/start_with_settings', JSON.stringify(data));
@@ -234,12 +137,11 @@ class Guard extends ModuleBase {
     requestToStopGuard() {
         var data = {};
 
-        data['openGates'] = this.openGatesSwitch.checked;
-        data['stopDvr'] = this.stopDvrSwitch.checked;
+        data['swGuardStoppingOpenGates'] = this.ui.switchByName('swGuardStoppingOpenGates').state()
+        data['swGuardStoppingStopDvr'] = this.ui.switchByName('swGuardStoppingStopDvr').state()
 
-        data['doorLocks'] = {};
         for (var name in this.confDoorLocks)
-            data['doorLocks'][name] = this.stopGuardDoorLocksSwitches[name].checked;
+            data['swGuardStoppingDoorlockPower_' + name] = this.ui.switchByName('swGuardStoppingDoorlockPower_' + name).state()
 
         this.logInfo('Post guard stop settings and stopping');
         this.skynetPostRequest('guard/stop_with_settings', JSON.stringify(data));

@@ -119,12 +119,12 @@ class Lighters():
         data = {}
         for l in s.list():
             try:
-                data[l.name()] = not l.isDown()
+                data['ledLighter_%s' % l.name()] = not l.isDown()
             except IoError:
                 pass
 
-        data['automatic'] = s._enableAutomatic.val
-        s.skynet.emitEvent('lighters', 'statusUpdate', data)
+        data['ledLighter_automatic'] = s._enableAutomatic.val
+        s.skynet.emitEvent('lighters', 'ledsUpdate', data)
 
 
     def destroy(s):

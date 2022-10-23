@@ -36,10 +36,10 @@ class DoorLocks():
         data = {}
         for dl in s.list():
             try:
-                data[dl.name()] = not dl.isClosed()
+                data['ledDoorlock_%s' % dl.name()] = not dl.isClosed()
             except AppError:
                 pass
-        s.skynet.emitEvent('door_locks', 'statusUpdate', data)
+        s.skynet.emitEvent('door_locks', 'ledsUpdate', data)
 
 
     def destroy(s):

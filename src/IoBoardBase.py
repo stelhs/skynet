@@ -84,13 +84,6 @@ class IoBoardBase():
         return "Board %s" % s.name()
 
 
-    def updateCachedState(s, portStateList):
-        s.updatedTime = int(time.time())
-        for row in portStateList:
-            port = s.io.port(row['port_name'])
-            port.updateCachedState(row['state'])
-
-
 
     class Emulator:
         def __init__(s, board):

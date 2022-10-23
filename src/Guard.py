@@ -354,41 +354,37 @@ class Guard():
 
 
     def uiUpdateHandler(s):
-        s.cnt = 0
+        leds = {}
         notAllReady = False
-        sensorsLeds = {}
-        readyZoneLeds = {}
-        blockedZoneLeds = {}
+        blockedZonesExisted = False
 
         for zone in s.zones():
-            readyZoneLeds[zone.name()] = zone.isReadyToWatch()
-            blockedZoneLeds[zone.name()] = zone.isBlocked()
+            leds['ledGuardZoneReady_%s' % zone.name()] = zone.isReadyToWatch()
+            blocked = zone.isBlocked()
+            if blocked:
+                blockedZonesExisted = True
+            leds['ledGuardZoneBlocked_%s' % zone.name()] = blocked
 
             for sensor in zone.sensors():
                 isTriggered = sensor.isTriggered()
                 try:
-                    sensorsLeds[sensor.name()] = sensor.state()
+                    leds['ledGuardSensorState_%s' % zone.name()] = sensor.state()
                 except IoError:
                     continue
 
                 if isTriggered:
                     notAllReady = True
 
-        blockedZonesExisted = bool(len([zone for zone in s.zones() if zone.isBlocked()]))
-
-        data = {'sensorsLeds': sensorsLeds,
-                'readyZoneLeds': readyZoneLeds,
-                'blockedZoneLeds': blockedZoneLeds,
-                'notAllReady': notAllReady,
-                'isStarted': s.isStarted(),
-                'blockedZonesExisted': blockedZonesExisted}
+        leds['ledGuardNotWatchedZones'] = notAllReady
+        leds['ledGuardAllZonesReady'] = not notAllReady
+        leds['ledGuardBlockedZones'] = blockedZonesExisted
 
         try:
-            data['publicSound'] = s.voicePowerPort.state()
+            leds['ledGuardPublicAudio'] = s.voicePowerPort.state()
         except IoError:
             pass
 
-        s.skynet.emitEvent('guard', 'statusUpdate', data)
+        s.skynet.emitEvent('guard', 'ledsUpdate', leds)
 
 
     def destroy(s):
@@ -530,45 +526,45 @@ class Guard():
 
         def asDict(s):
             data = {}
-            data['noWatchWorkshop'] = s.noWatchWorkshop.val
-            data['waterSupply'] = s.waterSupply.val
-            data['enabledAlarmSound'] = s.enabledAlarmSound.val
-            data['enabledSMS'] = s.enabledSMS.val
-            data['enabledSkynetGroupNotify'] = s.enabledSkynetGroupNotify.val
+            data['swGuardStartingNoWatchWorkshop'] = s.noWatchWorkshop.val
+            data['swGuardStartingWaterSupply'] = s.waterSupply.val
+            data['swGuardAlarmSoundEnabled'] = s.enabledAlarmSound.val
+            data['swGuardAlarmSmsEnabled'] = s.enabledSMS.val
+            data['swGuardAlarmSkynetEnabled'] = s.enabledSkynetGroupNotify.val
 
-            data['powerSockets'] = {}
             for name, key in s.powerSockets.items():
-                data['powerSockets'][name] = s.powerSockets[name].val
+                data['swGuardStartingPowerZone_%s' % name] = s.powerSockets[name].val
 
-            data['doorLocks'] = {}
             for name, key in s.doorLocks.items():
-                data['doorLocks'][name] = s.doorLocks[name].val
+                data['swGuardStartingDoorlockPower_%s' % name] = s.doorLocks[name].val
             return data
 
 
         def fromDict(s, data):
-            if 'noWatchWorkshop' in data:
-                s.noWatchWorkshop.set(data['noWatchWorkshop'])
+            if 'swGuardStartingNoWatchWorkshop' in data:
+                s.noWatchWorkshop.set(data['swGuardStartingNoWatchWorkshop'])
 
-            if 'waterSupply' in data:
-                s.waterSupply.set(data['waterSupply'])
+            if 'swGuardStartingWaterSupply' in data:
+                s.waterSupply.set(data['swGuardStartingWaterSupply'])
 
-            if 'enabledAlarmSound' in data:
-                s.enabledAlarmSound.set(data['enabledAlarmSound'])
+            if 'swGuardAlarmSoundEnabled' in data:
+                s.enabledAlarmSound.set(data['swGuardAlarmSoundEnabled'])
 
-            if 'enabledSMS' in data:
-                s.enabledSMS.set(data['enabledSMS'])
+            if 'swGuardAlarmSmsEnabled' in data:
+                s.enabledSMS.set(data['swGuardAlarmSmsEnabled'])
 
-            if 'enabledSkynetGroupNotify' in data:
-                s.enabledSkynetGroupNotify.set(data['enabledSkynetGroupNotify'])
+            if 'swGuardAlarmSkynetEnabled' in data:
+                s.enabledSkynetGroupNotify.set(data['swGuardAlarmSkynetEnabled'])
 
-            if 'powerSockets' in data:
-                for name, val in data['powerSockets'].items():
-                    s.powerSockets[name].set(data['powerSockets'][name])
+            for name, key in s.powerSockets.items():
+                divName = 'swGuardStartingPowerZone_%s' % name
+                if divName in data:
+                    s.powerSockets[name].set(data[divName])
 
-            if 'doorLocks' in data:
-                for name, val in data['doorLocks'].items():
-                    s.doorLocks[name].set(data['doorLocks'][name])
+            for name, key in s.doorLocks.items():
+                divName = 'swGuardStartingDoorlockPower_%s' % name
+                if divName in data:
+                    s.doorLocks[name].set(data[divName])
 
 
 
@@ -590,9 +586,9 @@ class Guard():
             data['openGates'] = s.openGates.val
             data['stopDvr'] = s.stopDvr.val
 
-            data['doorLocks'] = {}
             for name, key in s.doorLocks.items():
-                data['doorLocks'][name] = s.doorLocks[name].val
+                data['swGuardStoppingDoorlockPower_%s' % name] = s.doorLocks[name].val
+
             return data
 
 
@@ -603,9 +599,10 @@ class Guard():
             if 'stopDvr' in data:
                 s.stopDvr.set(data['stopDvr'])
 
-            if 'doorLocks' in data:
-                for name, val in data['doorLocks'].items():
-                    s.doorLocks[name].set(data['doorLocks'][name])
+            for name, key in s.doorLocks.items():
+                divName = 'swGuardStoppingDoorlockPower_%s' % name
+                if divName in data:
+                    s.doorLocks[name].set(data[divName])
 
 
     class Db():

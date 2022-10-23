@@ -101,6 +101,12 @@ class Ui {
         this.dialogBox = NaN;
         this.hidingPageDiv = $$('hidingPage');
         this.isErrBoxDisplayed = false
+
+        this.leds = [];
+        this.sevenSegs = [];
+        this.statusBars = [];
+        this.labelBars = [];
+        this.switches = [];
 //        this.noSleep.run();
         this.register();
         this.eventReceiver();
@@ -130,9 +136,14 @@ class Ui {
         $$('menu_panel').innerHTML = menuTpl.result();
         $$('modules').innerHTML = modulesTpl.result();
 
+        this.ledsAct = [];
         for (var i in this.modules) {
             var mod = this.modules[i];
             mod.init()
+            let led = this.ledRegister('ledActivity_'+mod.name(), 'red');
+            led.setLostSignalStyle('off')
+            led.setActualizeTimeoutMsec(100);
+            this.ledsAct[mod.name()] = led;
         }
 
         this.switchModule('power');
@@ -162,6 +173,36 @@ class Ui {
     }
 
     eventHandler(source, type, data) {
+        switch (type) {
+        case 'ledsUpdate':
+            this.ledsUpdateState(data);
+            break;
+
+        case 'sevenSegsUpdate':
+            this.sevenSegsUpdateState(data);
+            break;
+
+        case 'statusBarsUpdate':
+            this.statusBarsUpdateState(data);
+            break;
+
+        case 'labelsBarsUpdate':
+            this.labelBarsUpdateState(data);
+            break;
+
+        case 'switchesUpdate':
+            this.switchesUpdateState(data);
+            break;
+
+        case 'error':
+            this.logErr(source + ': ' + data)
+            return
+
+        case 'info':
+            this.logInfo(source + ': ' + data)
+            return
+        }
+
         for (var mod of this.modules) {
             if (mod.eventSources().includes(source)) {
                 mod.eventHandler(source, type, data);
@@ -350,6 +391,111 @@ class Ui {
         this.showDialogBox(loginBox)
     }
 
+    ledRegister(name, color, type='big') {
+        let led = new Led(this, name, color, type);
+        this.leds[name] = led;
+        return led;
+    }
+
+    ledByName(name) {
+        return this.leds[name];
+    }
+
+    ledsUpdateState(listStates) {
+        for (var name in listStates) {
+            var led = this.ledByName(name);
+            if (!led) {
+                console.log("Led "+name+" is not registred")
+                return;
+            }
+            var state = listStates[name]
+            led.light(state)
+        }
+    }
+
+    sevenSegRegister(name, color, digits=3) {
+        let sevenSeg = new SevenSeg(this, name, color, digits);
+        this.sevenSegs[name] = sevenSeg;
+    }
+
+    sevenSegByName(name) {
+        return this.sevenSegs[name];
+    }
+
+    sevenSegsUpdateState(listStates) {
+        for (var name in listStates) {
+            var ss = this.sevenSegByName(name);
+            if (!ss) {
+                console.log("SevenSeg "+name+" is not registred");
+                return;
+            }
+            var state = listStates[name]
+            ss.set(state)
+        }
+    }
+
+    statusBarRegister(name) {
+        let sb = new StatusBar(this, name);
+        this.statusBars[name] = sb;
+    }
+
+    statusBarByName(name) {
+        return this.statusBars[name];
+    }
+
+    statusBarsUpdateState(listStates) {
+        for (var name in listStates) {
+            var sb = this.statusBarByName(name);
+            if (!sb) {
+                console.log("StatusBar "+name+" is not registred");
+                return;
+            }
+            var state = listStates[name]
+            sb.set(state)
+        }
+    }
+
+    labelBarRegister(name) {
+        let lb = new LabelBar(this, name);
+        this.labelBars[name] = lb;
+    }
+
+    labelBarByName(name) {
+        return this.labelBars[name];
+    }
+
+    labelBarsUpdateState(listStates) {
+        for (var name in listStates) {
+            var lb = this.labelBarByName(name);
+            if (!lb) {
+                console.log("LabelBar "+name+" is not registred");
+                return;
+            }
+            var state = listStates[name];
+            lb.set(state);
+        }
+    }
+
+    switchRegister(name) {
+        let sw = new Switch(this, name);
+        this.switches[name] = sw;
+    }
+
+    switchByName(name) {
+        return this.switches[name];
+    }
+
+    switchesUpdateState(listStates) {
+        for (var name in listStates) {
+            var sw = this.switchByName(name);
+            if (!sw) {
+                console.log("Switch "+name+" is not registred");
+                return;
+            }
+            var state = listStates[name];
+            sw.set(state);
+        }
+    }
 }
 
 
@@ -497,17 +643,33 @@ class ModuleBase {
                      success.bind(this), error.bind(this))
     }
 
+    ledAct() {
+        this.ui.ledsAct[this.name()].set('on');
+    }
 }
 
 class Led {
-    constructor(divName, color, actualizeTimeoutSec=0, size="big") {
+    constructor(ui, divName, color, size="big") {
         this.divName = divName;
         this.div = $$(divName);
+
         this.color = color
         this.size = size
-        this.actualizeTimeout = actualizeTimeoutSec
+        this.ui = ui
+
+        this.actualizeTimeout = ui.configs['ui']['updateTimeout']
+
         this.wrkId = NaN;
-        this.set('undefined');
+        this.lostState = 'undefined'
+        this.set(this.lostState);
+    }
+
+    setLostSignalStyle(style) {
+        this.lostState = style
+    }
+
+    setActualizeTimeoutMsec(intervalMsec) {
+        this.actualizeTimeout = intervalMsec
     }
 
     set(mode) {
@@ -533,10 +695,10 @@ class Led {
             }
 
             var cb = function() {
-                this.set('undefined')
+                this.set(this.lostState)
                 this.wrkId = NaN;
             }
-            this.wrkId = setTimeout(cb.bind(this), this.actualizeTimeout * 1000)
+            this.wrkId = setTimeout(cb.bind(this), this.actualizeTimeout)
         }
     }
 
@@ -547,33 +709,33 @@ class Led {
             this.set('off');
     }
 
-    actualize(data, field, value) {
+/*    actualize(data, field, value) {
         if (field in data) {
             if (data[field] == value)
                 this.set('on');
             else
                 this.set('off');
         }
-    }
+    }*/
 }
 
 class SevenSeg {
-    constructor(divName, color, digits=3, actualizeTimeoutSec=0) {
+    constructor(ui, divName, color, digits=3) {
         this.divName = divName;
         this.div = $("#" + divName);
         this.color = color
         this.digits = digits
-        this.actualizeTimeout = actualizeTimeoutSec
+        this.actualizeTimeout = ui.configs['ui']['updateTimeout'];
         this.wrkId = NaN;
         this.set('');
     }
 
     set(val) {
         this.div.sevenSegArray({
-            value: val,
+            value: val.toString(),
             digits: this.digits,
             segmentOptions: {
-                colorOff: "#003500",
+                colorOff: "#002700",
                 colorOn: this.color,
                 slant: 10
             }
@@ -589,16 +751,16 @@ class SevenSeg {
                 this.set('')
                 this.wrkId = NaN;
             }
-            this.wrkId = setTimeout(cb.bind(this), this.actualizeTimeout * 1000)
+            this.wrkId = setTimeout(cb.bind(this), this.actualizeTimeout)
         }
     }
 }
 
 class StatusBar {
-    constructor(divName, actualizeTimeoutSec=0) {
+    constructor(ui, divName) {
         this.divName = divName;
         this.div = $$(divName);
-        this.actualizeTimeout = actualizeTimeoutSec
+        this.actualizeTimeout = ui.configs['ui']['updateTimeout'];
         this.wrkId = NaN;
         this.set('---');
     }
@@ -616,10 +778,54 @@ class StatusBar {
                 this.set('---')
                 this.wrkId = NaN;
             }
-            this.wrkId = setTimeout(cb.bind(this), this.actualizeTimeout * 1000)
+            this.wrkId = setTimeout(cb.bind(this), this.actualizeTimeout)
         }
     }
 }
+
+class LabelBar {
+    constructor(ui, divName) {
+        this.divName = divName;
+        this.div = $$(divName);
+        this.actualizeTimeout = ui.configs['ui']['updateTimeout'];
+        this.wrkId = NaN;
+        this.set('');
+    }
+
+    set(val) {
+        this.div.innerHTML = val;
+
+        if (this.actualizeTimeout && val != '') {
+            if (this.wrkId) {
+                clearTimeout(this.wrkId)
+                this.wrkId = NaN;
+            }
+
+            var cb = function() {
+                this.set('')
+                this.wrkId = NaN;
+            }
+            this.wrkId = setTimeout(cb.bind(this), this.actualizeTimeout)
+        }
+    }
+}
+
+class Switch {
+    constructor(ui, divName) {
+        this.divName = divName;
+        this.div = $$(divName);
+        this.set(false);
+    }
+
+    set(val) {
+        this.div.checked = val;
+    }
+
+    state() {
+        return this.div.checked;
+    }
+}
+
 
 function init() {
     Number.prototype.pad = function(size) {

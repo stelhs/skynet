@@ -13,7 +13,7 @@ class WaterSupply():
         s.io = skynet.io
         s.tc = skynet.tc
         s._lock = threading.Lock()
-        s._timeoutTask = None
+        s._autoStopTask = None
         s.httpServer = skynet.httpServer
         s.httpHandlers = WaterSupply.HttpHandlers(s)
 
@@ -23,7 +23,7 @@ class WaterSupply():
         s.buttRP = s.io.port('RP_water_pump_button')
         s.buttWorkshop = s.io.port('workshop_water_pump_button')
 
-        s.lowPressureSense.subscribe("WaterSupply", s.lowPressureHandler, 1)
+        s.lowPressureSense.subscribe("WaterSupply", s.lowPressureHandler)
         s.buttWorkshop.subscribe("WaterSupply", s.buttPressedHandler, 1)
         s.buttRP.subscribe("WaterSupply", s.buttPressedHandler, 1)
 
@@ -45,18 +45,18 @@ class WaterSupply():
     def uiUpdateHandler(s):
         data = {}
         try:
-            data['waterPumpEnabled'] = s.pumpPort.state()
+            data['ledWaterPumpEnabled'] = s.pumpPort.state()
         except IoError:
             pass
 
         try:
-            data['watersupplyLowPressure'] = s.lowPressureSense.state()
+            data['ledWatersupplyLowPressure'] = s.isLowPressure()
         except IoError:
             pass
 
-        data['watersupplyPumpIsLocked'] = s.isBlocked()
-        data['watersupplyAutomaticEnabled'] = s._enableAutomatic.val
-        s.skynet.emitEvent('water_supply', 'statusUpdate', data)
+        data['ledWatersupplyPumpIsLocked'] = s.isBlocked()
+        data['ledWatersupplyAutomaticEnabled'] = s._enableAutomatic.val
+        s.skynet.emitEvent('water_supply', 'ledsUpdate', data)
 
 
     def unlock(s):
@@ -65,42 +65,58 @@ class WaterSupply():
 
     def lock(s):
         s._isBlocked.set(True)
-        if s._timeoutTask:
-            s._timeoutTask.remove()
+        if s._autoStopTask:
+            s._autoStopTask.remove()
         s.pumpStop()
 
 
     def isBlocked(s):
-            return s._isBlocked.val
+        return s._isBlocked.val
+
+
+    def isLowPressure(s):
+        return s.lowPressureSense.state()
 
 
     def pumpRun(s):
         if s.isBlocked():
             raise PumpIsBlockedError(s.log, "Can't run pump. Pump is blocked")
-
-        s.restartAutoStop()
         s.pumpPort.up()
 
 
     def restartAutoStop(s):
         t = None
-        with s._lock:
-            if s._timeoutTask:
-                s._timeoutTask.remove()
+        s.cancelAutoStop()
 
-        t = Task.setTimeout("waterPumpTimeout",
-                            int(s.conf['pump_run_timeout']) * 1000, s.pumpStop)
+        def autostop():
+            print('autostop')
+            while 1:
+                try:
+                    s.pumpPort.down()
+                    with s._lock:
+                        s._autoStopTask = None
+                    return
+                except IoError:
+                    Task.sleep(1000)
+
+
+        t = Task.setTimeout("waterSupplyAutoStopTimeout",
+                            int(s.conf['pump_run_timeout']) * 1000, autostop)
 
         with s._lock:
-            s._timeoutTask = t
+            s._autoStopTask = t
+
+
+    def cancelAutoStop(s):
+        with s._lock:
+            if s._autoStopTask:
+                s._autoStopTask.remove()
+                s._autoStopTask = None
 
 
     def pumpStop(s):
         s.pumpPort.down()
-        with s._lock:
-            if s._timeoutTask:
-                s._timeoutTask.remove()
-                s._timeoutTask = None
+        s.cancelAutoStop()
 
 
     def isStarted(s):
@@ -121,11 +137,21 @@ class WaterSupply():
         if not s._enableAutomatic.val:
             return
 
-        s.restartAutoStop()
-        try:
-            s.pumpRun()
-        except IoError as e:
-            s.toAdmin('Can`t start water by low pressure: %s' % e)
+        if state == 1:
+            def start():
+                while 1:
+                    try:
+                        s.pumpRun()
+                        s.restartAutoStop()
+                        return
+                    except IoError as e:
+                        Task.sleep(1000)
+            Task.asyncRunSingle('waterSupplyAutoStarter', start)
+            return
+
+        if state == 0:
+            s.cancelAutoStop()
+            return
 
 
     def destroy(s):
@@ -169,6 +195,8 @@ class WaterSupply():
                 s.ws._enableAutomatic.set(False)
             else:
                 s.ws._enableAutomatic.set(True)
+                if s.ws.isLowPressure():
+                    s.ws.pumpRun()
             s.ws.uiUpdater.call()
 
 

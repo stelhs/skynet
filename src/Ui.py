@@ -19,15 +19,12 @@ class Ui():
         s.em = Ui.EventManager()
         s.httpHandlers = Ui.HttpHandlers(s)
         s.skynet.registerEventSubscriber('Ui', s.eventHandler,
-                                         ('io', 'boiler', 'termosensors', 'power_sockets',
-                                          'lighters', 'water_supply', 'gates', 'guard',
-                                          'door_locks', 'ups'))
+                                         evTypes=('ledsUpdate', 'statusBarsUpdate',
+                                                  'sevenSegsUpdate', 'boilerFuelConsumption'))
 
 
 
     def eventHandler(s, source, evType, data):
-        if evType == "ups":
-            print(data)
         s.em.send(source, evType, data)
 
 
@@ -209,7 +206,8 @@ class Ui():
                     "powerSockets": s.skynet.conf.powerSockets,
                     "termosensors": s.skynet.conf.termosensors,
                     "lighters": s.skynet.conf.lighters,
-                    "doorlocks": s.skynet.conf.doorLocks}
+                    "doorlocks": s.skynet.conf.doorLocks,
+                    "ui": {"updateTimeout": 3000}}
 
 
         def logout(s, args, conn):

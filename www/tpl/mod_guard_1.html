@@ -30,12 +30,12 @@
                 <div style="padding: 0 20 10 20;">
 
                     <div style="margin: 10 0 0 20">
-                        Готовность: <div id="led_all_zones_ready" class="led_big-red"></div>
+                        Готовность: <div id="ledGuardAllZonesReady" class="led_big-red"></div>
                     </div>
 
                     <div style="margin: 5 0 0 50">
                         <label class="switch" style="vertical-align: middle">
-                            <input type="checkbox" id="guard_starting_no_watch_workshop">
+                            <input type="checkbox" id="swGuardStartingNoWatchWorkshop">
                             <span class="slider round"></span>
                         </label>
                         Не следить за мастерской
@@ -48,7 +48,7 @@
                         <!-- START BLOCK : guard_starting_power_zone -->
                             <div style="margin: 5 0 0 50">
                                 <label class="switch" style="vertical-align: middle">
-                                    <input type="checkbox" id="guard_starting_power_zone_{name}">
+                                    <input type="checkbox" id="swGuardStartingPowerZone_{name}">
                                     <span class="slider round"></span>
                                 </label>
                                 {description}
@@ -63,7 +63,7 @@
                         <!-- START BLOCK : guard_starting_doorlock_power -->
                             <div style="margin: 5 0 0 50">
                                 <label class="switch" style="vertical-align: middle">
-                                    <input type="checkbox" id="guard_starting_doorlock_power_{name}">
+                                    <input type="checkbox" id="swGuardStartingDoorlockPower_{name}">
                                     <span class="slider round"></span>
                                 </label>
                                 {description}
@@ -73,7 +73,7 @@
 
                     <div style="margin: 5 0 0 50">
                         <label class="switch" style="vertical-align: middle">
-                            <input type="checkbox" id="guard_starting_water_supply">
+                            <input type="checkbox" id="swGuardStartingWaterSupply">
                             <span class="slider round"></span>
                         </label>
                         Водоснабжение
@@ -84,7 +84,7 @@
                         <div>
                             <div style="margin: 5 0 0 50; display: inline-block;">
                                 <label class="switch" style="vertical-align: middle">
-                                    <input type="checkbox" id="guard_alarm_sound_enabled">
+                                    <input type="checkbox" id="swGuardAlarmSoundEnabled">
                                     <span class="slider round"></span>
                                 </label>
                                 Сирена
@@ -92,7 +92,7 @@
 
                             <div style="margin: 5 0 0 50; display: inline-block;">
                                 <label class="switch" style="vertical-align: middle">
-                                    <input type="checkbox" id="guard_alarm_sms_enabled">
+                                    <input type="checkbox" id="swGuardAlarmSmsEnabled">
                                     <span class="slider round"></span>
                                 </label>
                                 Рассылка SMS
@@ -101,7 +101,7 @@
 
                         <div style="margin: 5 0 0 50">
                             <label class="switch" style="vertical-align: middle">
-                                <input type="checkbox" id="guard_alarm_skynet_enabled">
+                                <input type="checkbox" id="swGuardAlarmSkynetEnabled">
                                 <span class="slider round"></span>
                             </label>
                             Уведомление в Skynet группу
@@ -144,7 +144,7 @@
 
                     <div style="margin: 15 0 0 20">
                         <label class="switch" style="vertical-align: middle">
-                            <input type="checkbox" id="guard_stopping_open_gates">
+                            <input type="checkbox" id="swGuardStoppingOpenGates">
                             <span class="slider round"></span>
                         </label>
                         Открыть откатные ворота
@@ -152,7 +152,7 @@
 
                     <div style="margin: 5 0 0 20">
                         <label class="switch" style="vertical-align: middle">
-                            <input type="checkbox" id="guard_stopping_stop_dvr">
+                            <input type="checkbox" id="swGuardStoppingStopDvr">
                             <span class="slider round"></span>
                         </label>
                         Отключить запись видео в мастерской
@@ -163,7 +163,7 @@
                         <!-- START BLOCK : guard_stopping_doorlock_power -->
                             <div style="margin: 5 0 0 50">
                                 <label class="switch" style="vertical-align: middle">
-                                    <input type="checkbox" id="guard_stopping_doorlock_power_{name}">
+                                    <input type="checkbox" id="swGuardStoppingDoorlockPower_{name}">
                                     <span class="slider round"></span>
                                 </label>
                                 {description}
@@ -188,16 +188,16 @@
                 <div style="padding: 0 20 10 20;">
 
                     <div style="padding-top: 5px">
-                        <div id="led_guard_state" class="led_big-green"></div>Охрана (вкл/выкл)
+                        <div id="ledGuardState" class="led_big-green"></div>Охрана (вкл/выкл)
                     </div>
                     <div style="padding-top: 5px">
-                        <div id="led_blocked_zones" class="led_big-red"></div>Заблокированные зоны
+                        <div id="ledGuardBlockedZones" class="led_big-red"></div>Заблокированные зоны
                     </div>
                     <div style="padding-top: 5px">
-                        <div id="led_not_watched_zones" class="led_big-red"></div>Неохраняемые зоны
+                        <div id="ledGuardNotWatchedZones" class="led_big-red"></div>Неохраняемые зоны
                     </div>
                     <div style="padding-top: 5px">
-                        <div id="led_public_audio" class="led_big-red"></div>Громкоговоритель
+                        <div id="ledGuardPublicAudio" class="led_big-red"></div>Громкоговоритель
                     </div>
 
                     <div style="width: max-content;

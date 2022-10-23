@@ -16,8 +16,11 @@ class Ups():
         s.log = Syslog('Ups')
         s._lock = threading.Lock()
 
-        s.noVoltage = False
-        s.upsTask = Task.setPeriodic('ups', 1000, s.doControlUps)
+        s.noPowerUps250vdc = False
+        s.noPowerUps14vdc = False
+        s.noBattVoltage = False
+
+        s.upsTask = Task.setPeriodic('ups', 2000, s.doControlUps)
 
         s.storage = SkynetStorage(skynet, 'ups.json')
         s._mode = s.storage.key('/mode', 'charge') # 'charge', 'discharge', 'waiting', 'stopped'
@@ -41,7 +44,7 @@ class Ups():
         s.uiUpdater = s.skynet.periodicNotifier.register("ups", s.uiUpdateHandler, 2000)
         s.httpHandlers = Ups.HttpHandlers(s)
 
-        Task.setPeriodic('ups_actualizer', 1000, s.actualizer_cb)
+        Task.setPeriodic('ups_actualizer', 2000, s.actualizer_cb)
 
 
     def actualizer_cb(s, task):
@@ -54,8 +57,9 @@ class Ups():
                     s.chargerStart(1)
                     return
 
-                if s.mode() == 'charge':
-                    s.noVoltage = True
+                if s.mode() == 'charge' and not s.charger.isStarted():
+                    s.charger.start(1, 'skynet restarted')
+
         except IoError:
             return
         task.remove()
@@ -156,9 +160,9 @@ class Ups():
             try:
                 voltage = s.hw.battery.voltage()
             except BatteryVoltageError:
-                if s.noVoltage:
+                if s.noBattVoltage:
                     return
-                s.noVoltage = True
+                s.noBattVoltage = True
                 if s.charger.isStarted():
                     s.charger.pause()
                     s.log.err('Battery voltage error. Charger is paused')
@@ -166,8 +170,8 @@ class Ups():
                                   "Контроль за АКБ утерян.")
 
             # Voltage is present, resume controlling
-            if s.noVoltage and voltage != None:
-                s.noVoltage = False
+            if s.noBattVoltage and voltage != None:
+                s.noBattVoltage = False
                 s.log.info('Battery voltage restored. Charger is resumed')
                 s.toAdmin("Информация о напряжении на АКБ получена %.2fv.\n" \
                               "Контроль за АКБ продолжается." % voltage)
@@ -177,7 +181,7 @@ class Ups():
                     else:
                         s.charger.start(1, 'automatic')
 
-            if s.noVoltage:
+            if s.noBattVoltage:
                 return
 
             try:
@@ -197,16 +201,29 @@ class Ups():
 
     def doCheckUpsHw(s):
         try:
-            if not s.hw.powerOutUpsPort.state():
-                s.log.err('250VDC Error')
+            if not s.hw.powerOutUpsPort.state() and not s.noPowerUps250vdc:
+                s.log.err('250VDC is lost')
                 s.toAdmin("Нет выходного питания бесперебойника 250vdc")
+                s.noPowerUps250vdc = True
+
+            if s.hw.powerOutUpsPort.state() and s.noPowerUps250vdc:
+                s.log.err('250VDC appeared')
+                s.toAdmin("Выходного питание бесперебойника 250vdc восстановлено")
+                s.noPowerUps250vdc = True
         except IoError:
             pass
 
         try:
-            if not s.hw.powerUps14vdcPort.state():
-                s.log.err('14VDC Error')
+            if not s.hw.powerUps14vdcPort.state() and not s.noPowerUps14vdc:
+                s.log.err('14VDC is lost')
                 s.toAdmin("Нет внутреннего питания бесперебойника 14vdc")
+                s.noPowerUps14vdc = True
+
+            if s.hw.powerUps14vdcPort.state() and s.noPowerUps14vdc:
+                s.log.err('14VDC appeared')
+                s.toAdmin("Внутреннее питание бесперебойника 14vdc восстановлено")
+                s.noPowerUps14vdc = False
+
         except IoError:
             pass
 
@@ -306,123 +323,126 @@ class Ups():
     def uiUpdateHandler(s):
         now = int(time.time())
 
-        data = {}
+        leds = {}
+        statusBars = {}
         try:
-            data['ledPowerExtExist'] = s.hw.powerExtPort.state()
+            leds['ledPowerExtExist'] = s.hw.powerExtPort.state()
         except IoError:
             pass
 
         try:
-            data['ledPowerInUps'] = s.hw.powerInUpsPort.state()
+            leds['ledPowerInUps'] = s.hw.powerInUpsPort.state()
         except IoError:
             pass
 
         try:
-            data['ledPowerOutUpsIsAbsent'] = not s.hw.powerOutUpsPort.state()
+            leds['ledPowerOutUpsIsAbsent'] = not s.hw.powerOutUpsPort.state()
         except IoError:
             pass
 
         try:
-            data['ledPower14vdcUpsAbsent'] = not s.hw.powerUps14vdcPort.state()
+            leds['ledPower14vdcUpsAbsent'] = not s.hw.powerUps14vdcPort.state()
         except IoError:
             pass
 
-        data['ledAutomaticCharhing'] = s._automaticEnabled.val
+        leds['ledAutomaticCharhing'] = s._automaticEnabled.val
 
-        data['ledCharging'] = False
+        leds['ledCharging'] = False
         mode = s.mode()
         ups_state = mode
         if mode == 'charge':
-            ups_state = "%s_%s" % (mode, s.charger.stage())
-            data['ledCharging'] = True
+            if s.charger.isStarted():
+                ups_state = "%s_%s" % (mode, s.charger.stage())
+                leds['ledCharging'] = True
 
-        data['upsState'] = ups_state
+        statusBars['sbUpsState'] = ups_state
 
         try:
-            data['battVoltage'] = s.hw.battery.voltage()
+            statusBars['sbBattVoltage'] = s.hw.battery.voltage()
         except BatteryVoltageError:
             pass
 
         try:
-            data['chargeCurrent'] = s.hw.battery.chargerCurrent()
+            statusBars['sbChargeCurrent'] = s.hw.battery.chargerCurrent()
         except ChargeCurrentError:
             pass
 
         try:
-            data['ledChargerEnPort'] = s.hw.enablePort.state()
+            leds['ledChargerEnPort'] = s.hw.enablePort.state()
         except IoError:
             pass
 
         try:
-            data['ledHighCurrent'] = s.hw.highCurrentPort.state()
+            leds['ledHighCurrent'] = s.hw.highCurrentPort.state()
         except IoError:
             pass
 
         try:
-            data['ledMiddleCurrent'] = s.hw.middleCurrentPort.state()
+            leds['ledMiddleCurrent'] = s.hw.middleCurrentPort.state()
         except IoError:
             pass
 
         try:
-            data['ledChargeDischarge'] = s.hw.chargeDischargePort.state()
+            leds['ledChargeDischarge'] = s.hw.chargeDischargePort.state()
         except IoError:
             pass
 
         try:
-            data['ledBatteryRelayPort'] = s.hw.batteryRelayPort.state()
+            leds['ledBatteryRelayPort'] = s.hw.batteryRelayPort.state()
         except IoError:
             pass
 
         try:
-            data['ledUpsBreakPowerPort'] = s.hw.upsBreakPowerPort.state()
+            leds['ledUpsBreakPowerPort'] = s.hw.upsBreakPowerPort.state()
         except IoError:
             pass
 
         if s.charger.chargingReason.val:
-            data['chargingReason'] = s.charger.chargingReason.val
+            statusBars['sbChargingReason'] = s.charger.chargingReason.val
         if s.charger.startTime.val:
-            data['chargerStartTime'] = timeDateToStr(s.charger.startTime.val)
+            statusBars['sbChargerStartTime'] = timeDateToStr(s.charger.startTime.val)
         if s.charger.stopTime.val:
-            data['chargerStopTime'] = timeDateToStr(s.charger.stopTime.val)
+            statusBars['sbChargerStopTime'] = timeDateToStr(s.charger.stopTime.val)
         if s.charger.startVoltage.val:
-            data['chargeStartVoltage'] = s.charger.startVoltage.val
+            statusBars['sbChargeStartVoltage'] = s.charger.startVoltage.val
 
         totalDuration = 0
         for stage, _ in s.charger.chargeDates.items():
             if not s.charger.chargeDates[stage].val:
                 continue
             duration = s.charger.stageDuration(stage)
-            data['chargeDuration_stage%s' % stage] = timeDurationStr(duration)
+            statusBars['sbChargeDuration_stage%s' % stage] = timeDurationStr(duration)
             totalDuration += duration
 
         if totalDuration:
-            data['chargeTotalDuration'] = timeDurationStr(totalDuration)
+            statusBars['sbChargeTotalDuration'] = timeDurationStr(totalDuration)
 
         try:
-            data['ledDischarging'] = s.isDischarge()
+            leds['ledDischarging'] = s.isDischarge()
         except IoError:
             pass
 
         if s.dischargeReason.val:
-            data['dischargeReason'] = s.dischargeReason.val
+            statusBars['sbDischargeReason'] = s.dischargeReason.val
         if s.dischargeStartTime.val:
-            data['dischargeStartTime'] = timeDateToStr(s.dischargeStartTime.val)
+            statusBars['sbDischargeStartTime'] = timeDateToStr(s.dischargeStartTime.val)
         if s.dischargeStopTime.val:
-            data['dischargeStopTime'] = timeDateToStr(s.dischargeStopTime.val)
+            statusBars['sbDischargeStopTime'] = timeDateToStr(s.dischargeStopTime.val)
 
         if s.dischargeStartVoltage.val:
-            data['dischargeStartVoltage'] = s.dischargeStartVoltage.val
+            statusBars['sbDischargeStartVoltage'] = s.dischargeStartVoltage.val
 
         if s.dischargeStopVoltage.val:
-            data['dischargeStopVoltage'] = s.dischargeStopVoltage.val
+            statusBars['sbDischargeStopVoltage'] = s.dischargeStopVoltage.val
 
         if s.dischargeStartTime.val:
             if s.dischargeStopTime.val:
-                data['dischargeDuration'] = timeDurationStr(s.dischargeStopTime.val - s.dischargeStartTime.val)
+                statusBars['sbDischargeDuration'] = timeDurationStr(s.dischargeStopTime.val - s.dischargeStartTime.val)
             else:
-                data['dischargeDuration'] = timeDurationStr(now - s.dischargeStartTime.val)
+                statusBars['sbDischargeDuration'] = timeDurationStr(now - s.dischargeStartTime.val)
 
-        s.skynet.emitEvent('ups', 'statusUpdate', data)
+        s.skynet.emitEvent('ups', 'ledsUpdate', leds)
+        s.skynet.emitEvent('ups', 'statusBarsUpdate', statusBars)
 
 
     def destroy(s):

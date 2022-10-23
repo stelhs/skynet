@@ -33,25 +33,25 @@ class Boiler extends ModuleBase {
         tpl.assign();
         this.setContentPageTotal(tpl.result())
 
-        this.boilerStateBar = new StatusBar('bolier_state', 3);
+        this.boilerStateBar = this.ui.statusBarRegister('sbBolierState');
 
-        this.leds = {'power': new Led('led_power', 'green', 3),
-                     'air_fun': new Led('led_air_fun', 'green', 3),
-                     'fuel_pump': new Led('led_fuel_pump', 'green', 3),
-                     'ignition': new Led('led_ignition', 'red', 3),
-                     'water_pump': new Led('led_water_pump', 'green', 3),
-                     'flame': new Led('led_flame', 'green', 3),
-                     'heater': new Led('led_heater', 'red', 3),
-                     'no_pressure': new Led('led_no_pressure', 'red', 3),
-                     'overheat': new Led('led_overheat', 'red', 3)};
+        this.ui.ledRegister('ledBoilerPower', 'green');
+        this.ui.ledRegister('ledBoilerAirFun', 'green');
+        this.ui.ledRegister('ledBoilerFuelPump', 'green');
+        this.ui.ledRegister('ledBoilerIgnition', 'green');
+        this.ui.ledRegister('ledBoilerWaterPump', 'green');
+        this.ui.ledRegister('ledBoilerFlame', 'green');
+        this.ui.ledRegister('ledBoilerHeater', 'green');
+        this.ui.ledRegister('ledBoilerNoPressure', 'green');
+        this.ui.ledRegister('ledBoilerOverheat', 'green');
 
-        this.sevenSegs = {'target_t':  new SevenSeg("ss_target_t", "lime", 3, 3),
-                          'room_t':  new SevenSeg("ss_room_t", "lime", 3, 3),
-                          'boiler_box_t':  new SevenSeg("ss_boiler_box_t", "red", 3, 3),
-                          'boiler_t':  new SevenSeg("ss_boiler_t", "red", 3, 3),
-                          'return_t':  new SevenSeg("ss_return_t", "red", 3, 3),
-                          'ignition_counter':  new SevenSeg("ss_ignition_counter", "orange", 3, 3),
-                          'fuel_consumption':  new SevenSeg("ss_fuel_consumption", "orange", 3, 3)}
+        this.ui.sevenSegRegister("ssBoilerTarget_t", "lime", 3)
+        this.ui.sevenSegRegister("ssBoilerRoom_t", "lime", 4)
+        this.ui.sevenSegRegister("ssBoilerBox_t", "red", 4)
+        this.ui.sevenSegRegister("ssBoilerWater_t", "red", 4)
+        this.ui.sevenSegRegister("ssBoilerRetWater_t", "red", 4)
+        this.ui.sevenSegRegister("ssBoilerIgnitionCounter", "orange", 3)
+        this.ui.sevenSegRegister("ssBoilerFuelConsumption", "orange", 3)
     }
 
 
@@ -70,62 +70,14 @@ class Boiler extends ModuleBase {
 
 
     eventHandler(source, type, data) {
+        this.ledAct();
         switch (type) {
-        case 'boilerStatus':
-            this.updateStatus(data);
-            return;
-
-        case 'error':
-            this.logErr(data)
-            return
-
-        case 'info':
-            this.logInfo(data)
-            return
-
         case 'boilerFuelConsumption':
             this.updateBoilerFuelConsumption(data);
             return
-
-        default:
-            this.logErr("Incorrect event type: " + type)
         }
     }
 
-    actualizeSevenSeg(data, field) {
-        if (field in data)
-            var val = data[field].toString()
-            val = Math.round(val * 10) / 10
-            this.sevenSegs[field].set(val)
-    }
-
-    updateStatus(data) {
-        if (typeof data !== 'object') {
-            this.logErr("Incorrect event status")
-            return;
-        }
-
-        if ('state' in data)
-            this.boilerStateBar.set(data['state']);
-
-        this.leds['power'].actualize(data, 'power', 'True');
-        this.leds['air_fun'].actualize(data, 'air_fun', 'True');
-        this.leds['fuel_pump'].actualize(data, 'fuel_pump', 'True');
-        this.leds['ignition'].actualize(data, 'ignition', 'True');
-        this.leds['water_pump'].actualize(data, 'water_pump', 'True');
-        this.leds['flame'].actualize(data, 'flame', 'True');
-        this.leds['heater'].actualize(data, 'heater', 'True');
-        this.leds['no_pressure'].actualize(data, 'no_pressure', 'True');
-        this.leds['overheat'].actualize(data, 'overheat', 'True');
-
-        this.actualizeSevenSeg(data, 'target_t');
-        this.actualizeSevenSeg(data, 'room_t');
-        this.actualizeSevenSeg(data, 'boiler_box_t');
-        this.actualizeSevenSeg(data, 'boiler_t');
-        this.actualizeSevenSeg(data, 'return_t');
-        this.actualizeSevenSeg(data, 'ignition_counter');
-        this.actualizeSevenSeg(data, 'fuel_consumption');
-    }
 
     boilerRequest(method, args) {
         var success = function(responceText) {
