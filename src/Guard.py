@@ -56,7 +56,7 @@ class Guard():
                     "createZones() failed: Zones list alrady was created early")
         zones = []
         for name, zConf in s.conf['zones'].items():
-            zone = Guard.Zone(s, name, zConf, s.storage, s.db)
+            zone = Guard.Zone(s, name, zConf)
             zones.append(zone)
         s._zones = tuple(zones)
 
@@ -174,11 +174,13 @@ class Guard():
     def doLampBlinkOnStop(s):
         try:
             s.io.port('guard_lamp').blink(500, 500, 6)
-        except AppError as e:
+        except IoError as e:
             s.errors.append(("Can't blink guard lamp", e))
 
 
     def doGatesOpen(s):
+        if not s.stopSettings.openGates.val:
+            return
         try:
             s.gates.open()
         except AppError as e:
@@ -245,10 +247,10 @@ class Guard():
 
             try:
                 s.toSkynet("Охрана включена");
-
                 notWatchedZoneNames = [zone.description() for zone in s.zones() if zone.name() not in s.watchingZones.val]
                 notWatchedZonesText = "\n\t".join(notWatchedZoneNames)
-                s.toSkynet("Зоны не под охраной:\n\t%s" % notWatchedZonesText);
+                if len(notWatchedZoneNames):
+                    s.toSkynet("Зоны не под охраной:\n\t%s" % notWatchedZonesText);
             except AppError as e:
                 pass
 
@@ -259,7 +261,8 @@ class Guard():
                     s.toSkynet("Охрана включена, но возникли ошибки: \n%s" % fullListText);
                 except AppError:
                     pass
-                raise GuardError(s.log, "Guard was started but any errors has occured: %s" % shortListText)
+                raise GuardError(s.log, "Guard was started but any errors " \
+                                        "has occured: %s" % shortListText)
 
     #        s.uiInfo('Guard ')
 
@@ -368,7 +371,7 @@ class Guard():
             for sensor in zone.sensors():
                 isTriggered = sensor.isTriggered()
                 try:
-                    leds['ledGuardSensorState_%s' % zone.name()] = sensor.state()
+                    leds['ledGuardSensorState_%s' % sensor.name()] = sensor.state()
                 except IoError:
                     continue
 
@@ -378,6 +381,7 @@ class Guard():
         leds['ledGuardNotWatchedZones'] = notAllReady
         leds['ledGuardAllZonesReady'] = not notAllReady
         leds['ledGuardBlockedZones'] = blockedZonesExisted
+        leds['ledGuardState'] = s.isStarted()
 
         try:
             leds['ledGuardPublicAudio'] = s.voicePowerPort.state()
@@ -423,9 +427,9 @@ class Guard():
 
 
         def obtainSettingsHandler(s, args, conn):
-            data = {'startSettings': s.guard.startSettings.asDict(),
-                    'stopSettings': s.guard.stopSettings.asDict()}
-            s.guard.skynet.emitEvent('guard', 'guardSettings', data)
+            data = s.guard.startSettings.asDict()
+            data.update(s.guard.stopSettings.asDict())
+            s.guard.skynet.emitEvent('guard', 'switchesUpdate', data)
 
 
         def startWithSettingsHandler(s, args, conn):
@@ -583,8 +587,8 @@ class Guard():
 
         def asDict(s):
             data = {}
-            data['openGates'] = s.openGates.val
-            data['stopDvr'] = s.stopDvr.val
+            data['swGuardStoppingOpenGates'] = s.openGates.val
+            data['swGuardStoppingStopDvr'] = s.stopDvr.val
 
             for name, key in s.doorLocks.items():
                 data['swGuardStoppingDoorlockPower_%s' % name] = s.doorLocks[name].val
@@ -593,11 +597,11 @@ class Guard():
 
 
         def fromDict(s, data):
-            if 'openGates' in data:
-                s.openGates.set(data['openGates'])
+            if 'swGuardStoppingOpenGates' in data:
+                s.openGates.set(data['swGuardStoppingOpenGates'])
 
-            if 'stopDvr' in data:
-                s.stopDvr.set(data['stopDvr'])
+            if 'swGuardStoppingStopDvr' in data:
+                s.stopDvr.set(data['swGuardStoppingStopDvr'])
 
             for name, key in s.doorLocks.items():
                 divName = 'swGuardStoppingDoorlockPower_%s' % name
@@ -613,11 +617,11 @@ class Guard():
 
 
     class Zone():
-        def __init__(s, guard, name, conf, storage, db):
+        def __init__(s, guard, name, conf):
             s.guard = guard
             s.io = guard.io
             s._lock = threading.Lock()
-            s.storage = storage
+            s.storage = guard.storage
             s._name = name
             s._desc = conf['desc']
             if len(conf['io_sensors']) > 1:
@@ -634,7 +638,7 @@ class Guard():
                             "Can't create zone '%s': port '%s' has incorrect type '%s'. " \
                             "Only 'in' ports allowable" % (sName, port.name(), port.mode()))
 
-                sensor = Guard.Sensor(s.io, s, port, trigState)
+                sensor = Guard.Sensor(s, port, trigState)
                 s._sensors.append(sensor)
 
 
@@ -705,15 +709,16 @@ class Guard():
 
 
     class Sensor():
-        def __init__(s, io, zone, port, trigState):
+        def __init__(s, zone, port, trigState):
             s._lock = threading.Lock()
-            s.io = io
+            s.io = zone.guard.io
             s.zone = zone
             s.guard = zone.guard
             s.tc = s.guard.tc
             s.port = port
             s.attemptToLockTimer = None
             s.storage = s.guard.storage
+            s.toAdmin = s.zone.guard.toAdmin
 
             s.trigState = trigState
             port.subscribe("Sensor", s.doEventProcessing)
@@ -767,7 +772,6 @@ class Guard():
                 s._blocked.set(True)
             s._lastNotificationTime.set(int(time.time()))
             s._trigCnt.set(0)
-            print("sensor %s locked" % s.name())
 
 
         def unlock(s):
@@ -776,7 +780,6 @@ class Guard():
             with s._lock:
                 s._blocked.set(False)
             s._trigCnt.set(0)
-            print("sensor %s ulocked" % s.name())
 
 
         def match(s, port):

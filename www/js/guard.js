@@ -81,7 +81,7 @@ class Guard extends ModuleBase {
         this.ui.ledRegister('ledGuardState', 'green');
         this.ui.ledRegister('ledGuardNotWatchedZones', 'red');
         this.ui.ledRegister('ledGuardBlockedZones', 'red');
-        this.ui.ledRegister('ledGuardAllZonesReady', 'red');
+        this.ui.ledRegister('ledGuardAllZonesReady', 'green');
         this.ui.ledRegister('ledGuardPublicAudio', 'red');
 
         this.ui.switchRegister('swGuardStartingNoWatchWorkshop');
@@ -97,6 +97,11 @@ class Guard extends ModuleBase {
 
     eventHandler(source, type, data) {
     }
+
+    onPageChanged(pageNum) {
+        this.requestToObtainGuardSettings();
+    }
+
 
     logErr(msg) {
         this.ui.logErr("Guard: " + msg)
