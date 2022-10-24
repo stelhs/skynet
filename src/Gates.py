@@ -39,11 +39,11 @@ class Gates():
     def uiUpdateHandler(s):
         data = {}
         try:
-            data['ledGatesClosed'] = s.isClosedPort.state()
+            data['ledGatesNotClosed'] = not s.isClosedPort.state()
         except IoError:
             pass
         try:
-            data['ledGatesPower'] = not s.powerPort.state()
+            data['ledGatesNoPower'] = s.powerPort.state()
         except IoError:
             pass
         s.skynet.emitEvent('gates', 'ledsUpdate', data)
@@ -71,6 +71,7 @@ class Gates():
                 raise GatesNoPowerError(s.log, "Can't open gates. Power is absent")
             if s.isClosed():
                 return
+            print("call close")
             s.openPort.down()
             s.closePort.blink(1000, 500, 1)
 
@@ -116,7 +117,7 @@ class Gates():
 
 
     def buttOpenClosePedHandler(s, state):
-        if s.guard.isStarted():
+        if s.skynet.guard.isStarted():
             return
 
         try:
@@ -151,6 +152,8 @@ class Gates():
             s.regUiHandler('w', "GET", "/gates/open", s.openHandler)
             s.regUiHandler('w', "GET", "/gates/close", s.closeHandler)
             s.regUiHandler('w', "GET", "/gates/open_pedestrian", s.openPedestrianHandler)
+            s.regUiHandler('w', "GET", "/gates/power_on", s.powerOn)
+            s.regUiHandler('w', "GET", "/gates/power_off", s.powerOff)
 
 
         def regUiHandler(s, permissionMode, method, url, handler,
@@ -178,6 +181,21 @@ class Gates():
                 s.gates.openPed()
             except AppError as e:
                 raise HttpHandlerError("Can't open gates for pedestrian : %s" % e)
+
+
+        def powerOn(s, args, conn):
+            try:
+                s.gates.powerEnable()
+            except AppError as e:
+                raise HttpHandlerError("Can't power On: %s" % e)
+
+
+        def powerOff(s, args, conn):
+            try:
+                s.gates.powerDisable()
+            except AppError as e:
+                raise HttpHandlerError("Can't power Off: %s" % e)
+
 
 
     class TgHandlers():

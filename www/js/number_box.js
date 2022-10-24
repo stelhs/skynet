@@ -63,7 +63,6 @@ class NumberBox {
 
         if (this.digits[this.selectedInput].length > 4)
             this.digits[this.selectedInput].shift();
-        console.log(this.digits);
         this.updateDisplays();
     }
 
@@ -131,7 +130,6 @@ class NumberBox {
                 str += digit;
             }
 
-            console.log(color);
             div.sevenSegArray({
                 value: str,
                 digits: 4,

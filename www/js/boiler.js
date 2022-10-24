@@ -38,10 +38,10 @@ class Boiler extends ModuleBase {
         this.ui.ledRegister('ledBoilerPower', 'green');
         this.ui.ledRegister('ledBoilerAirFun', 'green');
         this.ui.ledRegister('ledBoilerFuelPump', 'green');
-        this.ui.ledRegister('ledBoilerIgnition', 'green');
+        this.ui.ledRegister('ledBoilerIgnition', 'red');
         this.ui.ledRegister('ledBoilerWaterPump', 'green');
         this.ui.ledRegister('ledBoilerFlame', 'green');
-        this.ui.ledRegister('ledBoilerHeater', 'green');
+        this.ui.ledRegister('ledBoilerHeater', 'red');
         this.ui.ledRegister('ledBoilerNoPressure', 'green');
         this.ui.ledRegister('ledBoilerOverheat', 'green');
 

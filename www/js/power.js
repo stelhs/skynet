@@ -70,8 +70,8 @@ class Power extends ModuleBase {
         for (var name in this.confDoorlocks)
             this.ui.ledRegister('ledDoorlock_' + name, 'green');
 
-        this.ui.ledRegister('ledGatesClosed', 'green');
-        this.ui.ledRegister('ledGatesPower', 'green');
+        this.ui.ledRegister('ledGatesNotClosed', 'red');
+        this.ui.ledRegister('ledGatesNoPower', 'red');
         this.ui.ledRegister('ledWaterPumpEnabled', 'red');
         this.ui.ledRegister('ledWatersupplyAutomaticEnabled', 'green', 'mini');
         this.ui.ledRegister('ledWatersupplyLowPressure', 'red');
@@ -169,6 +169,16 @@ class Power extends ModuleBase {
     requestToGatesClose() {
         this.logInfo('Request to gates close');
         this.skynetGetRequest('gates/close');
+    }
+
+    requestToGatesPowerOn() {
+        this.logInfo('Request to gates power on');
+        this.skynetGetRequest('gates/power_on');
+    }
+
+    requestToGatesPowerOff() {
+        this.logInfo('Request to gates power off');
+        this.skynetGetRequest('gates/power_off');
     }
 
     requestToWaterPumpOn() {

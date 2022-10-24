@@ -20,7 +20,8 @@ class Ui():
         s.httpHandlers = Ui.HttpHandlers(s)
         s.skynet.registerEventSubscriber('Ui', s.eventHandler,
                                          evTypes=('ledsUpdate', 'statusBarsUpdate',
-                                                  'sevenSegsUpdate', 'boilerFuelConsumption'))
+                                                  'labelsBarsUpdate', 'sevenSegsUpdate',
+                                                  'boilerFuelConsumption', 'switchesUpdate'))
 
 
 

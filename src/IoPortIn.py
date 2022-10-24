@@ -12,7 +12,7 @@ class IoPortIn(IoPortBase):
 
     def setBlockedState(s, state):
         s._blockedState.set(state)
-        s.io.uiUpdateBlockedPorts()
+        s.io.uiUpdateLedsBlockedPorts()
         if s.isBlocked():
             s.updateCachedState(state)
             s.io.emitEvent(s, state)

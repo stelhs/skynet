@@ -391,8 +391,10 @@ class Ui {
         this.showDialogBox(loginBox)
     }
 
-    ledRegister(name, color, type='big') {
+    ledRegister(name, color, type='big', timeout='default') {
         let led = new Led(this, name, color, type);
+        if (timeout != 'default')
+            led.setActualizeTimeoutMsec()
         this.leds[name] = led;
         return led;
     }
@@ -794,6 +796,7 @@ class LabelBar {
 
     set(val) {
         this.div.innerHTML = val;
+        this.show();
 
         if (this.actualizeTimeout && val != '') {
             if (this.wrkId) {
@@ -804,9 +807,18 @@ class LabelBar {
             var cb = function() {
                 this.set('')
                 this.wrkId = NaN;
+                this.hide();
             }
             this.wrkId = setTimeout(cb.bind(this), this.actualizeTimeout)
         }
+    }
+
+    show() {
+        this.div.style.display = "block";
+    }
+
+    hide() {
+        this.div.style.display = "none";
     }
 }
 

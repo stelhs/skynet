@@ -65,6 +65,20 @@ class Ups():
         task.remove()
 
 
+    def autoChargeEnable(s):
+        s._automaticEnabled.set(True)
+        if s.mode() == 'stopped':
+            s.setMode('waiting')
+
+
+    def autoChargeDisable(s):
+        s._automaticEnabled.set(False)
+
+
+    def autoChargeIsEnabled(s):
+        return s._automaticEnabled.val
+
+
     def enterToPowerLoss(s):
         now = int(time.time())
         s.setMode('discharge')
@@ -266,7 +280,7 @@ class Ups():
 
 
     def doWaiting(s, voltage):
-        if not s._automaticEnabled.val:
+        if not s.autoChargeIsEnabled():
             return
 
         if voltage < 12.0:
@@ -345,7 +359,7 @@ class Ups():
         except IoError:
             pass
 
-        leds['ledAutomaticCharhing'] = s._automaticEnabled.val
+        leds['ledAutomaticCharhing'] = s.autoChargeIsEnabled()
 
         leds['ledCharging'] = False
         mode = s.mode()
@@ -1039,10 +1053,10 @@ class Ups():
 
 
         def switchAutomatic(s, args, conn):
-            if s.ups._automaticEnabled.val:
-                s.ups._automaticEnabled.set(False)
+            if s.ups.autoChargeIsEnabled():
+                s.ups.autoChargeDisable()
             else:
-                s.ups._automaticEnabled.set(True)
+                s.ups.autoChargeEnable()
             s.ups.uiUpdater.call()
 
 
@@ -1070,9 +1084,10 @@ class Ups():
                     raise HttpHandlerError("Charger is not started")
                 try:
                     s.ups.chargerStop()
+                    s.ups.autoChargeDisable()
                 except AppError as e:
                     raise HttpHandlerError("Can't stop charger: %s" % e)
-
+            s.ups.uiUpdater.call()
 
 
         def chargerHwOn(s, args, conn):

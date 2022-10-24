@@ -36,14 +36,19 @@ class Io():
         for row in data['ports']:
             pName = row['port_name']
             state = row['state']
-            if 'blinking' in row:
-                val = '(%d/%d:%d)' % (row['d1'], row['d2'], row['cnt'])
-                labels['labelIoPortBlink_%s' % pName] = val
-                leds['ledIoPortBlink_%s' % pName] = True
-                labelsCnt += 1
+            port = s.port(pName)
+
+            if port.mode() == 'out':
+                leds['ledIoPortBlink_%s' % pName] = False
+                if 'blinking' in row:
+                    val = '(%d/%d): %d' % (row['blinking']['d1'],
+                                          row['blinking']['d2'],
+                                          row['blinking']['cnt'])
+                    labels['labelIoPortBlink_%s' % pName] = val
+                    leds['ledIoPortBlink_%s' % pName] = True
+                    labelsCnt += 1
 
             leds['ledIoPortState_%s' % pName] = state
-            port = s.port(pName)
             port.updateCachedState(state)
 
         s.skynet.emitEvent('io', 'ledsUpdate', leds)
@@ -133,7 +138,7 @@ class Io():
 
     def uiUpdateLedsBlockedPorts(s):
         leds = {}
-        for p in s.ports:
+        for p in s.ports():
             leds["ledIoPortBlocked_%s" % p.name()] = p.isBlocked()
             if p.mode() == 'in':
                 leds["ledIoPortEmulate_%s" % p.name()] = p.isBlocked() and p.blockedState()

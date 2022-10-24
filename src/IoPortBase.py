@@ -41,12 +41,12 @@ class IoPortBase():
 
     def lock(s):
         s._blocked.set(True)
-        s.io.uiUpdateBlockedPorts()
+        s.io.uiUpdateLedsBlockedPorts()
 
 
     def unlock(s):
         s._blocked.set(False)
-        s.io.uiUpdateBlockedPorts()
+        s.io.uiUpdateLedsBlockedPorts()
 
 
     def state(s):

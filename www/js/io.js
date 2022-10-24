@@ -84,15 +84,15 @@ class Io extends ModuleBase {
                 for (var portNum in boardInfo['in']) {
                     pName = boardInfo['in'][portNum]['name'];
                     this.ui.ledRegister("ledIoPortState_" + pName, 'red');
-                    this.ui.ledRegister("ledIoPortBlocked_" + pName, 'green', 'mini');
-                    this.ui.ledRegister("ledIoPortEmulate_" + pName, 'green', 'mini');
+                    this.ui.ledRegister("ledIoPortBlocked_" + pName, 'green', 'mini', 0);
+                    this.ui.ledRegister("ledIoPortEmulate_" + pName, 'green', 'mini', 0);
                 }
             }
             if ('out' in boardInfo) {
                 for (var portNum in boardInfo['out']) {
                     pName = boardInfo['out'][portNum];
                     this.ui.ledRegister("ledIoPortState_" + pName, 'green');
-                    this.ui.ledRegister("ledIoPortBlocked_" + pName, 'green', 'mini');
+                    this.ui.ledRegister("ledIoPortBlocked_" + pName, 'green', 'mini', 0);
                     this.ui.ledRegister("ledIoPortBlink_" + pName, 'green', 'mini');
                     this.ui.labelBarRegister("labelIoPortBlink_" + pName)
                 }
@@ -118,6 +118,9 @@ class Io extends ModuleBase {
         this.ui.logInfo("IO: " + msg)
     }
 
+    onPageChanged() {
+        this.requestIoBlockedPortsInfo();
+    }
 
     onSetPortBlink(ioName, portName) {
         var cb = function(results) {
