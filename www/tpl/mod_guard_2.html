@@ -28,9 +28,11 @@
                     <div style="padding: 3px 20px">
                         {sensor_name}:
                         <div id="ledGuardSensorState_{sensor_name}" class="led_big-off"></div>
-                        <a class="button_with_led" onclick="ui.guard.requestSensorLockUnlock('{name}')">
-                            <div id="ledGuardSensorBlocked_{name}" class="led_mini-undefined" style="margin: 15px"></div>
+                        <a class="button_with_led" onclick="ui.guard.requestSensorLockUnlock('{sensor_name}')">
+                            <div id="ledGuardSensorBlocked_{sensor_name}"
+                                    class="led_mini-undefined" style="margin: 15px"></div>
                         </a>
+                        lock/unlock
                     </div>
                 <!-- END BLOCK : sensor -->
 

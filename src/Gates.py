@@ -71,7 +71,6 @@ class Gates():
                 raise GatesNoPowerError(s.log, "Can't open gates. Power is absent")
             if s.isClosed():
                 return
-            print("call close")
             s.openPort.down()
             s.closePort.blink(1000, 500, 1)
 
@@ -106,11 +105,15 @@ class Gates():
                 s.lastRemoteButton = 'open'
                 return s.open()
 
+            if s.lastRemoteButton == 'close' and not s.isClosed():
+                s.lastRemoteButton = 'open'
+                return s.open()
+
             if s.lastRemoteButton == 'open':
                 s.lastRemoteButton = 'close'
                 return s.close()
 
-            s.lastRemoteButton = 'close'
+            s.lastRemoteButton = 'open'
             return s.open()
         except AppError as e:
             s.tc.toAdmin("Ошибка открытия/закрытия ворот: %s" % e)

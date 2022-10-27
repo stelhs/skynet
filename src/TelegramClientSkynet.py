@@ -139,8 +139,8 @@ class TelegramClientSkynet(TelegramClient):
 
         def call(s, text, replyFn):
             for cmd in s.cmdList:
-                if text.find(cmd) != 0:
-                    continue
+                if text.find(cmd) == 0:
+                    break
             arg = text.replace(cmd, '')
             return s.cb(arg, replyFn)
 

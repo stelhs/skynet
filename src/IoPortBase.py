@@ -1,4 +1,4 @@
-import threading
+import threading, time
 from Exceptions import *
 from Syslog import *
 from Skynet import *
@@ -61,8 +61,8 @@ class IoPortBase():
         s._board.updatedTime = s.updatedTime
 
 
-    def subscribe(s, name, cb, level=None):
-        subscriber = IoPortBase.EventSubscriber(s, name, cb, level)
+    def subscribe(s, name, cb, level=None, delayMs=200):
+        subscriber = IoPortBase.EventSubscriber(s, name, cb, level, delayMs)
         s.subscribers.append(subscriber)
 
 
@@ -87,14 +87,22 @@ class IoPortBase():
 
 
     class EventSubscriber():
-        def __init__(s, port, name, cb, level):
+        def __init__(s, port, name, cb, level, delayMs):
+            s.matchTime = int(time.time() * 1000)
             s.name = "%s:%s" % (name, str(level))
             s.port = port
             s.level = level
+            s.delayMs = delayMs
             s.cb = cb
 
 
         def match(s, level):
+            now = int(time.time() * 1000)
+
+            if s.matchTime + s.delayMs > now:
+                return False
+            s.matchTime = now
+
             if s.level == None:
                 return True
             return level == s.level

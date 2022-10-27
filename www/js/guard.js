@@ -65,9 +65,11 @@ class Guard extends ModuleBase {
         for (var zName in this.confGuard['zones']) {
             var zInfo = this.confGuard['zones'][zName];
             this.ui.ledRegister('ledGuardZoneReady_' + zName, 'green');
-            this.ui.ledRegister('ledGuardZoneBlocked_' + zName, 'green', 'mini');
-            for (var sName in zInfo['io_sensors'])
-                this.ui.ledRegister('ledGuardSensorState_' + sName, 'red');
+            this.ui.ledRegister('ledGuardZoneBlocked_' + zName, 'red', 'mini');
+            for (var sName in zInfo['io_sensors']) {
+                this.ui.ledRegister('ledGuardSensorState_' + sName, 'green');
+                this.ui.ledRegister('ledGuardSensorBlocked_' + sName, 'green', 'mini');
+            }
         }
 
         for (var name in this.confPowerSockets)
@@ -116,12 +118,17 @@ class Guard extends ModuleBase {
         this.skynetGetRequest('guard/zone_lock_unlock', {'zone_name': zoneName});
     }
 
+    requestSensorLockUnlock(sName) {
+        this.logInfo('Request to switch lock/unlock sensor ' + sName);
+        this.skynetGetRequest('guard/sensor_lock_unlock', {'sensor_name': sName});
+    }
+
     requestToObtainGuardSettings() {
         this.logInfo('Request to obtaining guard settings');
         this.skynetGetRequest('guard/obtain_settings');
     }
 
-    requestToStartGuard() {
+    startSettings() {
         var data = {};
         data['swGuardStartingNoWatchWorkshop'] = this.ui.switchByName('swGuardStartingNoWatchWorkshop').state()
         data['swGuardAlarmSoundEnabled'] = this.ui.switchByName('swGuardAlarmSoundEnabled').state()
@@ -135,21 +142,42 @@ class Guard extends ModuleBase {
         for (var name in this.confDoorLocks)
             data['swGuardStartingDoorlockPower_' + name] = this.ui.switchByName('swGuardStartingDoorlockPower_' + name).state()
 
-        this.logInfo('Post guard start settings and starting');
-        this.skynetPostRequest('guard/start_with_settings', JSON.stringify(data));
+        return data;
     }
 
-    requestToStopGuard() {
+    stopSettings() {
         var data = {};
-
         data['swGuardStoppingOpenGates'] = this.ui.switchByName('swGuardStoppingOpenGates').state()
         data['swGuardStoppingStopDvr'] = this.ui.switchByName('swGuardStoppingStopDvr').state()
 
         for (var name in this.confDoorLocks)
             data['swGuardStoppingDoorlockPower_' + name] = this.ui.switchByName('swGuardStoppingDoorlockPower_' + name).state()
 
+        return data;
+    }
+
+    requestToStartGuard() {
+        let data = this.startSettings();
+        this.logInfo('Post guard start settings and starting');
+        this.skynetPostRequest('guard/start_with_settings', JSON.stringify(data));
+    }
+
+    requestToStopGuard() {
+        let data = this.stopSettings();
         this.logInfo('Post guard stop settings and stopping');
         this.skynetPostRequest('guard/stop_with_settings', JSON.stringify(data));
+    }
+
+    requestToSaveStartSettings() {
+        let data = this.startSettings();
+        this.logInfo('Save guard start settings');
+        this.skynetPostRequest('guard/save_start_settings', JSON.stringify(data));
+    }
+
+    requestToSaveStopSettings() {
+        let data = this.stopSettings();
+        this.logInfo('Save guard stop settings');
+        this.skynetPostRequest('guard/save_stop_settings', JSON.stringify(data));
     }
 
     requestToCancelPublicSound() {
