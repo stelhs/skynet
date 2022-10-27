@@ -166,6 +166,8 @@ class Gates():
 
 
         def openHandler(s, args, conn):
+            if s.gates.skynet.guard.isStarted():
+                raise HttpHandlerError("Can't open gates because guard is running")
             try:
                 s.gates.open()
             except AppError as e:
@@ -180,6 +182,8 @@ class Gates():
 
 
         def openPedestrianHandler(s, args, conn):
+            if s.gates.skynet.guard.isStarted():
+                raise HttpHandlerError("Can't open gates because guard is running")
             try:
                 s.gates.openPed()
             except AppError as e:
@@ -212,6 +216,8 @@ class Gates():
 
 
         def open(s, arg, replyFn):
+            if s.gates.skynet.guard.isStarted():
+                return replyFn("Отключите охрану перед тем как открывать ворота")
             try:
                 s.gates.open()
             except AppError as e:
@@ -220,6 +226,8 @@ class Gates():
 
 
         def openPed(s, arg, replyFn):
+            if s.gates.skynet.guard.isStarted():
+                return replyFn("Отключите охрану перед тем как открывать ворота")
             try:
                 s.gates.openPed()
             except AppError as e:
