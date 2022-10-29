@@ -32,11 +32,6 @@ class TelegramClientSkynet(TelegramClient):
             s.send(chatId, msg, msgId)
 
         try:
-            user = s.skynet.users.userByTgId(fromId, fromName)
-        except UserNotRegistredError:
-            return reply("Вы не зарегистрированы")
-
-        try:
             s.db.insert('telegram_msg',
                         {'update_id': updateId,
                          'msg_id': msgId,
@@ -57,6 +52,11 @@ class TelegramClientSkynet(TelegramClient):
         keyword = words[0].lower()
         if keyword != 'skynet' and keyword != 'скайнет':
             return
+
+        try:
+            user = s.skynet.users.userByTgId(fromId, fromName)
+        except UserNotRegistredError:
+            return reply("У вас нет прав доступа")
 
         if len(words) == 1:
             return s.sendHelp(chatId, msgId)

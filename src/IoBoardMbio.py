@@ -106,4 +106,14 @@ class IoBoardMbio(IoBoardBase):
             pass
 
 
+    def hardReboot(s):
+        if not 'rebootPort' in s.conf or not s.conf['rebootPort']:
+            raise IoError(s.log, "Reboot is not supported")
+        p = s.io.port(s.conf['rebootPort'])
+        p.blink(2000, 1000, 1)
+
+
+
+
+
 

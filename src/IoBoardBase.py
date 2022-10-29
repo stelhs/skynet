@@ -76,6 +76,10 @@ class IoBoardBase():
         return list
 
 
+    def hardReboot(s):
+        raise IoError(s.log, "%s: Reboot is not supported" % s.name())
+
+
     def __repr__(s):
         return "b:%s" % s.name()
 

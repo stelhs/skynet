@@ -21,7 +21,7 @@ class Guard extends ModuleBase {
     }
 
     eventSources() {
-        return [];
+        return ['guard'];
     }
 
     setContentPagePrimary(content) {
@@ -51,8 +51,13 @@ class Guard extends ModuleBase {
         this.setContentPagePrimary(tpl.result());
 
         tpl = this.tplOpen('mod_guard_2')
-        for (var zName in this.confGuard['zones']) {
-            var zInfo = this.confGuard['zones'][zName];
+        let cnt = 0
+        for (let zName in this.confGuard['zones']) {
+            let zInfo = this.confGuard['zones'][zName];
+            if (cnt % 2 == 0)
+                tpl.assign('row')
+            cnt ++;
+
             tpl.assign('zone', {'name': zName,
                                 'description': zInfo['desc']})
 
@@ -98,6 +103,7 @@ class Guard extends ModuleBase {
     }
 
     eventHandler(source, type, data) {
+        this.ledAct();
     }
 
     onPageChanged(pageNum) {

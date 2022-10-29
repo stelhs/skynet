@@ -183,6 +183,7 @@ class Io():
             s.regUiHandler('w', "GET", "/io/port/toggle_blocked_state", s.portBlockedState, ('port_name',))
             s.regUiHandler('w', "GET", "/io/port/toggle_out_state", s.portToggleOutState, ('port_name',))
             s.regUiHandler('w', "GET", "/io/port/blink", s.portSetBlink, ('port_name', 'd1', 'd2', 'number'))
+            s.regUiHandler('w', "GET", "/io/request_to_hard_reboot_mbio", s.requestToHardRebootMbio, ('mbioName',))
 
 
         def regUiHandler(s, permissionMode, method, url, handler,
@@ -278,6 +279,15 @@ class Io():
                 port.blink(d1, d2, number)
             except AppError as e:
                 raise HttpHandlerError("Can't set blink for 'out' port %s: %s" % (portName, e))
+
+
+        def requestToHardRebootMbio(s, args, conn):
+            mbioName = args['mbioName']
+            try:
+                b = s.io.board(mbioName)
+                b.hardReboot()
+            except IoError as e:
+                raise HttpHandlerError("Can't reboot %s: %s" % (mbioName, e))
 
 
 

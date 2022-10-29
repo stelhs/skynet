@@ -116,6 +116,7 @@ class Ui():
         def subscribe(s, user):
             subscriber = Ui.EventManager.Subsriber(user)
             with s.lock:
+                user.setSubscriberId(subscriber.id)
                 s.subscribers.append(subscriber)
             return subscriber
 
@@ -154,8 +155,9 @@ class Ui():
             s.httpServer.setReqHandler("GET", "/ui/get_events", s.events)
             s.httpServer.setReqHandler("GET", "/ui/subscribe", s.subscribe)
             s.httpServer.setReqHandler("GET", "/ui/configs", s.configs)
-            s.httpServer.setReqHandler("GET", "/ui/logout", s.logout, ('subscriber_id',))
+            s.httpServer.setReqHandler("GET", "/ui/logout", s.logout)
             s.httpServer.setReqHandler("GET", "/ui/pin_code", s.pinCodePermit, ('pin',))
+            s.httpServer.setReqHandler("GET", "/ui/ping", s.ping, retJson=False)
 
 
         def teamplates(s, args, conn):
@@ -212,16 +214,13 @@ class Ui():
 
 
         def logout(s, args, conn):
-            if not 'subscriber_id' in args:
-                raise HttpHandlerError("'subscriber_id' is absent", 'subscriberAbsent')
-            subscriberId = args['subscriber_id']
-
             user = s.users.userByHttpConn(conn)
             if not user:
                 raise HttpHandlerError("User not logined")
+
             user.pinResetAcceptance()
             conn.removeCookie('auth')
-            s.ui.em.unSubscribe(subscriberId)
+            s.ui.em.unSubscribe(user.subscriberId())
 
 
         def pinCodePermit(s, args, conn):
@@ -234,6 +233,9 @@ class Ui():
             if not rc:
                 raise HttpHandlerError("wrong pin code")
 
+
+        def ping(s, args, conn):
+            return "pong"
 
 
 

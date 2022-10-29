@@ -53,6 +53,8 @@ class Io extends ModuleBase {
             pageNum += 1
             var boardInfo = this.conf['boards'][ioName];
             var tpl = this.tplOpen('mod_io_mbio');
+            tpl.assign(NaN, {'io_name': ioName});
+
             if ('in' in boardInfo) {
                 tpl.assign('inputs', {'io_name': ioName});
                 for (var portNum in boardInfo['in']) {
@@ -100,7 +102,7 @@ class Io extends ModuleBase {
         }
 
         for (var name in this.termosensorsConf['sensors'])
-            this.ui.sevenSegRegister("ssTermosensor_" + name, "red", 4);
+            this.ui.sevenSegRegister("ssTermosensor_" + name, "lime", 4);
 
         this.requestIoBlockedPortsInfo();
     }
@@ -160,6 +162,11 @@ class Io extends ModuleBase {
     requestIoBlockedPortsInfo() {
         this.logInfo('Request to skynet for obtain blocked ports info')
         this.skynetGetRequest('io/request_io_blocked_ports')
+    }
+
+    requestToMbioHardReboot(mbioName) {
+        this.logInfo('Request to hard reboot ' + mbioName)
+        this.skynetGetRequest('io/request_to_hard_reboot_mbio', {'mbioName': mbioName})
     }
 
 }
