@@ -1,0 +1,1 @@
+projects/chalet/automation/Электрооборудование/battery_system.es

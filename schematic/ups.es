@@ -1,0 +1,1 @@
+projects/chalet/automation/Электрооборудование/ups.es
