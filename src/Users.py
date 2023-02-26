@@ -87,6 +87,7 @@ class User():
         s.webWritePinAccess = None
         s.webWritePin = None
         s.pinAcceptedTime = 0
+        s._subscriberId = None
 
         s.tgWriteAccess = None
         s.tgChatId = None
@@ -118,6 +119,14 @@ class User():
 
     def name(s):
         return s._name
+
+
+    def setSubscriberId(s, id):
+        s._subscriberId = id
+
+
+    def subscriberId(s):
+        return s._subscriberId
 
 
     def matchWithIpAddr(s, ip):
@@ -195,7 +204,6 @@ class User():
 
                 if word == subsystem:
                     permit = True
-
                 if len(word) and word[0] == '-':
                     if word[1:] == subsystem:
                         permit = False
@@ -204,6 +212,9 @@ class User():
         def ckeckWriteByPin():
             permit = False
             if not s.pinAccepted():
+                return False
+
+            if not s.webWritePinAccess:
                 return False
 
             for word in s.webWritePinAccess:

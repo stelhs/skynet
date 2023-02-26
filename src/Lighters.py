@@ -2,7 +2,7 @@ import datetime
 from Exceptions import *
 from Syslog import *
 from HttpServer import *
-from Storage import *
+from SkynetStorage import *
 
 
 class Lighters():
@@ -16,8 +16,9 @@ class Lighters():
         s._lighters = []
         s.httpHandlers = Lighters.HttpHandlers(s)
         s.TgHandlers = Lighters.TgHandlers(s)
+        s.timesOfDay = None
 
-        s.storage = Storage('lighters.json')
+        s.storage = SkynetStorage(skynet, 'lighters.json')
         s._enableAutomatic = s.storage.key('/automatic', True)
 
         for name, inf in s.conf['lighters'].items():
@@ -27,23 +28,26 @@ class Lighters():
 
         s.skynet.cron.registerEveryMin('lighter_automatic', s.timeHandler)
         s.uiUpdater = s.skynet.periodicNotifier.register("lighters", s.uiUpdateHandler, 2000)
-        s.initAutomtic()
-
-
-    def initAutomtic(s):
-        if not s._enableAutomatic.val:
-            return
-
-        if s.isNight():
-            s.up()
-            s.timesOfDay = 'night'
-        else:
-            s.timesOfDay = 'day'
-            s.down()
 
 
     def timeHandler(s):
         if not s._enableAutomatic.val:
+            return
+
+        if not s.timesOfDay:
+            if s.isNight():
+                try:
+                    s.up()
+                except AppError as e:
+                    s.tc.toAdmin('Неполучилось включить освещение: %s' % e)
+                s.timesOfDay = 'night'
+                return
+
+            try:
+                s.down()
+            except AppError as e:
+                s.tc.toAdmin('Неполучилось отключить освещение: %s' % e)
+            s.timesOfDay = 'day'
             return
 
         if s.isNight() and s.timesOfDay == 'day':
@@ -51,6 +55,7 @@ class Lighters():
                 s.up()
             except AppError as e:
                 s.tc.toAdmin('Неполучилось включить освещение: %s' % e)
+                return
             s.timesOfDay = 'night'
 
         if not s.isNight() and s.timesOfDay == 'night':
@@ -58,7 +63,8 @@ class Lighters():
                 s.down()
             except AppError as e:
                 s.tc.toAdmin('Неполучилось отключить освещение: %s' % e)
-                s.timesOfDay = 'day'
+                return
+            s.timesOfDay = 'day'
 
 
     def isNight(s):
@@ -113,12 +119,12 @@ class Lighters():
         data = {}
         for l in s.list():
             try:
-                data[l.name()] = not l.isDown()
-            except AppError:
+                data['ledLighter_%s' % l.name()] = not l.isDown()
+            except IoError:
                 pass
 
-        data['automatic'] = s._enableAutomatic.val
-        s.skynet.emitEvent('lighters', 'statusUpdate', data)
+        data['ledLighter_automatic'] = s._enableAutomatic.val
+        s.skynet.emitEvent('lighters', 'ledsUpdate', data)
 
 
     def destroy(s):
@@ -217,7 +223,7 @@ class Lighters():
 
 
         def isDown(s):
-            return not s._port.cachedState()
+            return not s._port.state()
 
 
         def __repr__(s):

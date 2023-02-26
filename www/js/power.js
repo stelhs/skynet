@@ -6,15 +6,7 @@ class Power extends ModuleBase {
         this.confPowerSockets = ui.configs['powerSockets'];
         this.confLighters = ui.configs['lighters'];
         this.confDoorlocks = ui.configs['doorlocks'];
-
-        this.ledsPowerSockets = {};
-        this.ledsLighters = {};
-        this.ledsDoorlocks = {};
-        this.ledsGates = {};
-        this.ledsWaterSupply = {};
-
-        this.ledsUps = {};
-        this.textBars = {};
+        this.confUi = ui.configs['ui'];
     }
 
     title() {
@@ -26,7 +18,7 @@ class Power extends ModuleBase {
     }
 
     eventSources() {
-        return ['door_locks', 'power_sockets', 'lighters', 'gates', 'water_supply', 'ups'];
+        return ['water_supply', 'lighters', 'gates', 'door_looks', 'power_sockets'];
     }
 
     setContentPagePrimary(content) {
@@ -69,96 +61,56 @@ class Power extends ModuleBase {
 
 
         for (var name in this.confPowerSockets)
-            this.ledsPowerSockets[name] = new Led('led_power_zone_' + name, 'green', 3);
+            this.ui.ledRegister('ledPowerZone_' + name, 'green');
 
         for (var name in this.confLighters['lighters'])
-            this.ledsLighters[name] = new Led('led_lighter_' + name, 'red', 3);
-        this.ledsLighters['automatic'] = new Led('led_auto_lighter_enabled', 'green', 3, 'mini');
+            this.ui.ledRegister('ledLighter_' + name, 'red');
+        this.ui.ledRegister('ledLighter_automatic', 'green', 'mini');
 
         for (var name in this.confDoorlocks)
-            this.ledsDoorlocks[name] = new Led('led_doorlock_' + name, 'green', 3);
+            this.ui.ledRegister('ledDoorlock_' + name, 'green');
 
-        this.ledsGates['gatesClosed'] = new Led('led_gates_closed', 'green', 3);
-        this.ledsGates['gatesPower'] = new Led('led_gates_power', 'green', 3);
+        this.ui.ledRegister('ledGatesNotClosed', 'red');
+        this.ui.ledRegister('ledGatesNoPower', 'red');
+        this.ui.ledRegister('ledWaterPumpEnabled', 'red');
+        this.ui.ledRegister('ledWatersupplyAutomaticEnabled', 'green', 'mini');
+        this.ui.ledRegister('ledWatersupplyLowPressure', 'red');
+        this.ui.ledRegister('ledWatersupplyPumpIsLocked', 'red', 'mini');
+        this.ui.ledRegister('ledPowerExtExist', 'green');
+        this.ui.ledRegister('ledPowerInUps', 'green');
+        this.ui.ledRegister('ledPowerOutUpsIsAbsent', 'red');
+        this.ui.ledRegister('ledPower14vdcUpsAbsent', 'red');
+        this.ui.ledRegister('ledAutomaticCharhing', 'green', 'mini');
+        this.ui.ledRegister('ledCharging', 'green');
+        this.ui.ledRegister('ledChargerEnPort', 'green');
+        this.ui.ledRegister('ledHighCurrent', 'green');
+        this.ui.ledRegister('ledMiddleCurrent', 'green');
+        this.ui.ledRegister('ledChargeDischarge', 'red');
+        this.ui.ledRegister('ledBatteryRelayPort', 'red');
+        this.ui.ledRegister('ledUpsBreakPowerPort', 'red');
+        this.ui.ledRegister('ledDischarging', 'red');
 
-        this.ledsWaterSupply['waterPumpEnabled'] = new Led('led_water_pump_enabled', 'red', 3);
-        this.ledsWaterSupply['watersupplyAutomaticEnabled'] = new Led('led_watersupply_automatic_enabled', 'green', 3, 'mini');
-        this.ledsWaterSupply['watersupplyLowPressure'] = new Led('led_watersupply_low_pressure', 'red', 3);
-        this.ledsWaterSupply['watersupplyPumpIsLocked'] = new Led('led_watersupply_pump_is_locked', 'red', 3, 'mini');
-
-        this.ledsUps['ledPowerExtExist'] = new Led('led_power2_ext', 'green', 3);
-        this.ledsUps['ledPowerInUps'] = new Led('led_power2_ups_in', 'green', 3);
-        this.ledsUps['ledPowerOutUpsIsAbsent'] = new Led('led_power_no_output_power', 'red', 3);
-        this.ledsUps['ledPower14vdcUpsAbsent'] = new Led('led_power_no_14vdc', 'red', 3);
-        this.ledsUps['ledAutomaticCharhing'] = new Led('led_charger_automatic_enabled', 'green', 3, 'mini');
-        this.ledsUps['ledCharging'] = new Led('led_charger_status_activated', 'green', 3);
-        this.ledsUps['ledChargerEnPort'] = new Led('led_charger_power_enabled', 'green', 3);
-        this.ledsUps['ledHighCurrent'] = new Led('led_charger_current_max_enabled', 'green', 3);
-        this.ledsUps['ledMiddleCurrent'] = new Led('led_charger_current_middle_enabled', 'green', 3);
-        this.ledsUps['ledChargeDischarge'] = new Led('led_charge_discharge', 'red', 3);
-        this.ledsUps['ledBatteryRelayPort'] = new Led('led_main_relay_enabled', 'red', 3);
-        this.ledsUps['ledUpsBreakPowerPort'] = new Led('led_power_ups_disabled', 'red', 3);
-        this.ledsUps['ledDischarging'] = new Led('led_discharge_status_activated', 'red', 3);
-
-        this.textBars['upsState'] = new StatusBar('power2_ups_state', 3);
-        this.textBars['battVoltage'] = new StatusBar('battery_voltage', 3);
-        this.textBars['chargeCurrent'] = new StatusBar('charger_current', 3);
-
-        this.textBars['chargingReason'] = new StatusBar('charger_status_reason_started', 3);
-        this.textBars['chargerStartTime'] = new StatusBar('charger_status_start_time', 3);
-        this.textBars['chargerStopTime'] = new StatusBar('charger_status_end_time', 3);
-        this.textBars['chargeStartVoltage'] = new StatusBar('charger_status_start_voltage', 3);
-        this.textBars['chargeDuration_stage1'] = new StatusBar('charger_status_max_current_duration', 3);
-        this.textBars['chargeDuration_stage2'] = new StatusBar('charger_status_middle_current_duration', 3);
-        this.textBars['chargeDuration_stage3'] = new StatusBar('charger_status_min_current_duration', 3);
-        this.textBars['chargeTotalDuration'] = new StatusBar('charger_status_duration', 3);
-        this.textBars['dischargeReason'] = new StatusBar('discharge_status_reason_started', 3);
-        this.textBars['dischargeStartTime'] = new StatusBar('discharge_status_start_time', 3);
-        this.textBars['dischargeStopTime'] = new StatusBar('discharge_status_end_time', 3);
-        this.textBars['dischargeStartVoltage'] = new StatusBar('discharge_status_start_voltage', 3);
-        this.textBars['dischargeStopVoltage'] = new StatusBar('discharge_status_finished_voltage', 3);
-        this.textBars['dischargeDuration'] = new StatusBar('discharge_status_duration', 3);
+        this.ui.statusBarRegister('sbUpsState');
+        this.ui.statusBarRegister('sbBattVoltage');
+        this.ui.statusBarRegister('sbChargeCurrent');
+        this.ui.statusBarRegister('sbChargingReason');
+        this.ui.statusBarRegister('sbChargerStartTime');
+        this.ui.statusBarRegister('sbChargerStopTime');
+        this.ui.statusBarRegister('sbChargeStartVoltage');
+        this.ui.statusBarRegister('sbChargeDuration_stage1');
+        this.ui.statusBarRegister('sbChargeDuration_stage2');
+        this.ui.statusBarRegister('sbChargeDuration_stage3');
+        this.ui.statusBarRegister('sbChargeTotalDuration');
+        this.ui.statusBarRegister('sbDischargeReason');
+        this.ui.statusBarRegister('sbDischargeStartTime');
+        this.ui.statusBarRegister('sbDischargeStopTime');
+        this.ui.statusBarRegister('sbDischargeStartVoltage');
+        this.ui.statusBarRegister('sbDischargeStopVoltage');
+        this.ui.statusBarRegister('sbDischargeDuration');
     }
 
     eventHandler(source, type, data) {
-        switch (source) {
-        case 'door_locks':
-            if (type == 'statusUpdate')
-                return this.updateDoorLooksStatus(data);
-
-        case 'power_sockets':
-            if (type == 'statusUpdate')
-                return this.updatePowerSocketsStatus(data);
-
-        case 'lighters':
-            if (type == 'statusUpdate')
-                return this.updateLightersStatus(data);
-
-        case 'gates':
-            if (type == 'statusUpdate')
-                return this.updateGatesStatus(data);
-
-        case 'water_supply':
-            if (type == 'statusUpdate')
-                return this.updateWaterSupplyStatus(data);
-
-        case 'ups':
-            if (type == 'statusUpdate')
-                return this.updateUpsStatus(data);
-        }
-
-        switch (type) {
-        case 'error':
-            this.logErr(data)
-            return
-
-        case 'info':
-            this.logInfo(data)
-            return
-
-        default:
-            this.logErr("Incorrect event type: " + type)
-        }
+        this.ledAct();
     }
 
     logErr(msg) {
@@ -167,60 +119,6 @@ class Power extends ModuleBase {
 
     logInfo(msg) {
         this.ui.logInfo("Guard: " + msg)
-    }
-
-    updateDoorLooksStatus(data) {
-        for (var name in this.ledsDoorlocks) {
-            var led = this.ledsDoorlocks[name]
-            if (name in data)
-                led.light(data[name])
-        }
-    }
-
-    updatePowerSocketsStatus(data) {
-        for (var name in this.ledsPowerSockets) {
-            var led = this.ledsPowerSockets[name]
-            if (name in data)
-                led.light(data[name])
-        }
-    }
-
-    updateLightersStatus(data) {
-        for (var name in this.ledsLighters) {
-            var led = this.ledsLighters[name]
-            if (name in data)
-                led.light(data[name])
-        }
-    }
-
-    updateGatesStatus(data) {
-        for (var name in this.ledsGates) {
-            var led = this.ledsGates[name]
-            if (name in data)
-                led.light(data[name])
-        }
-    }
-
-    updateWaterSupplyStatus(data) {
-        for (var name in this.ledsWaterSupply) {
-            var led = this.ledsWaterSupply[name]
-            if (name in data)
-                led.light(data[name])
-        }
-    }
-
-    updateUpsStatus(data) {
-        for (var name in this.ledsUps) {
-            var led = this.ledsUps[name]
-            if (name in data)
-                led.light(data[name])
-        }
-
-        for (var name in this.textBars) {
-            var led = this.textBars[name]
-            if (name in data)
-                led.set(data[name])
-        }
     }
 
     requestToPowerSocketOn(name) {
@@ -273,6 +171,16 @@ class Power extends ModuleBase {
         this.skynetGetRequest('gates/close');
     }
 
+    requestToGatesPowerOn() {
+        this.logInfo('Request to gates power on');
+        this.skynetGetRequest('gates/power_on');
+    }
+
+    requestToGatesPowerOff() {
+        this.logInfo('Request to gates power off');
+        this.skynetGetRequest('gates/power_off');
+    }
+
     requestToWaterPumpOn() {
         this.logInfo('Request to water pump on');
         this.skynetGetRequest('water_supply/pump_on');
@@ -306,6 +214,11 @@ class Power extends ModuleBase {
     requestToSwitchAutomatic() {
         this.logInfo('Request to switch automatic charging');
         this.skynetGetRequest('ups/switch_automatic');
+    }
+
+    requestToSetZeroChargerCurrent() {
+        this.logInfo('Request to set zero charger current');
+        this.skynetGetRequest('ups/set_zero_charger_current');
     }
 
     requestToEnableHwCharger() {

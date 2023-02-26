@@ -10,6 +10,7 @@ class Termosensors():
         s.conf = skynet.conf.termosensors
         s.skynet = skynet
         s.sensors = []
+        s.log = Syslog("Termosensors")
 
         try:
             for sName, sInfo in s.conf['sensors'].items():
@@ -25,7 +26,7 @@ class Termosensors():
         skynet.registerEventSubscriber('TermosensorsMbio', s.eventHandlerMbio,
                                         ('mbio', ), ('termoStates', ))
         skynet.registerEventSubscriber('TermosensorsBoiler', s.eventHandlerBoiler,
-                                        ('boiler', ), ('boilerStatus', ))
+                                        ('boiler', ), ('boilerState', ))
 
 
     def eventHandlerMbio(s, source, type, data):
@@ -38,7 +39,7 @@ class Termosensors():
                     pass
         except KeyError as e:
             raise EventHandlerError(s.log,
-                    "eventHandler of '%s' failed: field %s is absent in event data" % (s.name(), e)) from e
+                    "eventHandler mbio failed: field %s is absent in event data" % e) from e
         s.updateUi()
 
 
@@ -50,7 +51,7 @@ class Termosensors():
             s.sensor('workshop_radiators').update(data['return_t'])
         except KeyError as e:
             raise EventHandlerError(s.log,
-                    "eventHandler of '%s' failed: field %s is absent in event data" % (s.name(), e)) from e
+                    "eventHandler boiler failed: field %s is absent in event data" % e) from e
         s.updateUi()
 
 
@@ -74,10 +75,10 @@ class Termosensors():
         data = {}
         for sensor in s.sensors:
             try:
-                data[sensor.name()] = sensor.t()
+                data["ssTermosensor_%s" % sensor.name()] = round(sensor.t(), 1)
             except TermosensorNoDataError:
                 pass
-        s.skynet.emitEvent('termosensors', 'termosensorsUpdate', data)
+        s.skynet.emitEvent('termosensors', 'sevenSegsUpdate', data)
 
 
     class HttpHandlers():
@@ -87,7 +88,7 @@ class Termosensors():
             s.httpServer.setReqHandler("GET", "/io/termosensor_config", s.termosensor, ['io'])
 
 
-        def termosensor(s, args, body, attrs, conn):
+        def termosensor(s, args, conn):
             ioBoardName = args['io']
             list = []
             for sensor in s.ts.sensors:
@@ -114,8 +115,10 @@ class Termosensor():
 
 
     def update(s, t):
+        if not t or t == 'None':
+            return
         with s._lock:
-            s._t = t
+            s._t = float(t)
             s.updateTime = int(time.time())
 
 

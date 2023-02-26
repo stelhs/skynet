@@ -1,4 +1,4 @@
-import threading
+import threading, time
 from Exceptions import *
 from Syslog import *
 from Skynet import *
@@ -10,7 +10,7 @@ class IoPortBase():
         s.pName = pName
         s._board = board;
         s._mode = mode;
-        s._pn = pn;
+        s._pn = int(pn);
         s.log = Syslog('Io_port_%s' % pName)
         s.dbw = IoPortBase.Db(s)
         s._cachedState = None
@@ -41,27 +41,28 @@ class IoPortBase():
 
     def lock(s):
         s._blocked.set(True)
-        s.io.uiUpdateBlockedPorts()
+        s.io.uiUpdateLedsBlockedPorts()
 
 
     def unlock(s):
         s._blocked.set(False)
-        s.io.uiUpdateBlockedPorts()
+        s.io.uiUpdateLedsBlockedPorts()
 
 
-    def cachedState(s):
+    def state(s):
         if (time.time() - s.updatedTime) > s.io.conf['cachedInterval']:
-            raise IoPortCachedStateExpiredError(s.log, 'Cached state of port %s was expired' % s.name())
+            raise IoPortNotAccessible(s.log, 'Cached state of port %s was expired' % s.name())
         return s._cachedState
 
 
     def updateCachedState(s, state):
         s.updatedTime = time.time()
         s._cachedState = state
+        s._board.updatedTime = s.updatedTime
 
 
-    def subscribe(s, name, cb, level=None):
-        subscriber = IoPortBase.EventSubscriber(s, name, cb, level)
+    def subscribe(s, name, cb, level=None, delayMs=200):
+        subscriber = IoPortBase.EventSubscriber(s, name, cb, level, delayMs)
         s.subscribers.append(subscriber)
 
 
@@ -86,14 +87,22 @@ class IoPortBase():
 
 
     class EventSubscriber():
-        def __init__(s, port, name, cb, level):
+        def __init__(s, port, name, cb, level, delayMs):
+            s.matchTime = int(time.time() * 1000)
             s.name = "%s:%s" % (name, str(level))
             s.port = port
             s.level = level
+            s.delayMs = delayMs
             s.cb = cb
 
 
         def match(s, level):
+            now = int(time.time() * 1000)
+
+            if s.matchTime + s.delayMs > now:
+                return False
+            s.matchTime = now
+
             if s.level == None:
                 return True
             return level == s.level

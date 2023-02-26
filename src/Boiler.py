@@ -17,6 +17,48 @@ class Boiler():
         s.httpHandlers = Boiler.HttpHandlers(s, s.httpServer, s.dbw)
         s.TgHandlers = Boiler.TgHandlers(s)
 
+        skynet.registerEventSubscriber('Boiler', s.eventHandler,
+                                        ('boiler', ), ('boilerState', ))
+
+
+    def eventHandler(s, source, type, data):
+        termos = {}
+        sevenSegs = {}
+
+        if 'state' in data:
+            s.skynet.emitEvent('boilerSkynet', 'statusBarsUpdate',
+                               {'sbBolierState': data['state']})
+
+        if 'target_t' in data:
+            termos['ssBoilerTarget_t'] = round(data['target_t'], 1)
+
+        if 'room_t' in data:
+            termos['ssBoilerRoom_t'] = round(data['room_t'], 1)
+
+        if 'boiler_box_t' in data:
+            termos['ssBoilerBox_t'] = round(data['boiler_box_t'], 1)
+
+        if 'boiler_box_t' in data:
+            termos['ssBoilerBox_t'] = round(data['boiler_box_t'], 1)
+
+        if 'boiler_t' in data:
+            termos['ssBoilerWater_t'] = round(data['boiler_t'], 1)
+
+        if 'return_t' in data:
+            termos['ssBoilerRetWater_t'] = round(data['return_t'], 1)
+
+        s.skynet.emitEvent('boilerSkynet', 'sevenSegsUpdate', termos)
+
+        if 'ignition_counter' in data:
+            sevenSegs['ssBoilerIgnitionCounter'] = data['ignition_counter']
+
+        if 'fuel_consumption' in data:
+            sevenSegs['ssBoilerFuelConsumption'] = round(data['fuel_consumption'], 1)
+
+        s.skynet.emitEvent('boilerSkynet', 'sevenSegsUpdate', sevenSegs)
+
+
+
 
     def send(s, op, args = {}):
         url = "http://%s:%s/%s" % (s.conf['host'], s.conf['port'], op)
@@ -152,7 +194,7 @@ class Boiler():
                         listByYears.append({'year': year,
                                             'months': listByMonths,
                                             'total': float(round(yearSum / 1000, 1))})
-                s.skynet.emitEvent('boiler', 'boilerFuelConsumption', listByYears)
+                s.skynet.emitEvent('boilerSkynet', 'boilerFuelConsumption', listByYears)
 
             Task.asyncRunSingle("requestFuelConsumption", report)
 

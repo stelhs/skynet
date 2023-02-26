@@ -2,6 +2,7 @@ from Exceptions import *
 from IoBoardMbio import *
 from HttpServer import *
 from Syslog import *
+from SkynetStorage import *
 
 
 class Io():
@@ -13,14 +14,15 @@ class Io():
         s.tc = skynet.tc
 
         s.log = Syslog('Io')
-        s.storage = Storage('io.json')
+        s.storage = SkynetStorage(skynet, 'io.json')
 
         s.httpHandlers = Io.HttpHandlers(s)
         s.registerBoards()
         s.skynet = skynet
         s.skynet.registerEventSubscriber('Io', s.eventHandler, ('mbio', ), ('portTriggered', ))
         s.skynet.registerEventSubscriber('Io', s.boardStatusHandler, ('mbio', ), ('portsStates', ))
-        s.chechTask = Task.setPeriodic('IoCheckTask', 30000, s.checkBoards)
+
+        s.chechTask = Task.setPeriodic('IoCheckTask', 30 * 1000, s.checkBoards)
 
 
     def toAdmin(s, msg):
@@ -28,9 +30,31 @@ class Io():
 
 
     def boardStatusHandler(s, source, type, data):
-        board = s.board(data['io_name'])
-        board.updateCachedState(data['ports'])
-        s.skynet.emitEvent('io', 'portsStates', data)
+        leds = {}
+        labels = {}
+        labelsCnt = 0
+        for row in data['ports']:
+            pName = row['port_name']
+            state = row['state']
+            port = s.port(pName)
+
+            if port.mode() == 'out':
+                leds['ledIoPortBlink_%s' % pName] = False
+                if 'blinking' in row:
+                    val = '(%d/%d): %d' % (row['blinking']['d1'],
+                                          row['blinking']['d2'],
+                                          row['blinking']['cnt'])
+                    labels['labelIoPortBlink_%s' % pName] = val
+                    leds['ledIoPortBlink_%s' % pName] = True
+                    labelsCnt += 1
+
+            leds['ledIoPortState_%s' % pName] = state
+            port.updateCachedState(state)
+
+        s.skynet.emitEvent('io', 'ledsUpdate', leds)
+        if labelsCnt:
+            s.skynet.emitEvent('io', 'labelsBarsUpdate', labels)
+
 
 
     def eventHandler(s, source, type, data):
@@ -53,14 +77,22 @@ class Io():
 
         try:
             port.updateCachedState(state)
-            s.emitEvent(port.name(), state)
+            s.emitEvent(port, state)
         except AppError as e:
             s.toAdmin("IO event handler %s error: %s" % (port, e))
 
 
-    def emitEvent(s, portName, state):
-        port = s.port(portName)
+    def emitEvent(s, port, state):
         port.emitEvent(state)
+        try:
+            s.db.insert('io_events',
+                        {'mode': port.mode(),
+                         'port_name': port.name(),
+                         'io_name': port.board().name(),
+                         'port': port.pn(),
+                         'state': state});
+        except DatabaseConnectorError as e:
+            pass
 
 
     def registerBoards(s):
@@ -104,18 +136,16 @@ class Io():
         raise IoBoardNotFound(s.log, "board() failed: IO board '%s' is not registred" % name)
 
 
-    def uiUpdateBlockedPorts(s):
-        listIn = [{'state': int(p.blockedState()), 'type': p.mode(),
-                   'port_name': p.name(), 'isBlocked': p.isBlocked()}
-                   for p in s.ports(mode='in')]
-        listOut = [{'state': 0, 'type': p.mode(),
-                    'port_name': p.name()} for p in s.ports(mode='out', blocked=True)]
-        list = listIn
-        list.extend(listOut)
-        s.skynet.emitEvent('io', 'boardsBlokedPortsList', list)
+    def uiUpdateLedsBlockedPorts(s):
+        leds = {}
+        for p in s.ports():
+            leds["ledIoPortBlocked_%s" % p.name()] = p.isBlocked()
+            if p.mode() == 'in':
+                leds["ledIoPortEmulate_%s" % p.name()] = p.isBlocked() and p.blockedState()
+        s.skynet.emitEvent('io', 'ledsUpdate', leds)
 
 
-    def checkBoards(s):
+    def checkBoards(s, task):
         now = int(time.time())
         for board in s.boards():
             if (now - board.updatedTime) > 5:
@@ -153,6 +183,7 @@ class Io():
             s.regUiHandler('w', "GET", "/io/port/toggle_blocked_state", s.portBlockedState, ('port_name',))
             s.regUiHandler('w', "GET", "/io/port/toggle_out_state", s.portToggleOutState, ('port_name',))
             s.regUiHandler('w', "GET", "/io/port/blink", s.portSetBlink, ('port_name', 'd1', 'd2', 'number'))
+            s.regUiHandler('w', "GET", "/io/request_to_hard_reboot_mbio", s.requestToHardRebootMbio, ('mbioName',))
 
 
         def regUiHandler(s, permissionMode, method, url, handler,
@@ -180,14 +211,15 @@ class Io():
 
             try:
                 listStates = [{'pn': port.pn(),
-                               'state': port.lastState()} for port in ports if port.mode() == 'out']
+                               'state': port.lastState()} for port in ports \
+                              if port.mode() == 'out' and port.lastState() != None]
                 return {'listStates': listStates}
             except DatabaseConnectorError as e:
                 raise HttpHandlerError('Database error: %s' % e)
 
 
         def requestIoBlockedPorts(s, args, conn):
-            s.io.uiUpdateBlockedPorts()
+            s.io.uiUpdateLedsBlockedPorts()
 
 
         def portLockUnlock(s, args, conn):
@@ -249,6 +281,13 @@ class Io():
                 raise HttpHandlerError("Can't set blink for 'out' port %s: %s" % (portName, e))
 
 
+        def requestToHardRebootMbio(s, args, conn):
+            mbioName = args['mbioName']
+            try:
+                b = s.io.board(mbioName)
+                b.hardReboot()
+            except IoError as e:
+                raise HttpHandlerError("Can't reboot %s: %s" % (mbioName, e))
 
 
 

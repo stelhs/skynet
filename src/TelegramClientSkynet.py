@@ -32,20 +32,18 @@ class TelegramClientSkynet(TelegramClient):
             s.send(chatId, msg, msgId)
 
         try:
-            user = s.skynet.users.userByTgId(fromId, fromName)
-        except UserNotRegistredError:
-            return reply("Вы не зарегистрированы")
-
-        s.db.insert('telegram_msg',
-                    {'update_id': updateId,
-                     'msg_id': msgId,
-                     'date': date,
-                     'from_name': fromName,
-                     'from_id': fromId,
-                     'chat_id': chatId,
-                     'chat_name': chatName,
-                     'chat_type': chatType,
-                     'text': text})
+            s.db.insert('telegram_msg',
+                        {'update_id': updateId,
+                         'msg_id': msgId,
+                         'date': date,
+                         'from_name': fromName,
+                         'from_id': fromId,
+                         'chat_id': chatId,
+                         'chat_name': chatName,
+                         'chat_type': chatType,
+                         'text': text})
+        except DatabaseConnectorError as e:
+            pass
 
         words = text.split()
         if not len(words):
@@ -54,6 +52,11 @@ class TelegramClientSkynet(TelegramClient):
         keyword = words[0].lower()
         if keyword != 'skynet' and keyword != 'скайнет':
             return
+
+        try:
+            user = s.skynet.users.userByTgId(fromId, fromName)
+        except UserNotRegistredError:
+            return reply("У вас нет прав доступа")
 
         if len(words) == 1:
             return s.sendHelp(chatId, msgId)
@@ -136,8 +139,8 @@ class TelegramClientSkynet(TelegramClient):
 
         def call(s, text, replyFn):
             for cmd in s.cmdList:
-                if text.find(cmd) != 0:
-                    continue
+                if text.find(cmd) == 0:
+                    break
             arg = text.replace(cmd, '')
             return s.cb(arg, replyFn)
 

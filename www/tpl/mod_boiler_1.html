@@ -13,44 +13,44 @@
                     <tr>
                         <td style="width: 200px">Состояние:</td>
                         <td style="padding: 5px">
-                            <div class="status_box" id="bolier_state"></div>
+                            <div class="status_box" id="sbBolierState"></div>
                         </td>
                     </tr>
                     <tr>
                         <td>Питание:</td>
-                        <td><div id="led_power" class="led-undefined"></div></td>
+                        <td><div id="ledBoilerPower" class="led-undefined"></div></td>
                     </tr>
                     <tr>
                         <td>Воздух:</td>
-                        <td><div id="led_air_fun" class="led-undefined"></div></td>
+                        <td><div id="ledBoilerAirFun" class="led-undefined"></div></td>
                     </tr>
                     <tr>
                         <td>Топлиный насос:</td>
-                        <td><div id="led_fuel_pump" class="led-undefined"></div></td>
+                        <td><div id="ledBoilerFuelPump" class="led-undefined"></div></td>
                     </tr>
                     <tr>
                         <td>Зажигание:</td>
-                        <td><div id="led_ignition" class="led-undefined"></div></td>
+                        <td><div id="ledBoilerIgnition" class="led-undefined"></div></td>
                     </tr>
                     <tr>
                         <td>Водяной насос:</td>
-                        <td><div id="led_water_pump" class="led-undefined"></div></td>
+                        <td><div id="ledBoilerWaterPump" class="led-undefined"></div></td>
                     </tr>
                     <tr>
                         <td>Пламя:</td>
-                        <td><div id="led_flame" class="led-undefined"></div></td>
+                        <td><div id="ledBoilerFlame" class="led-undefined"></div></td>
                     </tr>
                     <tr>
                         <td>Тепловентилятор:</td>
-                        <td><div id="led_heater" class="led-undefined"></div></td>
+                        <td><div id="ledBoilerHeater" class="led-undefined"></div></td>
                     </tr>
                     <tr>
                         <td style="margin: 10px">Нет давления:</td>
-                        <td><div id="led_no_pressure" class="led-undefined"></div></td>
+                        <td><div id="ledBoilerNoPressure" class="led-undefined"></div></td>
                     </tr>
                     <tr>
                         <td style="margin: 10px">Перегрев:</td>
-                        <td><div id="led_overheat" class="led-undefined"></div></td>
+                        <td><div id="ledBoilerOverheat" class="led-undefined"></div></td>
                     </tr>
                 </table>
 
@@ -92,7 +92,7 @@
 
             <div class="seven_seg_item_big">
                 Установленная температура <br>
-                <div id="ss_target_t" class="seven_seg_big_3"></div>
+                <div id="ssBoilerTarget_t" class="seven_seg_big_3"></div>
                 <br><br>
 
                 <div style="">
@@ -121,12 +121,12 @@
 
             <div class="seven_seg_item">
                 Счётчик запусков за сутки<br>
-                <div id="ss_ignition_counter" class="seven_seg_3"></div>
+                <div id="ssBoilerIgnitionCounter" class="seven_seg_3"></div>
             </div>
 
             <div class="seven_seg_item">
                 Израсходовано литров за сутки<br>
-                <div id="ss_fuel_consumption" class="seven_seg_3"></div>
+                <div id="ssBoilerFuelConsumption" class="seven_seg_3"></div>
             </div>
 
         </td>
@@ -135,22 +135,22 @@
                    vertical-align: top">
             <div class="seven_seg_item">
                 Температура в помещении <br>
-                <div id="ss_room_t" class="seven_seg_3"></div>
+                <div id="ssBoilerRoom_t" class="seven_seg_4"></div>
             </div>
 
             <div class="seven_seg_item">
                 Температура в корпусе котла <br>
-                <div id="ss_boiler_box_t" class="seven_seg_3"></div>
+                <div id="ssBoilerBox_t" class="seven_seg_4"></div>
             </div>
 
             <div class="seven_seg_item">
                 Температура теплоносителя в котле<br>
-                <div id="ss_boiler_t" class="seven_seg_3"></div>
+                <div id="ssBoilerWater_t" class="seven_seg_4"></div>
             </div>
 
             <div class="seven_seg_item">
                 Температура теплоносителя на входе в котёл <br>
-                <div id="ss_return_t" class="seven_seg_3"></div>
+                <div id="ssBoilerRetWater_t" class="seven_seg_4"></div>
             </div>
         </td>
 

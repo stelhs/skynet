@@ -8,7 +8,7 @@ class Cron():
         s.workers = []
 
 
-    def do(s):
+    def do(s, task):
         for wrk in s.workers:
             wrk.incTime()
 

@@ -1,1 +1,0 @@
-projects/chalet/automation/Электрооборудование/освещение_мастерской.es

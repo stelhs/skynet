@@ -39,14 +39,14 @@ class Gates():
     def uiUpdateHandler(s):
         data = {}
         try:
-            data['gatesClosed'] = s.isClosedPort.cachedState()
-        except IoPortCachedStateExpiredError:
+            data['ledGatesNotClosed'] = not s.isClosedPort.state()
+        except IoError:
             pass
         try:
-            data['gatesPower'] = not s.powerPort.cachedState()
-        except IoPortCachedStateExpiredError:
+            data['ledGatesNoPower'] = s.powerPort.state()
+        except IoError:
             pass
-        s.skynet.emitEvent('gates', 'statusUpdate', data)
+        s.skynet.emitEvent('gates', 'ledsUpdate', data)
 
 
     def open(s):
@@ -95,30 +95,45 @@ class Gates():
         if s.skynet.guard.isStarted():
             return
 
-        s.io.port('guard_lamp').blink(200, 200, 2)
+        try:
+            s.io.port('guard_lamp').blink(200, 200, 2)
+        except IoBoardError as e:
+            s.tc.toAdmin("Не удалось помигать лампой на воротах: %s" % e)
 
-        if s.isClosed():
+        try:
+            if s.isClosed():
+                s.lastRemoteButton = 'open'
+                return s.open()
+
+            if s.lastRemoteButton == 'close' and not s.isClosed():
+                s.lastRemoteButton = 'open'
+                return s.open()
+
+            if s.lastRemoteButton == 'open':
+                s.lastRemoteButton = 'close'
+                return s.close()
+
             s.lastRemoteButton = 'open'
             return s.open()
-
-        if s.lastRemoteButton == 'open':
-            s.lastRemoteButton = 'close'
-            return s.close()
-
-        s.lastRemoteButton = 'close'
-        return s.open()
+        except AppError as e:
+            s.tc.toAdmin("Ошибка открытия/закрытия ворот: %s" % e)
 
 
     def buttOpenClosePedHandler(s, state):
-        if s.guard.isStarted():
+        if s.skynet.guard.isStarted():
             return
 
-        s.io.port('guard_lamp').blink(200, 200, 1)
+        try:
+            s.io.port('guard_lamp').blink(200, 200, 1)
+        except IoBoardError as e:
+            s.tc.toAdmin("Не удалось помигать лампой на воротах: %s" % e)
 
-        if s.isClosed():
-            return s.openPed()
-
-        s.close()
+        try:
+            if s.isClosed():
+                return s.openPed()
+            s.close()
+        except AppError as e:
+            s.tc.toAdmin("Ошибка открытия/закрытия ворот для пешехода: %s" % e)
 
 
     def senseGatesClosedHandler(s, state):
@@ -140,6 +155,8 @@ class Gates():
             s.regUiHandler('w', "GET", "/gates/open", s.openHandler)
             s.regUiHandler('w', "GET", "/gates/close", s.closeHandler)
             s.regUiHandler('w', "GET", "/gates/open_pedestrian", s.openPedestrianHandler)
+            s.regUiHandler('w', "GET", "/gates/power_on", s.powerOn)
+            s.regUiHandler('w', "GET", "/gates/power_off", s.powerOff)
 
 
         def regUiHandler(s, permissionMode, method, url, handler,
@@ -149,6 +166,8 @@ class Gates():
 
 
         def openHandler(s, args, conn):
+            if s.gates.skynet.guard.isStarted():
+                raise HttpHandlerError("Can't open gates because guard is running")
             try:
                 s.gates.open()
             except AppError as e:
@@ -163,10 +182,27 @@ class Gates():
 
 
         def openPedestrianHandler(s, args, conn):
+            if s.gates.skynet.guard.isStarted():
+                raise HttpHandlerError("Can't open gates because guard is running")
             try:
                 s.gates.openPed()
             except AppError as e:
                 raise HttpHandlerError("Can't open gates for pedestrian : %s" % e)
+
+
+        def powerOn(s, args, conn):
+            try:
+                s.gates.powerEnable()
+            except AppError as e:
+                raise HttpHandlerError("Can't power On: %s" % e)
+
+
+        def powerOff(s, args, conn):
+            try:
+                s.gates.powerDisable()
+            except AppError as e:
+                raise HttpHandlerError("Can't power Off: %s" % e)
+
 
 
     class TgHandlers():
@@ -180,6 +216,8 @@ class Gates():
 
 
         def open(s, arg, replyFn):
+            if s.gates.skynet.guard.isStarted():
+                return replyFn("Отключите охрану перед тем как открывать ворота")
             try:
                 s.gates.open()
             except AppError as e:
@@ -188,6 +226,8 @@ class Gates():
 
 
         def openPed(s, arg, replyFn):
+            if s.gates.skynet.guard.isStarted():
+                return replyFn("Отключите охрану перед тем как открывать ворота")
             try:
                 s.gates.openPed()
             except AppError as e:

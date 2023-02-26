@@ -14,23 +14,7 @@ class IoBoardMbio(IoBoardBase):
                     "Configuration for mbio '%s' error in field %s" % (ioName, e)) from e
 
         s.log = Syslog('Mbio')
-        s.updatedTime = 0
-        s.resetMbio()
-
-        for port in s.ports():
-            if port.mode() == 'out':
-                port._lastState = 0
-            try:
-                if port.state() == 'not_configured':
-                    continue
-                state = int(port.state())
-                port.updateCachedState(state)
-                if port.mode() == 'out':
-                    port._lastState = state
-            except IoBoardError:
-                pass
-            except IoBoardPortNotConfiguredError:
-                pass
+#        s.resetMbio() #TODO add button to UI
 
 
     def send(s, op, args = {}):
@@ -60,38 +44,37 @@ class IoBoardMbio(IoBoardBase):
     def outputSetState(s, port, state):
         if s.emulator:
             return s.emulator.outputSet(port, state)
+
+        if (time.time() - s.updatedTime) > s.io.conf['cachedInterval']:
+            raise IoBoardNotAccessible(s.log, 'mbio board %s is not accessible' % s.name())
+
         s.send('io/output_set', {'pn': port.pn(), 'state': state})
 
 
-    def outputState(s, port):
+    def portSyncState(s, port):
         if s.emulator:
+            if port.mode() == 'in':
+                return s.emulator.inputState(port)
             return s.emulator.outputState(port)
+
         try:
-            ret = s.send('io/output_get', {'pn': port.pn()})
+            ret = s.send('io/sync_state', {'pn': port.pn()})
             if ret['state'] == 'not_configured':
                 raise IoBoardPortNotConfiguredError(s.log, "Port %s is not configured" % port.name())
             return ret['state']
         except KeyError as e:
             raise IoBoardMbioError(s.log,
-                    "Request 'output_get' to mbio board '%s' return json w/o state field: %s" % (
-                            s.name(), ret))
-
-
-    def inputState(s, port):
-        if s.emulator:
-            return s.emulator.inputState(port)
-        try:
-            ret = s.send('io/input_get', {'pn': port.pn()})
-            return ret['state']
-        except KeyError as e:
-            raise IoBoardMbioError(s.log,
-                    "Request 'input_get' to mbio board '%s' return json w/o state field: %s" % (
+                    "Request 'sync_state' to mbio board '%s' return json w/o state field: %s" % (
                             s.name(), ret))
 
 
     def setBlink(s, port, d1, d2=0, number=1):
         if s.emulator:
             return s.emulator.outputSet(port, 'blink %d %d %d' % (d1, d2, number))
+
+        if (time.time() - s.updatedTime) > s.io.conf['cachedInterval']:
+            raise IoBoardNotAccessible(s.log, 'mbio board %s is not accessible' % s.name())
+
         s.send("io/output_set", {'pn': port.pn(),
                               'state': 'blink',
                               'd1': d1,
@@ -99,12 +82,21 @@ class IoBoardMbio(IoBoardBase):
                               'number': number});
 
     def batteryInfo(s):
+        if (time.time() - s.updatedTime) > s.io.conf['cachedInterval']:
+            raise IoBoardNotAccessible(s.log, 'mbio board %s is not accessible' % s.name())
+
         try:
             ret = s.send('battery')
             return ret['data']
         except KeyError as e:
             raise IoBoardMbioError(s.log,
                     "Request 'batteryInfo'return json w/o 'data' field: %s" % ret)
+
+
+    def setZeroChargerCurrents(s):
+        if (time.time() - s.updatedTime) > s.io.conf['cachedInterval']:
+            raise IoBoardNotAccessible(s.log, 'mbio board %s is not accessible' % s.name())
+        s.send('set_zero_charger_current')
 
 
     def resetMbio(s):
@@ -114,9 +106,14 @@ class IoBoardMbio(IoBoardBase):
             pass
 
 
-    def updateCachedState(s, portStateList):
-        s.updatedTime = int(time.time())
-        for row in portStateList:
-            port = s.io.port(row['port_name'])
-            port.updateCachedState(row['state'])
+    def hardReboot(s):
+        if not 'rebootPort' in s.conf or not s.conf['rebootPort']:
+            raise IoError(s.log, "Reboot is not supported")
+        p = s.io.port(s.conf['rebootPort'])
+        p.blink(2000, 1000, 1)
+
+
+
+
+
 

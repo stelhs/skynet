@@ -20,7 +20,6 @@ from Ups import *
 
 
 
-
 class Skynet():
     def __init__(s):
         s.eventSubscribers = []
@@ -56,10 +55,20 @@ class Skynet():
         s.httpHandlers = Skynet.HttpHandlers(s, s.httpServer)
         s.TgHandlers = Skynet.TgHandlers(s)
 
+        s.tc.toAdmin("Skynet запущен")
+
+
 
     def registerEventSubscriber(s, name, cb, sources=(), evTypes=()):
         subscriber = Skynet.EventSubscriber(name, cb, sources, evTypes)
         s.eventSubscribers.append(subscriber)
+
+
+    def unsubscribeEvents(s, name):
+        for es in s.eventSubscribers:
+            if es.name == name:
+                s.eventSubscribers.remove(es)
+                return
 
 
     def emitEvent(s, source, evType, data):
@@ -74,12 +83,25 @@ class Skynet():
 
 
     def taskExceptionHandler(s, task, errMsg):
-        s.tc.sendToChat('stelhs',
-                "Skynet: task '%s' error:\n%s" % (task.name(), errMsg))
+        s.tc.toAdmin("Skynet: task '%s' error:\n%s" % (task.name(), errMsg))
 
+
+    def catchEvent(s, source=None, evType=None):
+        def eventHandler(source, type, data):
+            print('catched source = %s, evType = %s, data = %s' % (source, type, data))
+
+        source = (source, ) if source else ()
+        evType = (evType, ) if evType else ()
+        s.registerEventSubscriber('catchEvent', eventHandler, source, evType)
+        try:
+            Task.sleep(5000)
+        except KeyboardInterrupt:
+            pass
+        s.unsubscribeEvents('catchEvent')
 
 
     def destroy(s):
+        s.tc.toAdmin("Skynet остановлен")
         s.guard.destroy()
         s.lighters.destroy()
         s.waterSupply.destroy()
@@ -127,9 +149,9 @@ class Skynet():
             s.httpServer.setReqHandler("POST", "/send_event", s.eventHandler)
 
 
-        def eventHandler(s, args, body, attrs, conn):
+        def eventHandler(s, args, conn):
             try:
-                dt = json.loads(body)
+                dt = json.loads(conn.body())
                 source = dt['source']
                 evType = dt['type']
                 data = dt['data']
@@ -151,5 +173,6 @@ class Skynet():
 
         def status(s, arg, replyFn):
             replyFn("Делаю...")
+
 
 

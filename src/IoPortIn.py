@@ -6,29 +6,22 @@ class IoPortIn(IoPortBase):
         s._blockedState = s.storage.key('/ports/%s/blockedState' % s.name(), False)
 
 
-    def state(s, force=False):
-        if not force and s.isBlocked():
-            return s.blockedState()
-
-        return s.board().inputState(s);
-
-
     def blockedState(s):
         return s._blockedState.val
 
 
     def setBlockedState(s, state):
         s._blockedState.set(state)
-        s.io.uiUpdateBlockedPorts()
+        s.io.uiUpdateLedsBlockedPorts()
         if s.isBlocked():
             s.updateCachedState(state)
-            s.io.emitEvent(s.name(), state)
+            s.io.emitEvent(s, state)
 
 
-    def cachedState(s):
-        if s.isBlocked():
+    def state(s, force=False):
+        if not force and s.isBlocked():
             return s.blockedState()
-        return super().cachedState()
+        return super().state()
 
 
     def unlock(s):

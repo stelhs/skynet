@@ -1,7 +1,7 @@
 from Exceptions import *
 from Syslog import *
 from HttpServer import *
-from Storage import *
+from SkynetStorage import *
 
 
 class PowerSockets():
@@ -10,7 +10,7 @@ class PowerSockets():
         s.io = skynet.io
         s.conf = skynet.conf.powerSockets
         s.httpServer = skynet.httpServer
-        s.storage = Storage('power_sockets.json')
+        s.storage = SkynetStorage(skynet, 'power_sockets.json')
         s.log = Syslog('PowerSockets')
         s._sockets = []
         s.httpHandlers = PowerSockets.HttpHandlers(s)
@@ -41,10 +41,10 @@ class PowerSockets():
         data = {}
         for ps in s.list():
             try:
-                data[ps.name()] = not ps.isDown()
-            except AppError:
+                data['ledPowerZone_%s' % ps.name()] = not ps.isDown()
+            except IoError:
                 pass
-        s.skynet.emitEvent('power_sockets', 'statusUpdate', data)
+        s.skynet.emitEvent('power_sockets', 'ledsUpdate', data)
 
 
     def destroy(s):
@@ -94,10 +94,18 @@ class PowerSockets():
             s._port = s.manager.io.port(pName)
             s._port.subscribe("PowerSocket", lambda state: s.manager.uiUpdater.call())
 
-            if s._state.val:
-                s.up()
-            else:
-                s.down()
+            Task.setPeriodic('power_socket_actualizer_%s' % name, 1000, s.actualizer_cb)
+
+
+        def actualizer_cb(s, task):
+            try:
+                if s._state.val:
+                    s.up()
+                else:
+                    s.down()
+            except IoError:
+                return
+            task.remove()
 
 
         def name(s):
@@ -115,7 +123,7 @@ class PowerSockets():
 
 
         def isDown(s):
-            return not s._port.cachedState()
+            return not s._port.state()
 
 
         def __repr__(s):

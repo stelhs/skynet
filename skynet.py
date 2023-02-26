@@ -22,5 +22,5 @@ atexit.register(exitCb)
 io = s.io
 
 print("help:")
-print("\tskynet")
+print("\ts")
 print("\tio")

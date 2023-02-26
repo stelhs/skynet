@@ -1,7 +1,7 @@
 from Exceptions import *
 from Syslog import *
 from HttpServer import *
-from Storage import *
+from SkynetStorage import *
 
 class DoorLocks():
     def __init__(s, skynet):
@@ -11,7 +11,7 @@ class DoorLocks():
         s.conf = skynet.conf.doorLocks
 
         s.log = Syslog('DoorLocks')
-        s.storage = Storage('door_locks.json')
+        s.storage = SkynetStorage(skynet, 'door_locks.json')
         s._locks = []
         s.httpHandlers = DoorLocks.HttpHandlers(s)
         s.uiUpdater = s.skynet.periodicNotifier.register("door_locks", s.uiUpdateHandler, 2000)
@@ -36,10 +36,10 @@ class DoorLocks():
         data = {}
         for dl in s.list():
             try:
-                data[dl.name()] = not dl.isClosed()
+                data['ledDoorlock_%s' % dl.name()] = not dl.isClosed()
             except AppError:
                 pass
-        s.skynet.emitEvent('door_locks', 'statusUpdate', data)
+        s.skynet.emitEvent('door_locks', 'ledsUpdate', data)
 
 
     def destroy(s):
@@ -87,11 +87,18 @@ class DoorLocks():
             s._port = s.manager.io.port(pName)
             s._port.subscribe("DoorLock", lambda state: s.manager.uiUpdater.call())
             s._state = s.manager.storage.key('/lastState/%s' % name, False)
+            Task.setPeriodic('doorlooks_actualizer_%s' % name, 1000, s.actualizer_cb)
 
-            if s._state.val:
-                s.open()
-            else:
-                s.close()
+
+        def actualizer_cb(s, task):
+            try:
+                if s._state.val:
+                    s.open()
+                else:
+                    s.close()
+            except IoError:
+                return
+            task.remove()
 
 
         def doEventProcessing(s, port, state):
@@ -113,7 +120,7 @@ class DoorLocks():
 
 
         def isClosed(s):
-            return not s._port.cachedState()
+            return not s._port.state()
 
 
         def __repr__(s):
