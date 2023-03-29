@@ -347,7 +347,7 @@ class Guard():
               "Сработала зона: '%s', событие: %d" % (
                zone.name(), s._stateId.val)
 
-        if s.enabledSkynetGroupNotify.val:
+        if s.startSettings.enabledSkynetGroupNotify.val:
             s.tc.toAlarm(msg)
         else:
             s.tc.toAdmin(msg)
@@ -786,7 +786,6 @@ class Guard():
             s.toAdmin = s.zone.guard.toAdmin
 
             s.trigState = trigState
-            port.subscribe("Sensor", s.doEventProcessing)
 
             s._blocked = s.storage.key('/zones/zone_%s/sensor_%s/blocked' % (
                                        s.zone.name(), s.name()), False)
@@ -805,6 +804,7 @@ class Guard():
             s.confAutolockUnlockInterval = s.guard.conf["sensorAutolock"]["unlockInterval"]
             s.confAutolockTrigNumber = s.guard.conf['sensorAutolock']['trigNumber']
 
+            port.subscribe("Sensor", s.doEventProcessing)
 
         def trigTime(s):
             return s._lastTrigTime.val
@@ -889,8 +889,9 @@ class Guard():
 
             if s.isBlocked():
                 if (now - s._lastNotificationTime.val) > s.confAutolockNotificationInterval:
-                    s.toAdmin("Заблокированный датчик продолжает генерировать события. " \
-                                 "Нагенерировано событий: %d" % s._trigCnt.val)
+                    s.toAdmin("Заблокированный датчик %s из зоны %s продолжает " \
+                              "генерировать события. Нагенерировано событий: %d" % (
+                              s.name(), s.zone.name(), s._trigCnt.val))
                     s._lastNotificationTime.set(now)
                 return
 
@@ -902,11 +903,12 @@ class Guard():
                     s._trigCnt.set(0)
                     s.attemptToLockTimer = None
                 else:
+                    trigCnt = s._trigCnt.val
                     s.lock()
                     s.attemptToLockTimer = None
                     s.toAdmin("Датчик %s из зоны %s заблокирован, " \
-                                 "потому что он сработал %d раз за %d секунд" % (
-                                 s.name(), s.zone.name(), s._trigCnt.val,
+                                 "потому что он сработал %d раз за %d секунд."  % (
+                                 s.name(), s.zone.name(), trigCnt,
                                  s.confAutolockInterval))
                     return
 

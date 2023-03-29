@@ -172,7 +172,7 @@ class Skynet():
 
 
         def status(s, arg, replyFn):
-            replyFn("Делаю...")
+            replyFn("Эта команда временно неработает")
 
 
 

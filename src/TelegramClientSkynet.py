@@ -1,4 +1,5 @@
 from TelegramClient import *
+from Syslog import *
 from Users import *
 
 
@@ -7,6 +8,7 @@ class TelegramClientSkynet(TelegramClient):
         super().__init__(skynet.conf.telegram, s.receiver)
         s.skynet = skynet
         s.db = skynet.db
+        s.log = Syslog("TelegramClientSkynet")
 
         s.mutePublic = skynet.conf.skynet['mute_public']
         s.handlers = []
@@ -43,7 +45,7 @@ class TelegramClientSkynet(TelegramClient):
                          'chat_type': chatType,
                          'text': text})
         except DatabaseConnectorError as e:
-            pass
+            s.log.err("Database insert error: %s" % e)
 
         words = text.split()
         if not len(words):
