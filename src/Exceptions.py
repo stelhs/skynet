@@ -165,4 +165,7 @@ class ChargeCurrentError(UpsError): # No actual current information
     pass
 
 
+# GSM Modem
 
+class GsmModemError(AppError):
+    pass

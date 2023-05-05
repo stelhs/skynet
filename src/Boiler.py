@@ -1,8 +1,8 @@
 from datetime import date
-import requests, simplejson
 from Exceptions import *
 from HttpServer import *
 from Skynet import *
+from HttpClient import *
 
 
 class Boiler():
@@ -19,6 +19,7 @@ class Boiler():
 
         skynet.registerEventSubscriber('Boiler', s.eventHandler,
                                         ('boiler', ), ('boilerState', ))
+        s.httpClient = HttpClient('boiler', s.conf['host'], s.conf['port'])
 
 
     def eventHandler(s, source, type, data):
@@ -59,29 +60,12 @@ class Boiler():
 
 
 
-
     def send(s, op, args = {}):
-        url = "http://%s:%s/%s" % (s.conf['host'], s.conf['port'], op)
         try:
-            r = requests.get(url = url, params = args)
-            resp = r.json()
-            if resp['status'] != 'ok' and resp['reason']:
-                raise BoilerError(s.log,
-                        "Request '%s' to boiler return response with error: %s" % (
-                                op, resp['reason']))
-            return resp
-        except requests.RequestException as e:
-            raise BoilerError(s.log,
-                    "Request '%s' to bolier fails: %s" % (
-                            op, e)) from e
-        except simplejson.errors.JSONDecodeError as e:
-            raise BoilerError(s.log,
-                    "Response for '%s' from boiler parse error: %s. Response: %s" % (
-                            op, e, r.content)) from e
-        except KeyError as e:
-            raise BoilerError(s.log,
-                    "Request '%s' to boiler return incorrect json: %s" % (
-                            op, r.content)) from e
+            return s.httpClient.reqGet(op, args)
+        except HttpClient.Error as e:
+            raise BoilerError(s.log, e) from e
+
 
     def setTarget_t(s, t):
         s.send('boiler/set_target_t', {'t': t})

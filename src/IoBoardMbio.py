@@ -1,6 +1,7 @@
-import requests, simplejson, time
+import time
 from Exceptions import *
 from IoBoardBase import *
+from HttpClient import *
 
 
 class IoBoardMbio(IoBoardBase):
@@ -13,32 +14,15 @@ class IoBoardMbio(IoBoardBase):
             raise IoBoardConfigureErr(s.log,
                     "Configuration for mbio '%s' error in field %s" % (ioName, e)) from e
 
+        s.httpClient = HttpClient(ioName, s.host, s.port)
         s.log = Syslog('Mbio')
-#        s.resetMbio() #TODO add button to UI
 
 
     def send(s, op, args = {}):
-        url = "http://%s:%d/%s" % (s.host, s.port, op)
         try:
-            r = requests.get(url = url, params = args)
-            resp = r.json()
-            if resp['status'] != 'ok' and resp['reason']:
-                raise IoBoardMbioError(s.log,
-                        "Request '%s' to mbio board '%s' return response with error: %s" % (
-                                url, s.name(), resp['reason']))
-            return resp
-        except requests.RequestException as e:
-            raise IoBoardMbioError(s.log,
-                    "Request '%s' to mbio board '%s' fails: %s" % (
-                            url, s.name(), e)) from e
-        except simplejson.errors.JSONDecodeError as e:
-            raise IoBoardMbioError(s.log,
-                    "Response for '%s' from mbio '%s' parse error: %s. Response: %s" % (
-                            url, s.name(), e, r.content)) from e
-        except KeyError as e:
-            raise IoBoardMbioError(s.log,
-                    "Request '%s' to mbio board '%s' return incorrect json: %s" % (
-                            url, s.name(), r.content)) from e
+            return s.httpClient.reqGet(op, args)
+        except HttpClient.Error as e:
+            raise IoBoardMbioError(s.log, e) from e
 
 
     def outputSetState(s, port, state):

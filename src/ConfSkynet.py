@@ -16,6 +16,7 @@ class ConfSkynet(ConfParser):
         s.addConfig('lighters', 'lighters.conf')
         s.addConfig('guard', 'guard.conf')
         s.addConfig('waterSupply', 'water_supply.conf')
+        s.addConfig('gsmModem', 'gsm_modem.conf')
 
 
 

@@ -17,6 +17,7 @@ from Ui import *
 from Cron import *
 from Termosensors import *
 from Ups import *
+from GsmModem import *
 
 
 
@@ -51,6 +52,7 @@ class Skynet():
         s.gates = Gates(s)
         s.guard = Guard(s)
         s.ups = Ups(s)
+        s.gsmModem = GsmModem(s)
 
         s.httpHandlers = Skynet.HttpHandlers(s, s.httpServer)
         s.TgHandlers = Skynet.TgHandlers(s)

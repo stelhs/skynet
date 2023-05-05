@@ -6,6 +6,7 @@ from Skynet import *
 class IoPortBase():
     def __init__(s, io, board, mode, pn, pName):
         s.io = io
+        s.tc = io.tc
         s.storage = io.storage
         s.pName = pName
         s._board = board;
