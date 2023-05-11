@@ -459,6 +459,46 @@ class Ups():
         s.skynet.emitEvent('ups', 'statusBarsUpdate', statusBars)
 
 
+    def textStat(s):
+        text = "Бесперебойник:\n"
+        try:
+            text += "    Питание на вводе: %s\n" % ('отсутсвует' if s.isNoExtPower() else 'присутствует')
+        except AppError as e:
+            text += "    Не удалось запросить состояние питания на вводе: %s\n" % e
+        try:
+            text += "    Питание на входе в UPS: %s\n" % ('присутствует' if s.hw.powerInUpsPort.state() else 'отсутсвует')
+        except AppError as e:
+            text += "    Не удалось запросить состояние питания на вводе UPS: %s\n" % e
+        try:
+            text += "    Питание на выходе UPS: %s\n" % ('присутствует' if s.hw.powerOutUpsPort.state() else 'отсутсвует')
+        except AppError as e:
+            text += "    Не удалось запросить состояние питания на выходе UPS: %s\n" % e
+        try:
+            text += "    Питание 14VDC внутри UPS: %s\n" % ('отсутсвует' if s.hw.powerUps14vdcPort.state() else 'присутствует')
+        except AppError as e:
+            text += "    Не удалось запросить состояние питания 14VDC внутри UPS: %s\n" % e
+
+        text += "    Автоматический заряд АКБ: %s\n" % ('включён' if s.autoChargeIsEnabled() else 'отключён')
+
+        mode = s.mode()
+        ups_state = mode
+        if mode == 'charge':
+            if s.charger.isStarted():
+                ups_state = "%s_%s" % (mode, s.charger.stage())
+        text += "    Состояние ИБП: %s\n" % ups_state.upper()
+
+        try:
+            text += "    Напряжение на АКБ: %s V\n" % s.hw.battery.voltage()
+        except AppError as e:
+            text += "    Не удалось запросить напряжение АКБ: %s\n" % e
+        try:
+            text += "    Ток заряда/разряда АКБ: %s A\n" % s.hw.battery.chargerCurrent()
+        except AppError as e:
+            text += "    Не удалось запросить ток заряда/разряда АКБ: %s\n" % e
+
+        return text
+
+
     def destroy(s):
         s.upsTask.remove()
         print("destroy Ups")

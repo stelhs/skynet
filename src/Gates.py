@@ -145,7 +145,17 @@ class Gates():
         s.tc.toAdmin("Ворота открылись")
 
 
-
+    def textStat(s):
+        text = "Раздвижные ворота:\n"
+        try:
+            text += "    Ворота: %s\n" % ('закрыты' if s.isClosed() else 'не закрыты')
+        except AppError as e:
+            text += "    Неудалось запросить состояние ворот: %s\n" % e
+        try:
+            text += "    Питание ворот: %s\n" % ('присутствует' if s.isPowerEnabled() else 'отсутствует')
+        except AppError as e:
+            text += "    Неудалось запросить состояние питания ворот: %s\n" % e
+        return text
 
 
     class HttpHandlers():

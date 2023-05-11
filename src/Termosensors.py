@@ -83,6 +83,16 @@ class Termosensors():
         s.skynet.emitEvent('termosensors', 'sevenSegsUpdate', data)
 
 
+    def textStat(s):
+        text = "Датчики температуры:\n"
+        for sn in s.sensors:
+            try:
+                text += "    %s: %.1f°\n" % (sn.description(), sn.t())
+            except AppError as e:
+                pass
+        return text
+
+
     class HttpHandlers():
         def __init__(s, ts, httpServer):
             s.ts = ts

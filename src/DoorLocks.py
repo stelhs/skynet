@@ -42,6 +42,16 @@ class DoorLocks():
         s.skynet.emitEvent('door_locks', 'ledsUpdate', data)
 
 
+    def textStat(s):
+        text = "Дверные замки:\n"
+        for dl in s.list():
+            try:
+                text += "    %s: %s\n" % (dl.description(), 'закрыто' if dl.isClosed() else 'открыто')
+            except AppError as e:
+                text += "    Состояние замка '%s' запросить не удалось: %s" % (ps.description(), e)
+        return text
+
+
     def destroy(s):
         print('destroy DoorLocks')
         s.storage.destroy()
@@ -107,6 +117,10 @@ class DoorLocks():
 
         def name(s):
             return s._name
+
+
+        def description(s):
+            return s._description
 
 
         def open(s):

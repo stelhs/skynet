@@ -88,6 +88,39 @@ class Boiler():
         s.skynet.emitEvent('boiler', 'error', msg)
 
 
+    def stat(s):
+        return s.send('boiler/stat')
+
+
+    def textStat(s):
+        try:
+            st = s.stat()
+        except BoilerError as e:
+            return "Ошибка при запросе статуса котла: %s\n" % e
+
+        text = "Котёл:\n"
+        text += "    Состояние: %s\n" % st['state']
+        if 'stopReason' in st:
+            text += "    Причина остановки: %s\n" % st['stopReason']
+        text += "    Питание: %s\n" % ('присутсвует' if st['hwPowerState'] else 'отсутсвует')
+        text += "    Давление: %s\n" % ('присутсвует' if st['pressureState'] else 'отсутсвует')
+        text += "    Тепловентилятор: %s\n" % ('включён' if st['funHeaterState'] else 'отключён')
+        text += "    Количество запусков: %s\n" % st['ignitionCounter']
+        text += "    Израсходованно топлива: %.1f л\n" % st['fuelConsumption']
+
+        if 'target_t' in st:
+            text += "    Установленная температура: %.1f°\n" % st['target_t']
+        if 'room_t' in st:
+            text += "    Температура в мастерской: %.1f°\n" % st['room_t']
+        if 'boiler_t' in st:
+            text += "    Температура в котле: %.1f°\n" % st['boiler_t']
+        if 'return_t' in st:
+            text += "    Температура в радиаторах: %.1f°\n" % st['return_t']
+        if 'overHeartingState' in st and st['overHeartingState']:
+            text += "  Сработала защита по перегреву котла!\n"
+        return text
+
+
 
     class Db():
         def __init__(s, boiler, db):

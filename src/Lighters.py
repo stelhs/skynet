@@ -1,4 +1,4 @@
-import datetime
+import datetime, time
 from Exceptions import *
 from Syslog import *
 from HttpServer import *
@@ -108,6 +108,17 @@ class Lighters():
         s.skynet.emitEvent('lighters', 'ledsUpdate', data)
 
 
+    def textStat(s):
+        text = "Уличное освещение:\n"
+        for l in s.list():
+            try:
+                text += "    Фонарь '%s': %s\n" % (l.description(),
+                            'выключен' if l.isDown() else ('включен в течении %s' % timeDurationStr(l.upTime())))
+            except AppError as e:
+                text += "    Не удалось запросить сосотояние фонаря '%s': %s" % (l.description(), e)
+        return text
+
+
     def destroy(s):
         print("destroy Lighters")
         s.storage.destroy()
@@ -187,6 +198,7 @@ class Lighters():
             s.manager = manager
             s._name = name
             s._description = description
+            s._startTime = None
             s._port = s.manager.io.port(pName)
             s._port.subscribe("Lighter", lambda state: s.manager.uiUpdater.call())
 
@@ -195,12 +207,26 @@ class Lighters():
             return s._name
 
 
+        def description(s):
+            return s._description
+
+
         def up(s):
             s._port.up()
+            s._startTime = now()
+
+
+        def upTime(s):
+            if s.isDown():
+                return None
+            if not s._startTime:
+                return 0
+            return now() - s._startTime
 
 
         def down(s):
             s._port.down()
+            s.startTime = None
 
 
         def isDown(s):

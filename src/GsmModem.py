@@ -61,6 +61,20 @@ class GsmModem():
             raise GsmModemError(s.log, "field stat is absent in modem responce: %s" % resp)
 
 
+    def textStat(s):
+        text = "USB GSM модем:\n"
+        try:
+            text += "    Баланс счёта: %s руб\n" % s.balance()
+        except AppError as e:
+            text += "    Неудалось запросить баланс счёта: %s\n" % e
+        try:
+            st = s.stat()
+            text += "    Уровень сигнала: %s%%\n" % st['SignalStrength']
+            text += "    WAN IP адрес: %s\n" % st['WanIPAddress']
+        except AppError as e:
+            text += "    Неудалось запросить состояние модема: %s\n" % e
+        return text
+
 
     class TgHandlers():
         def __init__(s, modem):

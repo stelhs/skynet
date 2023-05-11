@@ -82,6 +82,10 @@ class WaterSupply():
         return s.lowPressureSense.state()
 
 
+    def isAutomaticEnabled(s):
+        return s._enableAutomatic.val
+
+
     def pumpRun(s):
         if s.isBlocked():
             raise PumpIsBlockedError(s.log, "Can't run pump. Pump is blocked")
@@ -171,6 +175,23 @@ class WaterSupply():
             Task.asyncRunSingle('waterSupplyAutoStarter', start)
             return
 
+
+    def textStat(s):
+        text = "Водоснабжение:\n"
+        text += "    Автоматика: %s\n" % ('включена' if s.isAutomaticEnabled() else 'отключена')
+        try:
+            text += "    Давление в контуре: %s\n" % ('отсутствует' if s.isLowPressure() else 'присутствует')
+        except AppError as e:
+            text += "    Давление в контуре запросить не удалось: %s\n" % e
+
+        try:
+            text += "    Насос: %s\n" % ('включен' if s.isStarted() else 'выключен')
+        except AppError as e:
+            text += "    Состояние питания насоса запросить не удалось: %s\n" %e
+
+        if s.isBlocked():
+            text += "Насос заблокирован\n"
+        return text
 
 
     def destroy(s):

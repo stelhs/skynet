@@ -174,7 +174,15 @@ class Skynet():
 
 
         def status(s, arg, replyFn):
-            replyFn("Эта команда временно неработает")
+            subSystems = (s.skynet.guard, s.skynet.gates, s.skynet.doorLocks,
+                          s.skynet.powerSockets, s.skynet.ts,
+                          s.skynet.boiler, s.skynet.waterSupply,
+                          s.skynet.lighters, s.skynet.ups,
+                          s.skynet.gsmModem)
+            text = ""
+            for sb in subSystems:
+                text += "%s\n" % sb.textStat()
+            replyFn(text)
 
 
 

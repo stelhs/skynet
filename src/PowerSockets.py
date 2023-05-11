@@ -47,6 +47,16 @@ class PowerSockets():
         s.skynet.emitEvent('power_sockets', 'ledsUpdate', data)
 
 
+    def textStat(s):
+        text = "Наличие питания:\n"
+        for ps in s.list():
+            try:
+                text += "    %s: %s\n" % (ps.description(), 'отсуствует' if ps.isDown() else 'присутвует')
+            except AppError as e:
+                text += "    Состояние питания зоны '%s' запросить не удалось: %s" % (ps.description(), e)
+        return text
+
+
     def destroy(s):
         print('destroy PowerSockets')
         s.storage.destroy()
@@ -110,6 +120,10 @@ class PowerSockets():
 
         def name(s):
             return s._name
+
+
+        def description(s):
+            return s._description
 
 
         def up(s):

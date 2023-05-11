@@ -29,7 +29,7 @@ class Guard():
         s.storage = SkynetStorage(skynet, 'guard.json')
         s._lock = threading.Lock()
         s._zones = []
-        s.createZones()
+        s.initZones()
         s.startSettings = Guard.StartSettings(s)
         s.stopSettings = Guard.StopSettings(s)
         s.httpHandlers = Guard.HttpHandlers(s)
@@ -60,10 +60,10 @@ class Guard():
         s.tc.toAdmin("Guard: %s" % msg)
 
 
-    def createZones(s):
+    def initZones(s):
         if len(s._zones):
             raise GuardZonesAlreadyCreatedError(s.log,
-                    "createZones() failed: Zones list alrady was created early")
+                    "initZones() failed: Zones list alrady was created early")
         zones = []
         for name, zConf in s.conf['zones'].items():
             zone = Guard.Zone(s, name, zConf)
@@ -450,6 +450,24 @@ class Guard():
             pass
 
         s.skynet.emitEvent('guard', 'ledsUpdate', leds)
+
+
+    def textStat(s):
+        text = "Система охраны:\n"
+        text += "    Охрана: %s\n" % ('включена' if s.isStarted() else 'отключена')
+
+        blocked = [z for z in s.zones() if z.isBlocked()]
+        if len(blocked):
+            text += "    Заблокированные зоны:\n"
+            for z in blocked:
+                text += "        %s\n" % z.description()
+
+        blocked = [sn for z in s.zones() for sn in z.sensors() if sn.isBlocked()]
+        if len(blocked):
+            text += "    Заблокированные датчики:\n"
+            for s in blocked:
+                text += "        %s\n" % s.name()
+        return text
 
 
     def destroy(s):
