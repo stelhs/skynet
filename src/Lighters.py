@@ -3,6 +3,7 @@ from Exceptions import *
 from Syslog import *
 from HttpServer import *
 from SkynetStorage import *
+from TimeRange import *
 
 
 class Lighters():
@@ -69,29 +70,9 @@ class Lighters():
 
     def isNight(s):
         now = datetime.datetime.now()
-        start, end = s.conf['light_calendar'][str(now.month)]
-
-        parts = start.split(':')
-        startHour = int(parts[0])
-        startMin = int(parts[1])
-
-        parts = end.split(':')
-        endHour = int(parts[0])
-        endMin = int(parts[1])
-
-        if now.hour == startHour and now.minute > startMin:
-            return True
-
-        if now.hour > startHour:
-            return True
-
-        if now.hour == endHour and now.minute <= endMin:
-            return True
-
-        if now.hour < endHour:
-            return True
-
-        return False
+        rangeStr = s.conf['light_calendar'][str(now.month)]
+        tr = TimeRange(rangeStr)
+        return tr.isInEntry(now)
 
 
     def list(s):

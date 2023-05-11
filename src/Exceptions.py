@@ -105,6 +105,9 @@ class GuardAlreadyStartedError(GuardError):
 class GuardZoneNotRegistredError(GuardError):
     pass
 
+class GuardZoneConfError(GuardError):
+    pass
+
 class GuardSensorNotRegistredError(GuardError):
     pass
 

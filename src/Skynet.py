@@ -96,7 +96,7 @@ class Skynet():
         evType = (evType, ) if evType else ()
         s.registerEventSubscriber('catchEvent', eventHandler, source, evType)
         try:
-            Task.sleep(5000)
+            Task.sleep(15000)
         except KeyboardInterrupt:
             pass
         s.unsubscribeEvents('catchEvent')

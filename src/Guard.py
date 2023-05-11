@@ -1,8 +1,10 @@
-import threading, time, json
+import threading, time, json, datetime
 from Exceptions import *
 from Task import *
 from SkynetStorage import *
 from HttpServer import *
+from TimeRange import *
+
 
 class Guard():
     def __init__(s, skynet):
@@ -161,7 +163,6 @@ class Guard():
 
 
     def doBoilerStandby(s):
-        print('doBoilerStandby')
         try:
             s.boiler.setTarget_t(5.0)
         except AppError as e:
@@ -264,6 +265,18 @@ class Guard():
             except AppError as e:
                 pass
 
+            trigStat = ""
+            for zone in s._zones:
+                trigStat += "Зона: %s\n" % zone.name()
+                for sn in zone.sensors():
+                    trigStat += "\t\t\t%s: %d\n" % (sn.name(), sn.localTrigCnt())
+                    sn.resetLocalTrigCnt()
+
+            try:
+                s.toAdmin("Статистика по датчикам за время не охраны:\n%s" % trigStat)
+            except AppError:
+                pass
+
             if len(s.errors):
                 shortListText = "<br> ".join([row[0] for row in s.errors])
                 try:
@@ -294,6 +307,13 @@ class Guard():
             s.doWaterSupplyOnStop()
             s.doBoilerReady()
 
+            trigStat = ""
+            for zone in s._zones:
+                trigStat += "Зона: %s\n" % zone.name()
+                for sn in zone.sensors():
+                    trigStat += "\t%s: %d\n" % (sn.name(), sn.localTrigCnt())
+                    sn.resetLocalTrigCnt()
+
             if len(s.errors):
                 shortListText = "<br> ".join([row[0] for row in s.errors])
                 try:
@@ -305,6 +325,7 @@ class Guard():
 
             try:
                 s.toSkynet("Охрана отключена");
+                s.toAdmin("Статистика по датчикам за время охраны:\n%s" % trigStat)
             except AppError as e:
                 pass
 
@@ -336,6 +357,7 @@ class Guard():
 
 
     def zoneTrig(s, zone):
+        trigTime = int(time.time())
         try:
             alarmId = s.db.insert('guard_alarms',
                                   {'zone': zone.name(),
@@ -344,13 +366,19 @@ class Guard():
             s.errors.append(("Can't insert into table guard_alarms", e))
 
         msg = "!!! Внимание, Тревога !!!\n" \
-              "Сработала зона: '%s', событие: %d" % (
-               zone.name(), s._stateId.val)
+              "Сработала зона: '%s', событие: %d\n" \
+              "Ссылка на видео: "\
+              "http://sr90.org:3080/dvr/?mod=videos&cam=south&time_position=%d" % (
+               zone.name(), s._stateId.val, trigTime)
+
 
         if s.startSettings.enabledSkynetGroupNotify.val:
             s.tc.toAlarm(msg)
         else:
             s.tc.toAdmin(msg)
+
+        s.tc.toAdmin("http://sr90.org:3080/dvr/?mod=videos" \
+                     "&cam=south&time_position=%d&private=1" % trigTime)
 
 
     def zones(s, unlockedOnly=False):
@@ -373,6 +401,11 @@ class Guard():
                     return sensor
 
         raise GuardSensorNotRegistredError(s.log, "Sensor %s has not registred" % sName)
+
+
+    def sensors(s):
+        return [sensor for zone in s._zones \
+                       for sensor in zone.sensors()]
 
 
     def uiErr(s, msg):
@@ -685,9 +718,11 @@ class Guard():
         def __init__(s, guard, name, conf):
             s.guard = guard
             s.io = guard.io
+            s.log = Syslog("Guard_zone_%s" % name)
             s._lock = threading.Lock()
             s.storage = guard.storage
             s._name = name
+            s.conf = conf
             s._desc = conf['desc']
             if len(conf['io_sensors']) > 1:
                 s._diffInterval = conf['diff_interval']
@@ -769,6 +804,51 @@ class Guard():
             s.guard.zoneTrig(s)
 
 
+        def isBlockedNow(s):
+            def isMonthInRange(month, rangeStr): # "1-4" or "5"
+                if rangeStr.find('-') >= 1:
+                    try:
+                        start, end = list(map(lambda p: int(p.strip()), rangeStr.split('-')))
+                    except ValueError as e:
+                        raise GuardZoneConfError(s.log, 'Wrong interval format "from - to": %s' % e) from e
+                else:
+                    try:
+                        start = int(rangeStr)
+                        end = start
+                    except ValueError as e:
+                        raise GuardZoneConfError(s.log, 'Wrong month number: %s' % e) from e
+
+                if start == end and start != month:
+                    return False
+                if month >= start and month <= end:
+                    return True
+                if start < end:
+                    return False
+                if month >= start and month <= 12:
+                    return True
+                if month >= 1 and month <= end:
+                    return True
+                return False
+
+            if 'blockScheduler' not in s.conf:
+                return False
+
+            blockScheduler = s.conf['blockScheduler']
+
+            for record in blockScheduler:
+                try:
+                    months, rangeStr = list(map(lambda p: p.strip(), record.split(',')))
+                except ValueError as e:
+                    raise GuardZoneConfError(s.log, 'Wrong format of "blockScheduler": %s' % e) from e
+
+                now = datetime.datetime.now()
+                if isMonthInRange(now.month, months):
+                    tr = TimeRange(rangeStr)
+                    if tr.isInEntry(now):
+                        return True
+            return False
+
+
         def __repr__(s):
             return "zone:%s" % s.name()
 
@@ -784,6 +864,7 @@ class Guard():
             s.attemptToLockTimer = None
             s.storage = s.guard.storage
             s.toAdmin = s.zone.guard.toAdmin
+            s._localTrigCnt = 0
 
             s.trigState = trigState
 
@@ -805,6 +886,7 @@ class Guard():
             s.confAutolockTrigNumber = s.guard.conf['sensorAutolock']['trigNumber']
 
             port.subscribe("Sensor", s.doEventProcessing)
+
 
         def trigTime(s):
             return s._lastTrigTime.val
@@ -833,6 +915,14 @@ class Guard():
                              s.name(), s.zone.name()))
 
             return s._blocked.val
+
+
+        def localTrigCnt(s):
+            return s._localTrigCnt
+
+
+        def resetLocalTrigCnt(s):
+            s._localTrigCnt = 0
 
 
         def lock(s):
@@ -870,10 +960,15 @@ class Guard():
         def doEventProcessing(s, state):
             s.zone.guard.uiUpdater.call()
 
+            if s.trigState != state:
+                return
+
+            s._localTrigCnt += 1
+
             if s.zone.isBlocked():
                 return
 
-            if s.trigState != state:
+            if s.zone.isBlockedNow():
                 return
 
             now = int(time.time())

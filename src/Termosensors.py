@@ -16,7 +16,9 @@ class Termosensors():
             for sName, sInfo in s.conf['sensors'].items():
                 sensor = Termosensor(s, sName, sInfo['addr'],
                                      sInfo['description'],
-                                     sInfo['ioBoard'])
+                                     sInfo['ioBoard'],
+                                     sInfo['min'],
+                                     sInfo['max'])
                 s.sensors.append(sensor)
         except KeyError as e:
             raise TermosensorConfiguringError(s.log,
@@ -44,14 +46,14 @@ class Termosensors():
 
 
     def eventHandlerBoiler(s, source, type, data):
-        try:
+        if 'room_t' in data:
             s.sensor('workshop_inside1').update(data['room_t'])
+        if 'boiler_t' in data:
             s.sensor('boiler_inside').update(data['boiler_t'])
+        if 'boiler_box_t' in data:
             s.sensor('boiler_inside_case').update(data['boiler_box_t'])
+        if 'return_t' in data:
             s.sensor('workshop_radiators').update(data['return_t'])
-        except KeyError as e:
-            raise EventHandlerError(s.log,
-                    "eventHandler boiler failed: field %s is absent in event data" % e) from e
         s.updateUi()
 
 
@@ -90,45 +92,39 @@ class Termosensors():
 
         def termosensor(s, args, conn):
             ioBoardName = args['io']
-            list = []
-            for sensor in s.ts.sensors:
-                if sensor.ioBoardName() != ioBoardName:
-                    continue
-                if sensor.addr():
-                    list.append(sensor.addr())
-            return {'list': list}
+            return {'list' :[{'addr': sn.addr(), 'min': sn.minT(), 'max': sn.maxT()} \
+                             for sn in s.ts.sensors if sn.ioBoardName() == ioBoardName]}
 
 
 
 
 class Termosensor():
-    def __init__(s, manager, name, addr, description, ioName):
+    def __init__(s, manager, name, addr, description, ioName, minT, maxT):
         s.manager = manager
         s.conf = manager.conf
         s.log = Syslog('Termosensor_%s' % name)
-        s._lock = threading.Lock()
         s._name = name
         s._addr = addr
         s._description = description
         s._ioName = ioName
+        s._minT = minT
+        s._maxT = maxT
         s.updateTime = 0
 
 
     def update(s, t):
         if not t or t == 'None':
             return
-        with s._lock:
-            s._t = float(t)
-            s.updateTime = int(time.time())
+        s._t = float(t)
+        s.updateTime = int(time.time())
 
 
     def t(s):
         now = int(time.time())
-        with s._lock:
-            if (now - s.updateTime) > s.conf['cachedInterval']:
-                raise TermosensorNoDataError(s.log,
-                        "termosensor is not updated more then %d seconds" % s.conf['cachedInterval'])
-            return s._t
+        if (now - s.updateTime) > s.conf['cachedInterval']:
+            raise TermosensorNoDataError(s.log,
+                    "termosensor is not updated more then %d seconds" % s.conf['cachedInterval'])
+        return s._t
 
 
     def name(s):
@@ -145,6 +141,14 @@ class Termosensor():
 
     def addr(s):
         return s._addr
+
+
+    def minT(s):
+        return s._minT
+
+
+    def maxT(s):
+        return s._maxT
 
 
     def __repr__(s):

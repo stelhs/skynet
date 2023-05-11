@@ -10,6 +10,7 @@ class Boiler():
         s.log = Syslog('Boiler')
         s.skynet = skynet
         s.tc = skynet.tc
+        s.ts = skynet.ts
         s.conf = skynet.conf.boiler
         s.httpServer = skynet.httpServer
         s.db = skynet.db
@@ -188,6 +189,7 @@ class Boiler():
         def __init__(s, boiler):
             s.boiler = boiler
             s.tc = boiler.tc
+            s.ts = boiler.ts
 
             s.tc.registerHandler('boiler', s.setFixed, 'w', ('еду',))
             s.tc.registerHandler('boiler', s.setT, 'w', ('установи температуру', 'boiler set t'))
@@ -195,21 +197,39 @@ class Boiler():
 
         def setFixed(s, arg, replyFn):
             fixedT = 17.0
+            msg = ""
             try:
                 s.boiler.setTarget_t(fixedT)
+                msg += "Установлена температура %.1f градусов\n" % fixedT
             except AppError as e:
                 return replyFn("Не удалось установить температуру: %s" % e)
-            replyFn("Установлена температура %.1f градусов" % fixedT)
+
+            try:
+                sn = s.ts.sensor('workshop_inside1')
+                msg += "Текущая температура в мастерской: %.1f градусов\n" % sn.t()
+            except AppError as e:
+                return replyFn("Не удалось получить текущую температуру: %s" % e)
+
+            replyFn(msg)
 
 
         def setT(s, arg, replyFn):
+            msg = ""
             try:
                 t = float(arg)
                 s.boiler.setTarget_t(t)
+                msg += "Установлена температура %.1f градусов\n" % fixedT
             except ValueError as e:
                 return replyFn("Не удалось понять какую температуру необходимо установить: %s" % e)
             except AppError as e:
                 return replyFn("Не удалось установить температуру: %s" % e)
-            replyFn("Установлена температура %.1f градусов" % t)
+
+            try:
+                sn = s.ts.sensor('workshop_inside1')
+                msg += "Текущая температура в мастерской: %.1f градусов\n" % sn.t()
+            except AppError as e:
+                return replyFn("Не удалось получить текущую температуру: %s" % e)
+
+            replyFn(msg)
 
 
