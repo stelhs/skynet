@@ -172,3 +172,10 @@ class ChargeCurrentError(UpsError): # No actual current information
 
 class GsmModemError(AppError):
     pass
+
+
+# Dvr errors:
+
+class DvrError(AppError):
+    pass
+

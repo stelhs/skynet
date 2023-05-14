@@ -48,7 +48,7 @@ class DoorLocks():
             try:
                 text += "    %s: %s\n" % (dl.description(), 'закрыто' if dl.isClosed() else 'открыто')
             except AppError as e:
-                text += "    Состояние замка '%s' запросить не удалось: %s" % (ps.description(), e)
+                text += "    Состояние замка '%s' запросить не удалось: %s" % (dl.description(), e)
         return text
 
 

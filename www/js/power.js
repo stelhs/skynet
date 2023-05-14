@@ -72,7 +72,7 @@ class Power extends ModuleBase {
 
         this.ui.ledRegister('ledGatesNotClosed', 'red');
         this.ui.ledRegister('ledGatesNoPower', 'red');
-        this.ui.ledRegister('ledWaterPumpEnabled', 'red');
+        this.ui.ledRegister('ledWaterPumpEnabled', 'green');
         this.ui.ledRegister('ledWatersupplyAutomaticEnabled', 'green', 'mini');
         this.ui.ledRegister('ledWatersupplyLowPressure', 'red');
         this.ui.ledRegister('ledWatersupplyPumpIsLocked', 'red', 'mini');

@@ -380,6 +380,10 @@ class Guard():
         s.tc.toAdmin("http://sr90.org:3080/dvr/?mod=videos" \
                      "&cam=south&time_position=%d&private=1" % trigTime)
 
+        if s.startSettings.enabledSMS.val:
+            for phone in s.conf['smsNotifierPhones']:
+                s.skynet.gsmModem.smsSend(phone, "Сработала зона: %s" % zone.name())
+
 
     def zones(s, unlockedOnly=False):
         if unlockedOnly:

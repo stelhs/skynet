@@ -27,11 +27,11 @@ class Lighters():
             s._lighters.append(l)
 
 
-        s.skynet.cron.registerEveryMin('lighter_automatic', s.timeHandler)
+        s.skynet.cron.register('lighterAutomatic', '*/1 * * * *', s.cronHandler)
         s.uiUpdater = s.skynet.periodicNotifier.register("lighters", s.uiUpdateHandler, 2000)
 
 
-    def timeHandler(s):
+    def cronHandler(s):
         if not s._enableAutomatic.val:
             return
 

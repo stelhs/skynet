@@ -23,4 +23,3 @@ io = s.io
 
 print("help:")
 print("\ts")
-print("\tio")

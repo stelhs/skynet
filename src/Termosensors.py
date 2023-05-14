@@ -93,6 +93,13 @@ class Termosensors():
         return text
 
 
+    def __repr__(s):
+        text = "Termosensors:\n"
+        for sn in s.sensors:
+            text += "\t%s: %.2f\n" % (sn.name(), sn.t())
+        return text
+
+
     class HttpHandlers():
         def __init__(s, ts, httpServer):
             s.ts = ts
@@ -119,6 +126,7 @@ class Termosensor():
         s._ioName = ioName
         s._minT = minT
         s._maxT = maxT
+        s._subscribers = []
         s.updateTime = 0
 
 
@@ -127,6 +135,9 @@ class Termosensor():
             return
         s._t = float(t)
         s.updateTime = int(time.time())
+        if len(s._subscribers):
+            for sb in s._subscribers:
+                sb.cb(s._t)
 
 
     def t(s):
@@ -161,5 +172,30 @@ class Termosensor():
         return s._maxT
 
 
-    def __repr__(s):
+    def registerSubscriber(s, name, cb):
+        s._subscribers.append(Termosensor.Subscriber(name, cb))
+
+
+    def __str__(s):
         return "Termosensor:%s" % s.name()
+
+
+    def __repr__(s):
+        return "Termosensor:%s\n" % s.name()
+
+
+
+    class Subscriber():
+        def __init__(s, name, cb):
+            s.name = name
+            s.cb = cb
+
+        def __repr__(s):
+            return "Termosensor.Subscriber:%s" % s.name()
+
+
+        def __str__(s):
+            return "Termosensor.Subscriber:%s" % s.name()
+
+
+

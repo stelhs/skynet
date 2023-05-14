@@ -3,6 +3,7 @@ from Exceptions import *
 from HttpServer import *
 from Skynet import *
 from HttpClient import *
+from AveragerQueue import *
 
 
 class Boiler():
@@ -21,6 +22,12 @@ class Boiler():
         skynet.registerEventSubscriber('Boiler', s.eventHandler,
                                         ('boiler', ), ('boilerState', ))
         s.httpClient = HttpClient('boiler', s.conf['host'], s.conf['port'])
+        skynet.cron.register('boilerStat', '0 9 * * *', s.cronStatHandler)
+        s.termoStat = Boiler.TermoStat(s)
+
+
+    def toAdmin(s, msg):
+        s.tc.toAdmin("Boiler: %s" % msg)
 
 
     def eventHandler(s, source, type, data):
@@ -92,6 +99,41 @@ class Boiler():
         return s.send('boiler/stat')
 
 
+    def resetStat(s):
+        s.send('boiler/reset_stat')
+
+
+    def cronStatHandler(s):
+        try:
+            st = s.stat()
+        except BoilerError as e:
+            s.toAdmin('Ошибка получения статистики котла: %s' % e)
+            return
+        try:
+            s.dbw.addDailyStat(st['burningTimeTotal'],
+                               st['fuelConsumption'] * 1000,
+                               st['ignitionCounter'],
+                               s.termoStat.sensorOverageT('workshop_radiators'),
+                               s.termoStat.sensorOverageT('workshop_inside1'),
+                               s.termoStat.sensorOverageT('RP_top'))
+            s.termoStat.reset()
+        except DatabaseConnectorError as e:
+            s.toAdmin('Не удалось сохранить статистику котла: %s' % e)
+            return
+        try:
+            s.resetStat()
+        except BoilerError as e:
+            s.toAdmin('Ошибка сброса статистики кота: %s' % e)
+
+        if st['ignitionCounter']:
+            text = "Статистика по котлу:\n"
+            text += "    Время работы котла: %s\n" % timeDurationStr(st['burningTimeTotal'])
+            text += "    Количество запусков: %d\n" % st['ignitionCounter']
+            text += "    Израсходовано топлива: %.1fл.\n" % st['fuelConsumption']
+            s.toAdmin(text)
+
+
+
     def textStat(s):
         try:
             st = s.stat()
@@ -121,6 +163,66 @@ class Boiler():
         return text
 
 
+    def __repr__(s):
+        return s.textStat()
+
+
+
+    class TermoStat():
+        def __init__(s, boiler):
+            ts = boiler.skynet.ts
+            s._sensors = [Boiler.TermoStat.Sensor(ts, 'RP_top'),
+                          Boiler.TermoStat.Sensor(ts, 'workshop_inside1'),
+                          Boiler.TermoStat.Sensor(ts, 'workshop_radiators')]
+
+
+        def reset(s):
+            for sn in s._sensors:
+                sn.reset()
+
+
+        def sensorOverageT(s, name):
+            for sn in s._sensors:
+                if sn.name() == name:
+                    return sn.overage()
+
+
+        def __repr__(s):
+            text = "Boiler.TermoStat:\n"
+            for sn in s._sensors:
+                text += "\t%s: %.2f\n" % (sn.name(), sn.overage())
+            return text
+
+
+
+        class Sensor():
+            def __init__(s, ts, name):
+                s.sn = ts.sensor(name)
+                s.queue = AveragerQueue()
+                s.sn.registerSubscriber('boiler', s.handler)
+
+
+            def name(s):
+                return s.sn.name()
+
+
+            def handler(s, t):
+                s.queue.push(t)
+
+
+            def reset(s):
+                s.queue.clear()
+
+
+            def overage(s):
+                return s.queue.round()
+
+
+            def __repr__(s):
+                return "Boiler.TermoStat.Sensor:%s" % s.name()
+
+
+
 
     class Db():
         def __init__(s, boiler, db):
@@ -137,6 +239,18 @@ class Boiler():
             if row['sum'] == None:
                 return 0
             return row['sum']
+
+
+        def addDailyStat(s, burningTime, fuelConsumption,
+                         ignitionCounter, retWaterT, roomT, outsideT):
+            s.db.insert('boiler_statistics',
+                        {'burning_time': burningTime,
+                         'fuel_consumption': fuelConsumption,
+                         'ignition_counter': ignitionCounter,
+                         'return_water_t': retWaterT,
+                         'room_t': roomT,
+                         'outside_t': outsideT})
+
 
 
 
@@ -226,24 +340,11 @@ class Boiler():
 
             s.tc.registerHandler('boiler', s.setFixed, 'w', ('еду',))
             s.tc.registerHandler('boiler', s.setT, 'w', ('установи температуру', 'boiler set t'))
+            s.tc.registerHandler('boiler', s.start, 'w', ('включи котёл', ))
 
 
         def setFixed(s, arg, replyFn):
-            fixedT = 17.0
-            msg = ""
-            try:
-                s.boiler.setTarget_t(fixedT)
-                msg += "Установлена температура %.1f градусов\n" % fixedT
-            except AppError as e:
-                return replyFn("Не удалось установить температуру: %s" % e)
-
-            try:
-                sn = s.ts.sensor('workshop_inside1')
-                msg += "Текущая температура в мастерской: %.1f градусов\n" % sn.t()
-            except AppError as e:
-                return replyFn("Не удалось получить текущую температуру: %s" % e)
-
-            replyFn(msg)
+            s.setT(17.0, replyFn)
 
 
         def setT(s, arg, replyFn):
@@ -251,7 +352,7 @@ class Boiler():
             try:
                 t = float(arg)
                 s.boiler.setTarget_t(t)
-                msg += "Установлена температура %.1f градусов\n" % fixedT
+                msg += "Установлена температура %.1f градусов\n" % t
             except ValueError as e:
                 return replyFn("Не удалось понять какую температуру необходимо установить: %s" % e)
             except AppError as e:
@@ -262,7 +363,24 @@ class Boiler():
                 msg += "Текущая температура в мастерской: %.1f градусов\n" % sn.t()
             except AppError as e:
                 return replyFn("Не удалось получить текущую температуру: %s" % e)
-
+            try:
+                stat = s.boiler.stat()
+                if stat['state'] == 'STOPPED':
+                    msg += "Однако котёл выключен."
+                    if stat['stopReason']:
+                        msg += "Причина остановки: %s" % stat['stopReason']
+                    msg += "\n"
+            except AppError as e:
+                return replyFn("Не удалось получить статус котла: %s" % e)
             replyFn(msg)
+
+
+        def start(s, arg, replyFn):
+            try:
+                s.boiler.start()
+            except AppError as e:
+                return replyFn("Не удалось включить котёл: %s" % e)
+            replyFn("Котёл включается")
+
 
 

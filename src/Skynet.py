@@ -18,6 +18,7 @@ from Cron import *
 from Termosensors import *
 from Ups import *
 from GsmModem import *
+from Dvr import *
 
 
 
@@ -53,6 +54,7 @@ class Skynet():
         s.guard = Guard(s)
         s.ups = Ups(s)
         s.gsmModem = GsmModem(s)
+        s.dvr = Dvr(s)
 
         s.httpHandlers = Skynet.HttpHandlers(s, s.httpServer)
         s.TgHandlers = Skynet.TgHandlers(s)
@@ -100,6 +102,26 @@ class Skynet():
         except KeyboardInterrupt:
             pass
         s.unsubscribeEvents('catchEvent')
+
+
+    def __repr__(s):
+        text = "Skynet:\n"
+        text += "\ts.cron: Skynet cron\n"
+        text += "\ts.ts: Termosensors\n"
+        text += "\ts.ui: User Interface\n"
+        text += "\ts.io: I/O subsystem\n"
+        text += "\ts.boiler: Boiler\n"
+        text += "\ts.waterSupply: Water supply system\n"
+        text += "\ts.doorLocks: Door locks\n"
+        text += "\ts.powerSockets: Power Sockets\n"
+        text += "\ts.lighters: Outside lighters\n"
+        text += "\ts.speakerphone: Speakerphone\n"
+        text += "\ts.gates: Main gates\n"
+        text += "\ts.guard: Guard system\n"
+        text += "\ts.ups: UPS system\n"
+        text += "\ts.gsmModem: USB 3g GSM modem\n"
+        text += "\ts.dvr: Digital Video Recorder\n"
+        return text
 
 
     def destroy(s):
@@ -174,11 +196,12 @@ class Skynet():
 
 
         def status(s, arg, replyFn):
+            replyFn("делаю...")
             subSystems = (s.skynet.guard, s.skynet.gates, s.skynet.doorLocks,
                           s.skynet.powerSockets, s.skynet.ts,
                           s.skynet.boiler, s.skynet.waterSupply,
                           s.skynet.lighters, s.skynet.ups,
-                          s.skynet.gsmModem)
+                          s.skynet.gsmModem, s.skynet.dvr)
             text = ""
             for sb in subSystems:
                 text += "%s\n" % sb.textStat()
