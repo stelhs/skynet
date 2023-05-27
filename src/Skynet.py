@@ -179,7 +179,7 @@ class Skynet():
                 source = dt['source']
                 evType = dt['type']
                 data = dt['data']
-            except json.JSONDecodeError as e:
+            except (json.JSONDecodeError, TypeError) as e:
                 raise HttpHandlerError("can't parse JSON from POST request: %s" % e, 'JSONDecodeError')
             except KeyError as e:
                 raise HttpHandlerError("%s field not specified in JSON" % e, 'KeyError')

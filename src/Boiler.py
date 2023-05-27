@@ -22,7 +22,7 @@ class Boiler():
         skynet.registerEventSubscriber('Boiler', s.eventHandler,
                                         ('boiler', ), ('boilerState', ))
         s.httpClient = HttpClient('boiler', s.conf['host'], s.conf['port'])
-        skynet.cron.register('boilerStat', '0 9 * * *', s.cronStatHandler)
+        skynet.cron.register('boilerStat', ('0 0 9 * * *',)).addCb(s.cronStatHandler)
         s.termoStat = Boiler.TermoStat(s)
 
 
@@ -103,7 +103,7 @@ class Boiler():
         s.send('boiler/reset_stat')
 
 
-    def cronStatHandler(s):
+    def cronStatHandler(s, cronWorker=None):
         try:
             st = s.stat()
         except BoilerError as e:

@@ -1005,11 +1005,11 @@ class Guard():
             s._trigCnt.set(s._trigCnt.val + 1)
 
             if s.isBlocked():
-                if (now - s._lastNotificationTime.val) > s.confAutolockNotificationInterval:
-                    s.toAdmin("Заблокированный датчик %s из зоны %s продолжает " \
-                              "генерировать события. Нагенерировано событий: %d" % (
-                              s.name(), s.zone.name(), s._trigCnt.val))
-                    s._lastNotificationTime.set(now)
+                #if (now - s._lastNotificationTime.val) > s.confAutolockNotificationInterval:
+                 #   s.toAdmin("Заблокированный датчик %s из зоны %s продолжает " \
+                  #            "генерировать события. Нагенерировано событий: %d" % (
+                   #           s.name(), s.zone.name(), s._trigCnt.val))
+                    #s._lastNotificationTime.set(now)
                 return
 
             if not s.attemptToLockTimer:

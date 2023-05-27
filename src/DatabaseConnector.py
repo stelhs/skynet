@@ -36,17 +36,19 @@ class DatabaseConnector():
 
             try:
                 s.mysql.connect()
-            except (mysql.connector.errors.DatabaseError, mysql.connector.errors.InterfaceError):
+            except mysql.connector.errors.Error:
                 s.attempts += 1
                 Task.sleep(1000)
                 continue
 
             s.attempts = 0
-            s.task.dropMessages()
-            s.task.waitMessage()
+            #s.task.dropMessages()
+            #s.task.waitMessage()
+            Task.sleep(1000)
 
 
-    def waitForConnect(s):
+    def waitForConnect(s): # TODO
+        print("waitForReconnect")
         s.task.sendMessage('doConnect')
         while 1:
             Task.sleep(500)
