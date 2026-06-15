@@ -95,6 +95,55 @@
                 </div>
             </div>
 
+
+            <div style="border: solid 1px;
+                        width: max-content;
+                        margin: 0 0 10 0">
+
+                <div style="background-color: #335577;
+                            text-align: center;
+                            padding: 3 0">
+                    Вентиляция
+                </div>
+                <div style="padding: 0 20 10 20;">
+                    <table>
+                        <tr>
+                            <td style="width: 180">Вытяжка: </td>
+                            <td>
+                                <div id="ledVentilationEnabled" class="led_big-off" style="margin: 5px; vertical-align: middle"></div>
+                                <a class="button_without_led_green" onpointerdown="ui.power.requestVentilationOn()"></a>
+                                <a class="button_without_led_red" onpointerdown="ui.power.requestVentilationOff()"></a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Положение клапана</td>
+                            <td>
+                                <div id="ledVentilationValveOpened" class="led_big-red"></div>
+                                Открыт
+                                <div id="ledVentilationValveClosed" class="led_big-red"></div>
+                                Закрыт
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Управление клапаном</td>
+                            <td>
+                                <a class="button_without_led_green" onpointerdown="ui.power.requestVentilationValveOpen()"></a>
+                                <div id="ledVentilationValveOpen" class="led_big-green"></div>
+                                Открытие
+                                <br>
+
+                                <a class="button_without_led_red" onpointerdown="ui.power.requestVentilationValveClose()"></a>
+                                <div id="ledVentilationValveClose" class="led_big-green"></div>
+                                Закрытие<br>
+                            </td>
+                        </tr>
+
+                    </table>
+
+                </div>
+            </div>
+
+
         </td>
 
 

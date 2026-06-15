@@ -179,3 +179,8 @@ class GsmModemError(AppError):
 class DvrError(AppError):
     pass
 
+
+# Ventilation errors:
+
+class VentilationError(AppError):
+    pass

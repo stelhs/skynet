@@ -21,7 +21,8 @@ class Ui():
         s.skynet.registerEventSubscriber('Ui', s.eventHandler,
                                          evTypes=('ledsUpdate', 'statusBarsUpdate',
                                                   'labelsBarsUpdate', 'sevenSegsUpdate',
-                                                  'boilerFuelConsumption', 'switchesUpdate'))
+                                                  'boilerFuelConsumption', 'switchesUpdate',
+                                                  'error', 'info'))
 
 
 
@@ -40,6 +41,14 @@ class Ui():
             user.pinExtendAcceptance()
             handler(args, conn)
         s.httpServer.setReqHandler(method, url, cb, requiredFields, retJson)
+
+
+    def logErr(s, subsystem, text):
+        s.skynet.emitEvent(subsystem, 'error', text)
+
+
+    def logInfo(s, subsystem, text):
+        s.skynet.emitEvent(subsystem, 'info', text)
 
 
     class EventManager():

@@ -89,6 +89,11 @@ class Power extends ModuleBase {
         this.ui.ledRegister('ledBatteryRelayPort', 'red');
         this.ui.ledRegister('ledUpsBreakPowerPort', 'red');
         this.ui.ledRegister('ledDischarging', 'red');
+        this.ui.ledRegister('ledVentilationEnabled', 'green');
+        this.ui.ledRegister('ledVentilationValveOpened', 'red');
+        this.ui.ledRegister('ledVentilationValveClosed', 'red');
+        this.ui.ledRegister('ledVentilationValveOpen', 'green');
+        this.ui.ledRegister('ledVentilationValveClose', 'green');
 
         this.ui.statusBarRegister('sbUpsState');
         this.ui.statusBarRegister('sbBattVoltage');
@@ -281,6 +286,25 @@ class Power extends ModuleBase {
         this.skynetGetRequest('ups/input_power_on');
     }
 
+    requestVentilationOn() {
+        this.logInfo('Request to ventilation on');
+        this.skynetGetRequest('ventilation/power_on');
+    }
+
+    requestVentilationOff() {
+        this.logInfo('Request to ventilation off');
+        this.skynetGetRequest('ventilation/power_off');
+    }
+
+    requestVentilationValveOpen() {
+        this.logInfo('Request to ventilation valve open');
+        this.skynetGetRequest('ventilation/valve_open');
+    }
+
+    requestVentilationValveClose() {
+        this.logInfo('Request to ventilation valve close');
+        this.skynetGetRequest('ventilation/valve_close');
+    }
 
 }
 

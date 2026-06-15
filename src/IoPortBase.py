@@ -57,8 +57,8 @@ class IoPortBase():
 
 
     def updateCachedState(s, state):
-        s.updatedTime = time.time()
         s._cachedState = state
+        s.updatedTime = time.time()
         s._board.updatedTime = s.updatedTime
 
 
@@ -71,6 +71,7 @@ class IoPortBase():
         for sb in s.subscribers:
             if not sb.match(state):
                 continue
+            s.updateCachedState(state)
             try:
                 sb.cb(state)
             except AppError as e:

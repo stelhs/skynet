@@ -19,7 +19,7 @@ from Termosensors import *
 from Ups import *
 from GsmModem import *
 from Dvr import *
-
+from Ventilation import *
 
 
 class Skynet():
@@ -55,6 +55,7 @@ class Skynet():
         s.ups = Ups(s)
         s.gsmModem = GsmModem(s)
         s.dvr = Dvr(s)
+        s.ventilation = Ventilation(s)
 
         s.httpHandlers = Skynet.HttpHandlers(s, s.httpServer)
         s.TgHandlers = Skynet.TgHandlers(s)
