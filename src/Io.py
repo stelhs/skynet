@@ -145,7 +145,7 @@ class Io():
         s.skynet.emitEvent('io', 'ledsUpdate', leds)
 
 
-    def checkBoards(s, task):
+    def checkBoards(s):
         now = int(time.time())
         for board in s.boards():
             if (now - board.updatedTime) > 5:

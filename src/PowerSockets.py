@@ -104,10 +104,10 @@ class PowerSockets():
             s._port = s.manager.io.port(pName)
             s._port.subscribe("PowerSocket", lambda state: s.manager.uiUpdater.call())
 
-            Task.setPeriodic('power_socket_actualizer_%s' % name, 1000, s.actualizer_cb)
+            Task.setTimeout('power_socket_actualizer_%s' % name, 1000, s.actualizer_cb)
 
 
-        def actualizer_cb(s, task):
+        def actualizer_cb(s):
             try:
                 if s._state.val:
                     s.up()
@@ -115,8 +115,6 @@ class PowerSockets():
                     s.down()
             except IoError:
                 return
-            task.remove()
-
 
         def name(s):
             return s._name

@@ -44,10 +44,10 @@ class Ups():
         s.uiUpdater = s.skynet.periodicNotifier.register("ups", s.uiUpdateHandler, 2000)
         s.httpHandlers = Ups.HttpHandlers(s)
 
-        Task.setPeriodic('ups_actualizer', 2000, s.actualizer_cb)
+        Task.setTimeout('ups_actualizer', 2000, s.actualizer_cb)
 
 
-    def actualizer_cb(s, task):
+    def actualizer_cb(s):
         try:
             with s._lock:
                 if s.isDischarge():
@@ -62,7 +62,6 @@ class Ups():
 
         except IoError:
             return
-        task.remove()
 
 
     def autoChargeEnable(s):
@@ -166,7 +165,7 @@ class Ups():
         s._mode.set(mode)
 
 
-    def doControlUps(s, task):
+    def doControlUps(s):
         with s._lock:
             s.doCheckUpsHw()
 

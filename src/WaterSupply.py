@@ -213,7 +213,7 @@ class WaterSupply():
             s.enabledCnt = 0
 
 
-        def tick(s, task):
+        def tick(s):
             try:
                 if s.ws.isStarted():
                     s.enabledCnt += 1
