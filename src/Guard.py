@@ -16,6 +16,7 @@ class Guard():
         s.io = skynet.io
         s.ui = skynet.ui
         s.waterSupply = skynet.waterSupply
+        s.ventilation = skynet.ventilation
         s.gates = skynet.gates
         s.doorLocks = skynet.doorLocks
         s.powerSockets = skynet.powerSockets
@@ -169,6 +170,13 @@ class Guard():
             s.errors.append(("Can't set boiler temperature", e))
 
 
+    def doVentilationStandby(s):
+        try:
+            s.ventilation.stop()
+        except AppError as e:
+            s.errors.append(("Can't set boiler temperature", e))
+
+
     def doSetSleepState(s):
         s._state.set('sleep')
         s._stateTime.set(int(time.time()))
@@ -255,6 +263,7 @@ class Guard():
                 s.doPowerSocketsOnStart()
                 s.doWaterSupplyOnStart()
                 s.doBoilerStandby()
+                s.doVentilationStandby()
 
             try:
                 s.toSkynet("Охрана включена");

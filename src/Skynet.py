@@ -51,11 +51,11 @@ class Skynet():
         s.lighters = Lighters(s)
         s.speakerphone = Speakerphone(s)
         s.gates = Gates(s)
+        s.ventilation = Ventilation(s)
         s.guard = Guard(s)
         s.ups = Ups(s)
         s.gsmModem = GsmModem(s)
         s.dvr = Dvr(s)
-        s.ventilation = Ventilation(s)
 
         s.httpHandlers = Skynet.HttpHandlers(s, s.httpServer)
         s.TgHandlers = Skynet.TgHandlers(s)
@@ -201,6 +201,7 @@ class Skynet():
             subSystems = (s.skynet.guard, s.skynet.gates, s.skynet.doorLocks,
                           s.skynet.powerSockets, s.skynet.ts,
                           s.skynet.boiler, s.skynet.waterSupply,
+                          s.skynet.ventilation,
                           s.skynet.lighters, s.skynet.ups,
                           s.skynet.gsmModem, s.skynet.dvr)
             text = ""

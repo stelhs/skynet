@@ -161,6 +161,14 @@ class Ventilation():
         s.valveAbortFlag = True
 
 
+    def isValveOpened(s):
+        return s.valveOpenedSense.state()
+
+
+    def isValveClosed(s):
+        return s.valveClosedSense.state()
+
+
     def run(s):
         s.valveOpen()
         s.fanOn()
