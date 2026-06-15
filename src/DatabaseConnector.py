@@ -20,7 +20,7 @@ class DatabaseConnector():
 
     def toAdmin(s, msg):
         if not s.tc:
-            s.tc = s.skynet
+            s.tc = s.skynet.tc
         if s.tc:
             s.tc.toAdmin("DatabaseConnector: %s" % msg)
 

@@ -68,19 +68,19 @@
                         width: 320px;">
 
                 <div class="button_box_green">
-                    <a onclick="ui.boiler.boilerStart()"></a>
+                    <a onpointerdown="ui.boiler.boilerStart()"></a>
                 </div>
                 <span>Вкл. котёл</span>
                 <br>
 
                 <div class="button_box_green">
-                    <a onclick="ui.boiler.boilerEnableHeater()"></a>
+                    <a onpointerdown="ui.boiler.boilerEnableHeater()"></a>
                 </div>
                 <span>Вкл. тепловентилятор</span>
                 <br>
 
                 <div class="button_box_red">
-                    <a onclick="ui.boiler.boilerDisableHeater()"></a>
+                    <a onpointerdown="ui.boiler.boilerDisableHeater()"></a>
                 </div>
                 <span>Выкл. тепловентилятор</span>
             </div>
@@ -97,13 +97,13 @@
 
                 <div style="">
 
-                    <a class="button_blue" onclick="ui.boiler.boilerSetTarget_t(5)">5°</a>
-                    <a class="button_blue" onclick="ui.boiler.onClickSetTarget_t()">Задать</a>
+                    <a class="button_blue" onpointerdown="ui.boiler.boilerSetTarget_t(5)">5°</a>
+                    <a class="button_blue" onpointerdown="ui.boiler.onClickSetTarget_t()">Задать</a>
 
                 <!--    <div style="display: inline-block;
                                 text-align: center">
                         <div class="button_box_red">
-                            <a onclick="ui.boiler.boilerSetTarget_t(5)"></a>
+                            <a onpointerdown="ui.boiler.boilerSetTarget_t(5)"></a>
                         </div><br>
                         <span>5°</span>
                     </div>
@@ -111,7 +111,7 @@
                     <div style="display: inline-block;
                                 text-align: center">
                         <div class="button_box_green">
-                            <a onclick="ui.boiler.onClickSetTarget_t()"></a>
+                            <a onpointerdown="ui.boiler.onClickSetTarget_t()"></a>
                         </div><br>
                         <span>Установить t°</span>
                     </div>

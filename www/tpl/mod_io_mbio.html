@@ -20,13 +20,13 @@
                                 <div id="ledIoPortState_{port_name}" class="led_big-undefined"></div>
                             </td>
                             <td>
-                                <a class="button_with_led" onclick="ui.io.onTogglePortBlockedState('{port_name}')">
+                                <a class="button_with_led" onpointerdown="ui.io.onTogglePortBlockedState('{port_name}')">
                                     <div id="ledIoPortEmulate_{port_name}"
                                          class="led_mini-undefined" style="margin: 15px"></div>
                                 </a>
                             </td>
                             <td>
-                                <a class="button_with_led" onclick="ui.io.onTogglePortLockUnlock('{port_name}')">
+                                <a class="button_with_led" onpointerdown="ui.io.onTogglePortLockUnlock('{port_name}')">
                                     <div id="ledIoPortBlocked_{port_name}"
                                          class="led_mini-undefined" style="margin: 15px"></div>
                                 </a>
@@ -56,10 +56,10 @@
                                 <div id="ledIoPortState_{port_name}" class="led_big-undefined"></div>
                             </td>
                             <td>
-                                <a class="button_without_led" onclick="ui.io.onTogglePortState('{port_name}')"></a>
+                                <a class="button_without_led" onpointerdown="ui.io.onTogglePortState('{port_name}')"></a>
                             </td>
                             <td>
-                                <a class="button_with_led" onclick="ui.io.onSetPortBlink('{io_name}', '{port_name}')">
+                                <a class="button_with_led" onpointerdown="ui.io.onSetPortBlink('{io_name}', '{port_name}')">
                                     <div id="ledIoPortBlink_{port_name}" class="led_mini-undefined" style="margin: 15px"></div>
                                 </a>
                                 <div id="labelIoPortBlink_{port_name}"
@@ -69,7 +69,7 @@
                                             display: none"></div>
                             </td>
                             <td>
-                                <a class="button_with_led" onclick="ui.io.onTogglePortLockUnlock('{port_name}')">
+                                <a class="button_with_led" onpointerdown="ui.io.onTogglePortLockUnlock('{port_name}')">
                                     <div id="ledIoPortBlocked_{port_name}"
                                          class="led_mini-undefined" style="margin: 15px"></div>
                                 </a>
@@ -88,7 +88,7 @@
             margin: 5px">
 
     <div class="button_box_red">
-        <a onclick="ui.io.requestToMbioHardReboot('{io_name}')"></a>
+        <a onpointerdown="ui.io.requestToMbioHardReboot('{io_name}')"></a>
     </div>
     <span>Перезагрузка по питанию</span>
 </div>

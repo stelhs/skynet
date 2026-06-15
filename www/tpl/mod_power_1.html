@@ -21,8 +21,8 @@
                                 <td style="width: 200">Питание в "{description}": </td>
                                 <td>
                                     <div id="ledPowerZone_{name}" class="led_big-off" style="margin: 5px; vertical-align: middle"></div>
-                                    <a class="button_without_led_green" onclick="ui.power.requestToPowerSocketOn('{name}')"></a>
-                                    <a class="button_without_led_red" onclick="ui.power.requestToPowerSocketOff('{name}')"></a>
+                                    <a class="button_without_led_green" onpointerdown="ui.power.requestToPowerSocketOn('{name}')"></a>
+                                    <a class="button_without_led_red" onpointerdown="ui.power.requestToPowerSocketOff('{name}')"></a>
                                 </td>
                             </tr>
                         <!-- END BLOCK : power_zone -->
@@ -45,8 +45,8 @@
                                 <td style="width: 200">Освещение в "{description}": </td>
                                 <td>
                                     <div id="ledLighter_{name}" class="led_big-off" style="margin: 5px; vertical-align: middle"></div>
-                                    <a class="button_without_led_green" onclick="ui.power.requestToLighterOn('{name}')"></a>
-                                    <a class="button_without_led_red" onclick="ui.power.requestToLighterOff('{name}')"></a>
+                                    <a class="button_without_led_green" onpointerdown="ui.power.requestToLighterOn('{name}')"></a>
+                                    <a class="button_without_led_red" onpointerdown="ui.power.requestToLighterOff('{name}')"></a>
                                 </td>
                             </tr>
                         <!-- END BLOCK : lighter -->
@@ -55,7 +55,7 @@
                                 Автоматическое управление освещением
                             </td>
                             <td>
-                                <a class="button_with_led" onclick="ui.power.requestToSwitchLightersAutomatic()" style="margin: 10 5">
+                                <a class="button_with_led" onpointerdown="ui.power.requestToSwitchLightersAutomatic()" style="margin: 10 5">
                                     <div id="ledLighter_automatic" class="led_mini-off" style="margin: 15px"></div>
                                 </a>
                             </td>
@@ -86,8 +86,8 @@
                                 <td style="width: 200">Замок "{description}": </td>
                                 <td>
                                     <div id="ledDoorlock_{name}" class="led_big-off" style="margin: 5px; vertical-align: middle"></div>
-                                    <a class="button_without_led_green" onclick="ui.power.requestToDoorLocksOn('{name}')"></a>
-                                    <a class="button_without_led_red" onclick="ui.power.requestToDoorLocksOff('{name}')"></a>
+                                    <a class="button_without_led_green" onpointerdown="ui.power.requestToDoorLocksOn('{name}')"></a>
+                                    <a class="button_without_led_red" onpointerdown="ui.power.requestToDoorLocksOff('{name}')"></a>
                                 </td>
                             </tr>
                         <!-- END BLOCK : doorlock -->
@@ -116,8 +116,8 @@
                     <div>
                         <div id="ledGatesNoPower" class="led_big-green"></div>
                         Нет питания автоматики ворот
-                        <a class="button_without_led_green" onclick="ui.power.requestToGatesPowerOn()"></a>
-                        <a class="button_without_led_red" onclick="ui.power.requestToGatesPowerOff()"></a>
+                        <a class="button_without_led_green" onpointerdown="ui.power.requestToGatesPowerOn()"></a>
+                        <a class="button_without_led_red" onpointerdown="ui.power.requestToGatesPowerOff()"></a>
                     </div>
 
                     <div style="padding-bottom: 20px">
@@ -128,7 +128,7 @@
                     <div style="display: inline-block;
                                 text-align: center">
                         <div class="button_box_green">
-                            <a onclick="ui.power.requestToGatesOpen()"></a>
+                            <a onpointerdown="ui.power.requestToGatesOpen()"></a>
                         </div>
                         <div>Открыть</div>
                     </div>
@@ -136,7 +136,7 @@
                     <div style="display: inline-block;
                                 text-align: center">
                         <div class="button_box_green">
-                            <a onclick="ui.power.requestToGatesOpenPedestrian()"></a>
+                            <a onpointerdown="ui.power.requestToGatesOpenPedestrian()"></a>
                         </div>
                         <div>Открыть пешеходу</div>
                     </div>
@@ -144,7 +144,7 @@
                     <div style="display: inline-block;
                                 text-align: center">
                         <div class="button_box_red">
-                            <a onclick="ui.power.requestToGatesClose()"></a>
+                            <a onpointerdown="ui.power.requestToGatesClose()"></a>
                         </div>
                         <div>Закрыть</div>
                     </div>
@@ -168,14 +168,14 @@
                             <td style="width: 180">Питание насоса: </td>
                             <td>
                                 <div id="ledWaterPumpEnabled" class="led_big-off" style="margin: 5px; vertical-align: middle"></div>
-                                <a class="button_without_led_green" onclick="ui.power.requestToWaterPumpOn()"></a>
-                                <a class="button_without_led_red" onclick="ui.power.requestToWaterPumpOff()"></a>
+                                <a class="button_without_led_green" onpointerdown="ui.power.requestToWaterPumpOn()"></a>
+                                <a class="button_without_led_red" onpointerdown="ui.power.requestToWaterPumpOff()"></a>
                             </td>
                         </tr>
                         <tr>
                             <td>Блокировка насоса: </td>
                             <td>
-                                <a class="button_with_led" onclick="ui.power.requestToSwitchWaterSupplyBlocking()" style="margin: 10 5">
+                                <a class="button_with_led" onpointerdown="ui.power.requestToSwitchWaterSupplyBlocking()" style="margin: 10 5">
                                     <div id="ledWatersupplyPumpIsLocked" class="led_mini-off" style="margin: 15px"></div>
                                 </a>
                             </td>
@@ -183,7 +183,7 @@
                         <tr>
                             <td>Автоматика насоса: </td>
                             <td>
-                                <a class="button_with_led" onclick="ui.power.requestToSwitchWaterSupplyAutomatic()" style="margin: 10 5">
+                                <a class="button_with_led" onpointerdown="ui.power.requestToSwitchWaterSupplyAutomatic()" style="margin: 10 5">
                                     <div id="ledWatersupplyAutomaticEnabled" class="led_mini-off" style="margin: 15px"></div>
                                 </a>
                             </td>

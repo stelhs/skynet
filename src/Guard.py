@@ -164,7 +164,7 @@ class Guard():
 
     def doBoilerStandby(s):
         try:
-            s.boiler.setTarget_t(5.0)
+            s.boiler.setTarget_t(19.0)
         except AppError as e:
             s.errors.append(("Can't set boiler temperature", e))
 
@@ -229,7 +229,7 @@ class Guard():
 
     def doBoilerReady(s):
         try:
-            s.boiler.setTarget_t(17.0)
+            s.boiler.setTarget_t(19.0)
         except AppError as e:
             s.errors.append(("Can't set boiler temperature", e))
 

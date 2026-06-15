@@ -20,19 +20,19 @@
             </div>
 
             <!-- START BLOCK : page_selector -->
-                <a class="button_switch_page" onclick="ui.{name}.switchPrevPage()"><-</a>
+                <a class="button_switch_page" onpointerdown="ui.{name}.switchPrevPage()"><-</a>
                 <span id="module_{name}_page_selector"
                       style="font-weight: bold;
                              padding: 10px;
                              font-size: 20;"></span>
-                <a class="button_switch_page" onclick="ui.{name}.switchNextPage()">-></a>
+                <a class="button_switch_page" onpointerdown="ui.{name}.switchNextPage()">-></a>
             <!-- END BLOCK : page_selector -->
 
 
             <a style="vertical-align: bottom;
                      float: right;
                      margin-right: 10px;"
-                class="button_admin_mode" onclick="ui.logout()">
+                class="button_admin_mode" onpointerdown="ui.logout()">
                 <img id="button_disable_super_mode"
                      style="height: 40px;
                             display: inline-block"
@@ -42,7 +42,7 @@
             <a style="vertical-align: bottom;
                      float: right;
                      margin-right: 20px;"
-                class="button_admin_mode" onclick="ui.pinCodeDialog()">
+                class="button_admin_mode" onpointerdown="ui.pinCodeDialog()">
                 <img id="button_enable_super_mode"
                      style="height: 40px;
                             display: block"

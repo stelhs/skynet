@@ -10,7 +10,7 @@
                 float: left">
         {header}
     </div>
-    <a onclick="ui.hideDialogBox()"
+    <a onpointerdown="ui.hideDialogBox()"
        class="number_button_blue"
        style="padding: 0px;
               width: 50px;
@@ -27,29 +27,29 @@
          id="number_win_disp_frame_{name}">
         {header}<br>
         <div id="ss_number_win_{name}"
-             onclick="ui.dialogBox.onSelectInput('{name}')"
+             onpointerdown="ui.dialogBox.onSelectInput('{name}')"
              class="seven_seg_4">
         </div>
     </div>
 <!-- END BLOCK : display -->
 <div style="margin: 20 40 0 40">
-    <a class="number_button_blue" onclick="ui.dialogBox.onClickDigit('1')">1</a>
-    <a class="number_button_blue" onclick="ui.dialogBox.onClickDigit('2')">2</a>
-    <a class="number_button_blue" onclick="ui.dialogBox.onClickDigit('3')">3</a>
+    <a class="number_button_blue" onpointerdown="ui.dialogBox.onClickDigit('1')">1</a>
+    <a class="number_button_blue" onpointerdown="ui.dialogBox.onClickDigit('2')">2</a>
+    <a class="number_button_blue" onpointerdown="ui.dialogBox.onClickDigit('3')">3</a>
 </div>
 <div>
-    <a class="number_button_blue" onclick="ui.dialogBox.onClickDigit('4')">4</a>
-    <a class="number_button_blue" onclick="ui.dialogBox.onClickDigit('5')">5</a>
-    <a class="number_button_blue" onclick="ui.dialogBox.onClickDigit('6')">6</a>
+    <a class="number_button_blue" onpointerdown="ui.dialogBox.onClickDigit('4')">4</a>
+    <a class="number_button_blue" onpointerdown="ui.dialogBox.onClickDigit('5')">5</a>
+    <a class="number_button_blue" onpointerdown="ui.dialogBox.onClickDigit('6')">6</a>
 </div>
 <div>
-    <a class="number_button_blue" onclick="ui.dialogBox.onClickDigit('7')">7</a>
-    <a class="number_button_blue" onclick="ui.dialogBox.onClickDigit('8')">8</a>
-    <a class="number_button_blue" onclick="ui.dialogBox.onClickDigit('9')">9</a>
+    <a class="number_button_blue" onpointerdown="ui.dialogBox.onClickDigit('7')">7</a>
+    <a class="number_button_blue" onpointerdown="ui.dialogBox.onClickDigit('8')">8</a>
+    <a class="number_button_blue" onpointerdown="ui.dialogBox.onClickDigit('9')">9</a>
 </div>
 <div>
-    <a class="number_button_blue" onclick="ui.dialogBox.eraseSelected()">C</a>
-    <a class="number_button_blue" onclick="ui.dialogBox.onClickDigit('0')">0</a>
-    <a class="number_button_blue" onclick="ui.dialogBox.onClickDigit('.')">.</a>
+    <a class="number_button_blue" onpointerdown="ui.dialogBox.eraseSelected()">C</a>
+    <a class="number_button_blue" onpointerdown="ui.dialogBox.onClickDigit('0')">0</a>
+    <a class="number_button_blue" onpointerdown="ui.dialogBox.onClickDigit('.')">.</a>
 </div>
-<a class="number_button_blue" onclick="ui.dialogBox.onEnter()"> Ok </a>
+<a class="number_button_blue" onpointerdown="ui.dialogBox.onEnter()"> Ok </a>

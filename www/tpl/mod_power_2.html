@@ -38,7 +38,7 @@
                         <tr>
                             <td>Автоматический заряд АКБ</td>
                             <td>
-                                <a class="button_with_led" onclick="ui.power.requestToSwitchAutomatic()" style="margin: 10 5">
+                                <a class="button_with_led" onpointerdown="ui.power.requestToSwitchAutomatic()" style="margin: 10 5">
                                     <div id="ledAutomaticCharhing" class="led_mini-undefined" style="margin: 15px"></div>
                                 </a>
                             </td>
@@ -62,7 +62,7 @@
                         <tr>
                             <td>Установить ток в ноль</td>
                             <td>
-                                <a class="button_without_led" onclick="ui.power.requestToSetZeroChargerCurrent()" style="margin: 10 5">
+                                <a class="button_without_led" onpointerdown="ui.power.requestToSetZeroChargerCurrent()" style="margin: 10 5">
                                 </a>
                             </td>
                         </tr>
@@ -74,7 +74,7 @@
                         <div style="display: inline-block;
                                     text-align: center">
                             <div class="button_box_green">
-                                <a onclick="ui.power.requestToStartCharger()"></a>
+                                <a onpointerdown="ui.power.requestToStartCharger()"></a>
                             </div>
                             <div>Старт</div>
                         </div>
@@ -82,7 +82,7 @@
                         <div style="display: inline-block;
                                     text-align: center">
                             <div class="button_box_red">
-                                <a onclick="ui.power.requestToStopCharger()"></a>
+                                <a onpointerdown="ui.power.requestToStopCharger()"></a>
                             </div>
                             <div>Стоп</div>
                         </div>
@@ -111,8 +111,8 @@
                             <td style="width: 250">Подключение зарядного устройства к АКБ:</td>
                             <td>
                                 <div id="ledChargerEnPort" class="led_big-off" style="margin: 5px; vertical-align: middle"></div>
-                                <a class="button_without_led_green" onclick="ui.power.requestToEnableHwCharger()"></a>
-                                <a class="button_without_led_red" onclick="ui.power.requestToDisableHwCharger()"></a>
+                                <a class="button_without_led_green" onpointerdown="ui.power.requestToEnableHwCharger()"></a>
+                                <a class="button_without_led_red" onpointerdown="ui.power.requestToDisableHwCharger()"></a>
                             </td>
                         </tr>
 
@@ -120,8 +120,8 @@
                             <td>Зарядный ток 3A:</td>
                             <td>
                                 <div id="ledHighCurrent" class="led_big-off" style="margin: 5px; vertical-align: middle"></div>
-                                <a class="button_without_led_green" onclick="ui.power.requestToTurnOnHighCurrent()"></a>
-                                <a class="button_without_led_red" onclick="ui.power.requestToTurnOffHighCurrent()"></a>
+                                <a class="button_without_led_green" onpointerdown="ui.power.requestToTurnOnHighCurrent()"></a>
+                                <a class="button_without_led_red" onpointerdown="ui.power.requestToTurnOffHighCurrent()"></a>
                             </td>
                         </tr>
 
@@ -129,8 +129,8 @@
                             <td>Зарядный ток 1.5A:</td>
                             <td>
                                 <div id="ledMiddleCurrent" class="led_big-off" style="margin: 5px; vertical-align: middle"></div>
-                                <a class="button_without_led_green" onclick="ui.power.requestToTurnOnMiddleCurrent()"></a>
-                                <a class="button_without_led_red" onclick="ui.power.requestToTurnOffMiddleCurrent()"></a>
+                                <a class="button_without_led_green" onpointerdown="ui.power.requestToTurnOnMiddleCurrent()"></a>
+                                <a class="button_without_led_red" onpointerdown="ui.power.requestToTurnOffMiddleCurrent()"></a>
                             </td>
                         </tr>
 
@@ -138,8 +138,8 @@
                             <td>Разряд:</td>
                             <td>
                                 <div id="ledChargeDischarge" class="led_big-off" style="margin: 5px; vertical-align: middle"></div>
-                                <a class="button_without_led_green" onclick="ui.power.requestToSwitchToDischarge()"></a>
-                                <a class="button_without_led_red" onclick="ui.power.requestToSwitchToCharge()"></a>
+                                <a class="button_without_led_green" onpointerdown="ui.power.requestToSwitchToDischarge()"></a>
+                                <a class="button_without_led_red" onpointerdown="ui.power.requestToSwitchToCharge()"></a>
                             </td>
                         </tr>
 
@@ -147,8 +147,8 @@
                             <td>Отключатель питания реле АКБ:</td>
                             <td>
                                 <div id="ledBatteryRelayPort" class="led_big-off" style="margin: 5px; vertical-align: middle"></div>
-                                <a class="button_without_led_green" onclick="ui.power.requestToBatteryRelayOn()"></a>
-                                <a class="button_without_led_red" onclick="ui.power.requestToBatteryRelayOff()"></a>
+                                <a class="button_without_led_green" onpointerdown="ui.power.requestToBatteryRelayOn()"></a>
+                                <a class="button_without_led_red" onpointerdown="ui.power.requestToBatteryRelayOff()"></a>
                             </td>
                         </tr>
 
@@ -156,8 +156,8 @@
                             <td>Отключатель питания на ИБП (Запуск теста АКБ):</td>
                             <td>
                                 <div id="ledUpsBreakPowerPort" class="led_big-off" style="margin: 5px; vertical-align: middle"></div>
-                                <a class="button_without_led_green" onclick="ui.power.requestToInputPowerOff()"></a>
-                                <a class="button_without_led_red" onclick="ui.power.requestToInputPowerOn()"></a>
+                                <a class="button_without_led_green" onpointerdown="ui.power.requestToInputPowerOff()"></a>
+                                <a class="button_without_led_red" onpointerdown="ui.power.requestToInputPowerOn()"></a>
                             </td>
                         </tr>
                     </table>
